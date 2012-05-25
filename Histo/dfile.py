@@ -44,6 +44,7 @@ class DFileWriter:
         self._create_root()
         self._part_size = part_size
         self._idformat = idformat
+        self._modify = set()
         self._state_load_or_create()
     
     def write(self, s):
@@ -55,6 +56,9 @@ class DFileWriter:
             self._pointer += len(write)
             s = s[write_size:]
         self._update_state()
+    
+    def get_modify(self):
+        return self._modify
     
     def seek(self, pos):
         self._close_part()
@@ -106,6 +110,7 @@ class DFileWriter:
             
     def _write_part(self, str):
         self._part.write(str)
+        self._modify |= self._partid
     
     def _update_state(self):
         self._state.length = max(self._state.length, self._pointer)
@@ -142,3 +147,4 @@ class DFileWriter:
         import os
         if not os.path.exists(self._root):
             os.makedirs(self._root)
+            
