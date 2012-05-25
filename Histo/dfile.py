@@ -147,15 +147,3 @@ class DFileWriter:
         import os
         if not os.path.exists(self._root):
             os.makedirs(self._root)
-            
-def rand(len):
-    import random
-    return ''.join([''.join(random.sample('0123456789abcdef',1)) for i in range(len)])
-
-def test():
-    f = DFileWriter('D:\\dfile',10*1024*1024)
-    s = rand(3**11)
-    with f:
-        for i in range(100):
-            f.write(s)
-    print(f.get_modify())
