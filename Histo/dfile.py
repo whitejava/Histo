@@ -13,7 +13,7 @@ class DFileState:
     
     def load(self):
         with open(self._file,'r') as f:
-            d = f.readlines()
+            d = f.readline()
             m = eval(d)
             self.length = m['length']
             if m['partsize'] != self._partsize:
@@ -38,24 +38,26 @@ class DFileWriter:
     _4digits_decimal = lambda x:str(x).zfill(4)
     def __init__(self, root, part_size = _1mb, idformat = _4digits_decimal):
         self._part = None
+        self._partid = None
+        self._partpos = None
         self._root = root
+        self._create_root()
         self._part_size = part_size
         self._idformat = idformat
         self._state_load_or_create()
-        self._seek_end()
     
     def write(self, s):
-        s = s[:]
         while s:
             write_size = self._get_part_remain_size()
             self._ensure_open_part()
-            self._write_part(s[:write_size])
-            self._pointer += write_size
-            del s[:write_size]
+            write = s[:write_size]
+            self._write_part(write)
+            self._pointer += len(write)
+            s = s[write_size:]
         self._update_state()
     
     def seek(self, pos):
-        self.close()
+        self._close_part()
         self._pointer = pos
         self._open_part()
         self._seek_part()
@@ -69,6 +71,16 @@ class DFileWriter:
             self._part.flush()
     
     def close(self):
+        self._close_part()
+        self._state.close()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self,t,v,trace):
+        self.close()
+    
+    def _close_part(self):
         if self._part:
             self._part.close()
             self._part = None
@@ -79,6 +91,7 @@ class DFileWriter:
             s.load()
         else:
             s.create()
+        self._pointer = s.length
         self._state = s
     
     def _seek_end(self):
@@ -115,7 +128,7 @@ class DFileWriter:
         return self._partid != self._get_part_id() or self._partpos != self._get_part_pos()
 
     def _get_part_id(self):
-        return self.pointer / self._part_size
+        return self._pointer // self._part_size
     
     def _get_part_file_name(self, partid):
         import os
@@ -124,3 +137,8 @@ class DFileWriter:
     def _get_state_file_name(self):
         import os
         return os.path.join(self._root, 'state')
+    
+    def _create_root(self):
+        import os
+        if not os.path.exists(self._root):
+            os.makedirs(self._root)
