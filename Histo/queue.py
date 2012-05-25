@@ -31,34 +31,24 @@ class Postpone:
         with self._lock:
             self._do_verb()
 
-class AutoSaveQueue:
-    def __init__(self,storage):
-        from threading import Lock
-        self._storage = storage
-        self._lock = Lock()
-        self._auto_save = Postpone(self._save)
-        if storage.exist():
-            self._load()
-        else:
-            self._create()
-            self._auto_save.start()
-    def push(self,e):
-        with self._lock:
-            self._queue.append(e)
-            self._auto_save.start()
-    def pop(self):
-        with self._lock:
-            r = self._queue[0]
-            del self._queue[0]
-            self._auto_save.start()
-            return r
+class AutoSave:
+    def __init__(self,obj,store):
+        self._obj = obj
+        self._store = store
     def __enter__(self):
-        return self
-    def __exit__(self,t,v,trace):
-        self._auto_save.__exit__(t, v, trace)
-    def _load(self):
-        self._queue = self._storage.load()
-    def _create(self):
-        self._queue = []
-    def _save(self):
-        self._storage.save(self._queue)
+        pass
+
+class NotExist(Exception):
+    pass
+
+import store
+s = store.PrintStorage()
+try:
+    q = s.load()
+except NotExist:
+    q = []
+try:
+    for i in range(10):
+        q.append(i)
+finally:
+    s.save(q)
