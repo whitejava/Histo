@@ -110,7 +110,7 @@ class DFileWriter:
             
     def _write_part(self, str):
         self._part.write(str)
-        self._modify |= self._partid
+        self._modify |= set([self._partid])
     
     def _update_state(self):
         self._state.length = max(self._state.length, self._pointer)
@@ -148,3 +148,14 @@ class DFileWriter:
         if not os.path.exists(self._root):
             os.makedirs(self._root)
             
+def rand(len):
+    import random
+    return ''.join([''.join(random.sample('0123456789abcdef',1)) for i in range(len)])
+
+def test():
+    f = DFileWriter('D:\\dfile',10*1024*1024)
+    s = rand(3**11)
+    with f:
+        for i in range(100):
+            f.write(s)
+    print(f.get_modify())
