@@ -1,44 +1,37 @@
 class DFileState:
-    def _exist(self):
-        import os
-        return os.path.isfile(self._get_state_filename())
+    def __init__(self, file, partsize):
+        self._file = file
+        self._partsize = partsize
     
-    def _load(self):
-        fn = self._get_state_filename()
-        with open(fn, 'r') as f:
-            state = eval(f.readlines())
-            if self._partition_size != state['partition_size']:
-                raise IOError('Partition size is not same')
-            self._length = state['length']
-        self.seek_write(self._length)
-        self.seek_read(0)
-        
-    def _create(self):
-        self._length = 0;
-        self._save()
-        
-    def _save(self):
-        fn = self._get_state_filename()
-        with open(fn, 'w') as f:
-            state = {'partition_size': self._partition_size,
-                     'length': self._length}
-            f.write(repr(state))
-            
-    def _get_state_filename(self):
+    def exist(self):
         import os
-        return os.path.join(self._root, 'state')
-
-def state_load_or_create(file):
-    r = DFileState(file)
-    if not r.exist():
-        r.create()
-    r.load()
-    return r
-
-def state_load(file):
-    r = DFileState(file)
-    r.load()
-    return r
+        return os.path.exists(self._file)
+    
+    def create(self):
+        self.length = 0
+        self._modified = True
+    
+    def load(self):
+        with open(self._file,'r') as f:
+            d = f.readlines()
+            m = eval(d)
+            self.length = m['length']
+            if m['partsize'] != self._partsize:
+                raise IOError('Part size is not same')
+        self._modified = False
+    
+    def on_modify(self):
+        self._modified = True
+        
+    def close(self):
+        if self._modified:
+            self._save()
+    
+    def _save(self):
+        with open(self._file, 'w') as f:
+            f.write(repr({'length': self.length,
+                          'partsize': self._partsize}))
+        self._modified = False
 
 class DFileWriter:
     _1mb = 1*1024*1024
@@ -81,10 +74,11 @@ class DFileWriter:
             self._part = None
     
     def _state_load_or_create(self):
-        s = DFileState(self._root)
-        if not s.exist():
-            s.create(self._part_size)
-        s.load()
+        s = DFileState(self._get_state_file_name(), self._part_size)
+        if s.exist():
+            s.load()
+        else:
+            s.create()
         self._state = s
     
     def _seek_end(self):
@@ -102,6 +96,7 @@ class DFileWriter:
     
     def _update_state(self):
         self._state.length = max(self._state.length, self._pointer)
+        self._state.on_modify()
     
     def _open_part(self):
         partid = self._get_part_id()
@@ -125,3 +120,7 @@ class DFileWriter:
     def _get_part_file_name(self, partid):
         import os
         return os.path.join(self._root, self._idformat(partid))
+    
+    def _get_state_file_name(self):
+        import os
+        return os.path.join(self._root, 'state')
