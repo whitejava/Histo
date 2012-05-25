@@ -41,55 +41,87 @@ def state_load(file):
     return r
 
 class DFileWriter:
-    def __init__(self, root, partition_size = 1*1024*1024, idformat=lambda x:str(x).zfill(4)):
-        self._root = root;
+    _1mb = 1*1024*1024
+    _4digits_decimal = lambda x:str(x).zfill(4)
+    def __init__(self, root, part_size = _1mb, idformat = _4digits_decimal):
+        self._part = None
+        self._root = root
+        self._part_size = part_size
         self._idformat = idformat
-        self._partition_size = partition_size
-        self._writer = None
-        self._lock()
-        import os
-        self._state = state_load_or_create(os.path.join(self._root, 'state'))
-        
-    def write(self, str):
-        str = str[:]
-        while str:
-            self._ensure_writer()
-            cur = self._pointer
-            size = self._partition_size
-            switch_point = (1 + cur/size)*size
-            write_size = switch_point - cur
-            self._writer.write(str[:write_size])
+        self._state_load_or_create()
+        self._seek_end()
+    
+    def write(self, s):
+        s = s[:]
+        while s:
+            write_size = self._get_part_remain_size()
+            self._ensure_open_part()
+            self._write_part(s[:write_size])
             self._pointer += write_size
-            self._state.length = max(self._pointer, self._state_length)
-            del str[:write_size]
-    
-    def _ensure_writer(self):
-        if not self._writer or self._opened_part_id != self.pointer/self._partition_size:
-            self.close()
-            self._writer = self._open_cur_part()
-            part_pos = self._pointer % self._partition_size
-            self._writer.seek(part_pos)
-    
-    def _open_cur_part(self):
-        import os
-        part_id = self._pointer / self._partition_size
-        cur = os.path.join(self._root, self._idformat(part_id))
-        self._opened_part_id = part_id
-        return open(cur,'a')
+            del s[:write_size]
+        self._update_state()
     
     def seek(self, pos):
-        self._pointer = pos
         self.close()
-        self._writer
+        self._pointer = pos
+        self._open_part()
+        self._seek_part()
+        self._update_state()
     
     def tell(self):
         return self._pointer
     
     def flush(self):
-        if self._writer:
-            self._writer.flush()
+        if self._part:
+            self._part.flush()
     
     def close(self):
-        if self._writer:
-            self._writer.close()
-            self._writer = None
+        if self._part:
+            self._part.close()
+            self._part = None
+    
+    def _state_load_or_create(self):
+        s = DFileState(self._root)
+        if not s.exist():
+            s.create(self._part_size)
+        s.load()
+        self._state = s
+    
+    def _seek_end(self):
+        self.seek(self._state.length)
+    
+    def _get_part_remain_size(self):
+        return self._part_size - self._get_part_pos() 
+    
+    def _ensure_open_part(self):
+        if self._worth_seek():
+            self.seek(self._pointer)
+            
+    def _write_part(self, str):
+        self._part.write(str)
+    
+    def _update_state(self):
+        self._state.length = max(self._state.length, self._pointer)
+    
+    def _open_part(self):
+        partid = self._get_part_id()
+        self._part = open(self._get_part_file_name(partid), 'a')
+        self._partid = partid
+    
+    def _seek_part(self):
+        partpos = self._get_part_pos()
+        self._part.seek(partpos)
+        self._partpos = partpos
+    
+    def _get_part_pos(self):
+        return self._pointer % self._part_size
+    
+    def _worth_seek(self):
+        return self._partid != self._get_part_id() or self._partpos != self._get_part_pos()
+
+    def _get_part_id(self):
+        return self.pointer / self._part_size
+    
+    def _get_part_file_name(self, partid):
+        import os
+        return os.path.join(self._root, self._idformat(partid))
