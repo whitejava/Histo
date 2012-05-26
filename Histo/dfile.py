@@ -33,17 +33,13 @@ class DFileState:
                           'partsize': self._partsize}))
         self._modified = False
 
-class DFileWriter:
+class DFileWriter(DFileBase):
     _1mb = 1*1024*1024
     _4digits_decimal = lambda x:str(x).zfill(4)
-    def __init__(self, root, part_size = _1mb, idformat = _4digits_decimal):
+    def __init__(self, root, partsize = _1mb, idformat = _4digits_decimal):
+        DFileBase.__init__(self, root, partsize, idformat)
         self._part = None
-        self._partid = None
-        self._partpos = None
-        self._root = root
         self._create_root()
-        self._part_size = part_size
-        self._idformat = idformat
         self._modify = set()
         self._state_load_or_create()
     
@@ -152,7 +148,66 @@ class DFileWriter:
         if not os.path.exists(self._root):
             os.makedirs(self._root)
 
-p = DFileWriter('D:\\dfile',4192)
-with p:
-    for i in range(1000):
-        p.write(b'0123456789')
+class PartWriter:
+    def __init__(self, id, file):
+        self._file = open(file, 'wb+')
+        self.id = id
+    
+    def write(self, b):
+        self._file.write(b)
+    
+    def tell(self):
+        return self._file.tell()
+    
+    def close(self):
+        self._file.close()
+
+class DFileBase:
+    def __init__(self, root, partsize, idformat):
+        self._root = root
+        self._partsize = partsize
+        self._idformat = idformat
+        self._state = DFileState(partsize)
+        
+    def get_part_remain_size(self):
+        return self._partsize - 
+
+class DFileWriter2(DFileBase):
+    def DFileWriter(self, root, partsize = 1024*1024, idformat = lambda x:str(x).zfill(4)):
+        DFileBase.__init__(self, root, partsize, idformat)
+        self._state.load_or_create()
+        self._part = None
+        self._modify = set()
+    
+    def write(self, b):
+        while b:
+            self._ensure_part()
+            r = self.get_part_remain_size()
+            self._part.write(b[:r])
+            self._pointer += len(b[:r])
+            b = b[r:]
+    
+    def seek(self, pos):
+        self._pointer = pos
+    
+    def flush(self, pos):
+        if self._part:
+            self._part.flush()
+    
+    def close(self):
+        self._close_part()
+        self._state.close()
+        
+    def _ensure_part(self):
+        if not self._part or self._part.id != self.get_part_id() or self._part.tell() != self.get_part_pos():
+            self._close_part()
+            self._open_part()
+            self._seek_part()
+            
+    def _close_part(self):
+        if self._part:
+            self._part.close()
+            self._part = None
+            
+    def _open_part(self):
+        self._part = PartWriter(self.get_part_id(), self.get_part_file_name())
