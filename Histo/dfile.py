@@ -47,14 +47,14 @@ class DFileWriter:
         self._modify = set()
         self._state_load_or_create()
     
-    def write(self, s):
-        while s:
+    def write(self, b):
+        while b:
             write_size = self._get_part_remain_size()
             self._ensure_open_part()
-            write = s[:write_size]
+            write = b[:write_size]
             self._write_part(write)
             self._pointer += len(write)
-            s = s[write_size:]
+            b = b[write_size:]
         self._update_state()
     
     def get_modify(self):
@@ -108,8 +108,9 @@ class DFileWriter:
         if self._worth_seek():
             self.seek(self._pointer)
             
-    def _write_part(self, str):
-        self._part.write(str)
+    def _write_part(self, b):
+        self._partpos += len(b)
+        self._part.write(b)
         self._modify |= set([self._partid])
     
     def _update_state(self):
@@ -118,12 +119,15 @@ class DFileWriter:
     
     def _open_part(self):
         partid = self._get_part_id()
-        self._part = open(self._get_part_file_name(partid), 'a')
+        a = self._get_part_file_name(partid)
+        open(a, 'ab').close()
+        self._part = open(a, 'w+b')
         self._partid = partid
     
     def _seek_part(self):
         partpos = self._get_part_pos()
         self._part.seek(partpos)
+        print('seek part', self._partid, partpos)
         self._partpos = partpos
     
     def _get_part_pos(self):
@@ -147,3 +151,8 @@ class DFileWriter:
         import os
         if not os.path.exists(self._root):
             os.makedirs(self._root)
+
+p = DFileWriter('D:\\dfile',4192)
+with p:
+    for i in range(1000):
+        p.write(b'0123456789')
