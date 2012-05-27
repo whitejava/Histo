@@ -92,11 +92,6 @@ class DFileBase:
     def tell(self):
         return self.pointer
     
-    def seek(self, pos):
-        if pos > self.size():
-            raise IOError('seek out of bounds')
-        self.pointer = pos
-    
     def size(self):
         return self.state.fileSize
     
@@ -253,8 +248,96 @@ class DFileReader(DFileBase):
             self.pointer += len(read)
         return r
     
+    def seek(self, pos):
+        if pos > self.size():
+            raise IOError('seek out of bounds')
+        self.pointer = pos
+    
     def openCorrectPart(self):
         self.part = PartReader(self.getCorrectPartId(), self.getCorrectPartFileName(), self.partSize)
+
+class DFileWriter2:
+    def __init__(self,state,files):
+        self.state = state
+        self.state.loadOrCreate()
+        self.files = files
+        self.pointer = self.state.fileSize
+        self.file = self.files(self.pointer//self.partSize)
+        self.modify = set()
+    
+    def write(self,b):
+        while b:
+            partRemain = self.state.partSize - self.pointer%self.state.partSize
+            self.file.write(b[:partRemain])
+            self.modify += set([self.pointer//self.partSize])
+            self.increasePointer(len(b[:partRemain]))
+    
+    def getModify(self):
+        return self.modify
+    
+    def tell(self):
+        return self.pointer
+    
+    def close(self):
+        self.file.close()
+        self.state.close()
+    
+    def increasePointer(self,delta):
+        before = self.pointer//self.state.partSize
+        self.pointer += delta
+        after = self.pointer//self.state.partSize
+        self.state.updateFileSize(self.pointer)
+        for i in range(before, after):
+            self.onSwitchFile(i,i+1)
+    
+    def onSwitchFile(self,from2,to):
+        self.file.close()
+        self.file = self.files(to)
+
+class DFileReader2:
+    def __init__(self,state,files):
+        self.state = state
+        self.files = files
+        self.part = None
+        self.pointer = 0
+    
+    def read(self, limit = None):
+        if not limit:
+            limit = self.available()
+        r = b''
+        while limit:
+            self.ensurePart()
+            partRemain = self.pointer//self.state.partSize
+            readSize = min(partRemain, limit)
+            read = self.part.file.read(readSize)
+            if len(read) != readSize:
+                raise IOError('read length not enough')
+            self.pointer += readSize
+        return r
+            
+    def seek(self, pos):
+        self.pointer = pos
+    
+    def available(self):
+        return self.state.fileSize - self.pointer
+    
+    def close(self):
+        self.closePart()
+        self.state.close()
+        
+    def closePart(self):
+        if self.part:
+            self.part.file.close()
+            self.part = None
+
+    def ensurePart(self):
+        if not self.part:
+            self.part = object()
+            self.part.id = self.pointer//self.state.partSize
+            self.part.file = self.files(self.part.id)
+        partPos = self.pointer % self.state.partSize
+        if self.part.file.tell() != partPos:
+            self.part.file.seek(partPos)
 
 def writeSample():
     with DFileWriter('D:\\dfile', 10) as f:
