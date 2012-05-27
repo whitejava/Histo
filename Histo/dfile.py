@@ -264,6 +264,5 @@ def writeSample():
     
 def readSample():
     with DFileReader('D:\\dfile', 10) as f:
+        f.seek(10)
         print(f.read())
-
-readSample()
