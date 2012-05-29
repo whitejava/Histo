@@ -1,11 +1,10 @@
 defaultPartSize = 1000000
-defaultIdFormat = '{:04d}'.format
 
-class DFileState:
-    def __init__(self, file, partSize):
-        self.file = file
+class State:
+    def __init__(self, root, partSize = defaultPartSize):
+        self.root = root
         self.partSize = partSize
-        self.fileSize = 0
+        self.modified = False
     
     def loadOrCreate(self):
         if self.exists():
@@ -13,288 +12,81 @@ class DFileState:
         else:
             self.create()
     
+    def exists(self):
+        import os
+        return os.path.exists(self.subfile('state'))
+    
     def load(self):
-        with open(self.file, 'r') as f:
-            m = eval(f.readline())
+        with open(self.subfile('state'), 'r') as f:
+            m = eval(f.read())
+            self.partSize = m['partSize']
             self.fileSize = m['fileSize']
-            if self.partSize != m['partSize']:
-                raise IOError('partSize is not same')
+            self.buffer = m['buffer']
     
     def create(self):
-        pass
+        import os
+        if not os.path.exists(self.root):
+            os.makedirs(self.root)
+        self.fileSize = 0
+        self.buffer = b''
+    
+    def increaseFileSize(self, delta):
+        self.fileSize += delta
+        self.modified = True
     
     def close(self):
-        self.save()
-    
-    def updateLength(self, pos):
-        self.fileSize = max(self.fileSize, pos)
+        if self.modified:
+            self.save()
     
     def save(self):
-        self.createParentDir()
-        with open(self.file, 'w') as f:
-            f.write(repr({'fileSize':self.fileSize,
-                          'partSize':self.partSize}))
-    
-    def createParentDir(self):
+        with open(self.subfile('state'), 'w') as f:
+            f.write(repr({'partSize': self.partSize,
+                          'fileSize': self.fileSize,
+                          'buffer': self.buffer}))
+            
+    def subfile(self, name):
         import os
-        root = os.path.dirname(self.file)
-        if not os.path.exists(root):
-            os.makedirs(root)
-    
-    def exists(self):
-        import os
-        return os.path.exists(self.file)
-    
-class DFileLock:
-    def __init__(self, fileName):
-        self.fileName = fileName
-        if self.exists():
-            raise Exception('Failed to lock. Maybe the dfile is in use.')
-        self.createLock()
-    
-    def close(self):
-        self.deleteLock()
-        
-    def exists(self):
-        import os
-        return os.path.exists(self.fileName)
-    
-    def createLock(self):
-        self.createParentDir(self.fileName)
-        open(self.fileName, 'w').close()
-    
-    def deleteLock(self):
-        import os
-        os.remove(self.fileName)
-        
-    def createParentDir(self, fileName):
-        import os
-        parent = os.path.dirname(fileName)
-        if not os.path.exists(parent):
-            os.makedirs(parent)
+        return os.path.join(self.root, name)
 
-class DFileBase:
-    def __init__(self, root, partSize, idFormat):
-        self.root = root
-        self.partSize = partSize
-        self.idFormat = idFormat
-        self.pointer = 0
-        self.part = None
-        self.state = DFileState(self.getStateFileName(), partSize)
-        self.lock = DFileLock(self.getLockFileName())
-        
-    def getCorrectPartId(self):
-        return self.pointer // self.partSize
+class Writer:
+    def __init__(self,state,files):
+        self.state = state
+        self.files = files
+        self.modify = set()
     
-    def getCorrectPartPos(self):
-        return self.pointer % self.partSize
+    def write(self, b):
+        self.state.buffer += b
+        partId = self.state.fileSize//self.state.partSize
+        flushCount = len(self.state.buffer)//self.state.partSize
+        for i in range(flushCount):
+            part = self.state.buffer[:self.state.partSize]
+            self.flushPart(partId+i, part)
+            self.state.buffer = self.state.buffer[self.state.partSize:]
+        self.state.increaseFileSize(len(b))
+
+    def getModify(self):
+        return sorted(self.modify)
+
+    def flushPart(self, partId, part):
+        file = self.files(partId)
+        try:
+            file.write(part)
+        finally:
+            file.close()
+        self.modify.add(partId)
     
     def tell(self):
-        return self.pointer
-    
-    def size(self):
         return self.state.fileSize
     
     def close(self):
-        self.closePart()
-        self.state.close()
-        self.lock.close()
-    
-    def __enter__(self):
-        return self
-    
-    def __exit__(self,t,v,tract):
-        self.close()
-    
-    def getStateFileName(self):
-        import os
-        return os.path.join(self.root, 'state')
-    
-    def getCorrectPartFileName(self):
-        import os
-        return os.path.join(self.root, self.idFormat(self.getCorrectPartId()))
-    
-    def getLockFileName(self):
-        import os
-        return os.path.join(self.root, 'lock')
-    
-    def ensurePart(self):
-        if not self.isOnCorrectPart():
-            self.openCorrectPart()
-    
-    def ensurePartPos(self):
-        if not self.isOnCorrectPartPos():
-            self.seekCorrectPartPos()
-    
-    def isOnCorrectPart(self):
-        if not self.part:
-            return False
-        if self.part.id != self.getCorrectPartId():
-            return False
-        return True
-    
-    def isOnCorrectPartPos(self):
-        return self.part.tell() == self.getCorrectPartPos()
-        
-    def seekCorrectPartPos(self):
-        self.part.seek(self.getCorrectPartPos())
-        
-    def closePart(self):
-        if self.part:
-            self.part.close()
-            self.part = None
-            
-    def seekEnd(self):
-        self.seek(self.state.fileSize)
-        
-    def getRemainSize(self):
-        return self.state.fileSize - self.tell()
-
-class PartBase:
-    def __init__(self, id, fileName, size):
-        self.id = id
-        self.fileName = fileName
-        self.size = size
-    
-    def seek(self, pos):
-        import os
-        if pos > os.path.getsize(self.fileName):
-            raise IOError('target part is missing')
-        self.file.seek(pos)
-    
-    def close(self):
-        self.file.close()
-    
-    def tell(self):
-        return self.file.tell()
-    
-    def getRemainSize(self):
-        return self.size - self.tell()
-
-class PartReader(PartBase):
-    def __init__(self, id, fileName, size):
-        PartBase.__init__(self, id, fileName, size)
-        self.file = open(fileName, 'rb')
-    
-    def read(self, size):
-        return self.file.read(size)
-
-class PartWriter(PartBase):
-    def __init__(self, id, fileName, size):
-        PartBase.__init__(self, id, fileName, size)
-        self.file = self.openOrCreate(fileName)
-    
-    def write(self, b):
-        self.file.write(b)
-        
-    def flush(self):
-        self.file.flush()
-    
-    def openOrCreate(self, fileName):
-        import os
-        if not os.path.exists(fileName):
-            open(fileName, 'wb').close()
-        return open(fileName, 'r+b')
-
-class DFileWriter(DFileBase):
-    def __init__(self, root, partSize = defaultPartSize, idFormat = defaultIdFormat):
-        DFileBase.__init__(self, root, partSize, idFormat)
-        self.state.loadOrCreate()
-        self.modify = set()
-        self.part = None
-        self.seekEnd()
-    
-    def write(self,b):
-        while b:
-            self.ensurePart()
-            self.ensurePartPos()
-            s = self.part.getRemainSize()
-            self.part.write(b[:s])
-            self.modify |= set([self.part.id])
-            self.pointer += len(b[:s])
-            self.state.updateLength(self.pointer)
-            b = b[s:]
-    
-    def flush(self):
-        if self.part:
-            self.part.flush()
-    
-    def openCorrectPart(self):
-        self.part = PartWriter(self.getCorrectPartId(), self.getCorrectPartFileName(), self.partSize)
-    
-    def getModify(self):
-        return self.modify
-
-class DFileReader(DFileBase):
-    def __init__(self, root, partSize = defaultPartSize, idFormat = defaultIdFormat):
-        DFileBase.__init__(self, root, partSize, idFormat)
-        self.state.load()
-    
-    def read(self, limit = None):
-        if not limit:
-            limit = self.getRemainSize()
-        else:
-            limit = min(limit, self.getRemainSize())
-        r = b''
-        while limit:
-            self.ensurePart()
-            self.ensurePartPos()
-            s = min(limit, self.part.getRemainSize())
-            read = self.part.read(s)
-            if not read:
-                break
-            r += read
-            limit -= len(read)
-            self.pointer += len(read)
-        return r
-    
-    def seek(self, pos):
-        if pos > self.size():
-            raise IOError('seek out of bounds')
-        self.pointer = pos
-    
-    def openCorrectPart(self):
-        self.part = PartReader(self.getCorrectPartId(), self.getCorrectPartFileName(), self.partSize)
-
-class DFileWriter2:
-    def __init__(self,state,files):
-        self.state = state
-        self.state.loadOrCreate()
-        self.files = files
-        self.pointer = self.state.fileSize
-        self.file = self.files(self.pointer//self.partSize)
-        self.modify = set()
-    
-    def write(self,b):
-        while b:
-            partRemain = self.state.partSize - self.pointer%self.state.partSize
-            self.file.write(b[:partRemain])
-            self.modify += set([self.pointer//self.partSize])
-            self.increasePointer(len(b[:partRemain]))
-    
-    def getModify(self):
-        return self.modify
-    
-    def tell(self):
-        return self.pointer
-    
-    def close(self):
-        self.file.close()
+        self.flush()
         self.state.close()
     
-    def increasePointer(self,delta):
-        before = self.pointer//self.state.partSize
-        self.pointer += delta
-        after = self.pointer//self.state.partSize
-        self.state.updateFileSize(self.pointer)
-        for i in range(before, after):
-            self.onSwitchFile(i,i+1)
-    
-    def onSwitchFile(self,from2,to):
-        self.file.close()
-        self.file = self.files(to)
+    def flush(self):
+        if self.state.buffer:
+            self.flushPart(self.state.fileSize//self.state.partSize, self.state.buffer)
 
-class DFileReader2:
+class Reader:
     def __init__(self,state,files):
         self.state = state
         self.files = files
@@ -302,17 +94,19 @@ class DFileReader2:
         self.pointer = 0
     
     def read(self, limit = None):
-        if not limit:
+        if not limit or limit > self.available():
             limit = self.available()
         r = b''
         while limit:
             self.ensurePart()
-            partRemain = self.pointer//self.state.partSize
+            partRemain = self.state.partSize - self.pointer%self.state.partSize
             readSize = min(partRemain, limit)
             read = self.part.file.read(readSize)
             if len(read) != readSize:
                 raise IOError('read length not enough')
             self.pointer += readSize
+            r += read
+            limit -= readSize
         return r
             
     def seek(self, pos):
@@ -332,20 +126,26 @@ class DFileReader2:
 
     def ensurePart(self):
         if not self.part:
-            self.part = object()
-            self.part.id = self.pointer//self.state.partSize
-            self.part.file = self.files(self.part.id)
-        partPos = self.pointer % self.state.partSize
-        if self.part.file.tell() != partPos:
-            self.part.file.seek(partPos)
-
-def writeSample():
-    with DFileWriter('D:\\dfile', 10) as f:
-        for i in range(2):
-            f.write(b'0123456789abcdefghijkl')
-    print(f.getModify())
+            self.openPart()
+        expectPartId = self.pointer//self.state.partSize
+        if self.part.id != expectPartId:
+            self.openPart()
+        actual = self.part.file.tell()
+        expect = self.pointer % self.state.partSize
+        if actual > expect:
+            self.openPart()
+            actual = self.part.file.tell()
+        if actual < expect:
+            self.skipPart(expect - actual)
     
-def readSample():
-    with DFileReader('D:\\dfile', 10) as f:
-        f.seek(10)
-        print(f.read())
+    def skipPart(self, length):
+        if len(self.part.file.read(length)) != length:
+            raise IOError('Not enough data to skip')
+    
+    def openPart(self):
+        self.closePart()
+        class Part:
+            pass
+        self.part = Part()
+        self.part.id = self.pointer//self.state.partSize
+        self.part.file = self.files(self.part.id)
