@@ -43,23 +43,16 @@ class DecryptFile:
         self.buffer = b''
     
     def read(self, limit):
-        if not limit:
-            r = b''
-            while True:
-                r += self.readBuffer()
-                if not self.supplyBuffer():
-                    return r
-        else:
-            r = b''
-            while limit:
-                read = self.readBuffer(limit)
-                r += read
-                limit -= len(read)
-                if not limit:
-                    break
-                if not self.supplyBuffer():
-                    break
-            return r
+        r = b''
+        while limit:
+            read = self.readBuffer(limit)
+            r += read
+            limit -= len(read)
+            if not limit:
+                break
+            if not self.supplyBuffer():
+                break
+        return r
     
     def supplyBuffer(self):
         if not self.decrypter:
