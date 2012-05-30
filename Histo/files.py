@@ -25,7 +25,10 @@ class EncryptFile:
     def write(self,b):
         code = self.encrypter.update(b)
         self.file.write(code)
-        
+    
+    def tell(self):
+        return self.file.tell()
+    
     def close(self):
         code = self.encrypter.final()
         self.file.write(code)

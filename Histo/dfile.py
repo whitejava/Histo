@@ -142,6 +142,9 @@ class Reader:
         if len(self.part.file.read(length)) != length:
             raise IOError('Not enough data to skip')
     
+    def getFileSize(self):
+        return self.state.fileSize
+    
     def openPart(self):
         self.closePart()
         class Part:
