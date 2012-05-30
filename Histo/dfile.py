@@ -94,7 +94,7 @@ class Reader:
         self.pointer = 0
     
     def read(self, limit = None):
-        if not limit or limit > self.available():
+        if limit == None or limit > self.available():
             limit = self.available()
         r = b''
         while limit:
@@ -152,3 +152,12 @@ class Reader:
         self.part = Part()
         self.part.id = self.pointer//self.state.partSize
         self.part.file = self.files(self.part.id)
+        
+class MissingPart(IOError):
+    pass
+
+class DataCorrupt(IOError):
+    pass
+
+class DecryptError(Exception):
+    pass
