@@ -81,7 +81,7 @@ def readRange(f, ra):
         return b''
 
 def readCorrect(f, ra = None):
-    if not ra:
+    if ra == None:
         ra = randomRange(f)
     expect = getData(ra)
     actual = readRange(f, ra)
@@ -180,8 +180,6 @@ def relatedParts(ra):
 def readDataCorrupt(f, parts):
     import crypto
     ra = randomRange(f)
-    print('read range', repr(ra))
-    print('related',repr(relatedParts(ra)))
     if contains(parts, relatedParts(ra)):
         readExpectError(f, crypto.VerifyError, ra)
     else:
@@ -228,7 +226,6 @@ def testDataCorrupt():
     print('Testing DataCorrupt')
     parts = randomParts()
     corruptParts(parts)
-    print('corrupt parts',repr(parts))
     with createReader() as f:
         for _ in range(1000):
             readDataCorrupt(f, parts)
