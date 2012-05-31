@@ -1,209 +1,249 @@
 root = 'D:\\dfile'
 key1 = b'0123456789abcdef'
-key2 = b'0123456789abcdef0123'
+key2 = b'0123456789abcdef0123as'
 key3 = b'0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+key4 = b'fdas123f1dsa35fd'
+key5 = b'fd5as6f4ds5a6f4dsa5fsa'
+key6 = b'fdsa4f45d6sa18c9e18aw49r98a1fd8as9fd4safdsa9618cd9as1f8dsa94fd8d'
+keySet1 = [key1, key2, key3]
+keySet2 = [key4, key5, key6]
 partSize = 10
 
 import random
+import dfile
 
-def oneRun():
-    deleteDFile()
-    testCorrectness()
-    testPartMissing()
-    testPartCorrupt()
-    testDecryptError()
-    testFileTruncate()
+def createCiphers(keys = keySet1):
+    from crypto import VerifyCipher
+    from crypto import XorCipher
+    r = []
+    r.append(VerifyCipher('md5'))
+    r.append(VerifyCipher('sha1'))
+    r.append(XorCipher(keys[0], 'md5'))
+    r.append(XorCipher(keys[1], 'sha1'))
+    r.append(XorCipher(keys[2], 'sha512'))
+    r.append(VerifyCipher('md5'))
+    r.append(VerifyCipher('sha1'))
+    return r
 
-for i in range(100):
-    print('Case {}: Running... ', end = '')
-    oneRun()
-    print('OK')
-
-def getFiles():
+def createFiles(keys = keySet1):
     from files import LocalFiles
     from files import CipherFiles
-    import crypto
-    ciphers = []
-    ciphers.append(crypto.VerifyCipher('md5'))
-    ciphers.append(crypto.VerifyCipher('sha512'))
-    ciphers.append(crypto.XorCipher(key1, 'md5'))
-    ciphers.append(crypto.XorCipher(key2, 'sha1'))
-    ciphers.append(crypto.XorCipher(key3, 'sha512'))
-    ciphers.append(crypto.VerifyCipher('md5'))
-    ciphers.append(crypto.VerifyCipher('sha512'))
     files = LocalFiles(root)
+    ciphers = createCiphers(keys)
     for e in ciphers:
         files = CipherFiles(files, e)
     return files
 
-def testWrite():
-    import dfile
-    state = dfile.State(root, partSize)
-    state.loadOrCreate()
-    files = getFiles()
-    f = dfile.Writer(state, files.openForWrite)
-    try:
-        for i in range(20):
-            f.write(b'0124564'*1000)
-    finally:
-        f.close()
-    print(f.getModify())
+def createState():
+    return dfile.State(root, partSize)
 
-def testRead():
-    import dfile
-    state = dfile.State(root, partSize)
-    state.load()
-    files = getFiles()
-    f = dfile.Reader(state, files.openForRead)
-    try:
-        r=f.read()
-        print(len(r),r)
-    finally:
-        f.close()
+def createReader(keys = keySet1):
+    s = createState()
+    s.load()
+    return dfile.Reader(s, createFiles(keys))
 
-def md5bytes(it):
+def getPartCount():
+    import os
+    return len(os.walk(root)[2])-1
+
+def randomBoolean():
+    return random.randint(0,1) == 0
+
+def randomParts():
+    r = []
+    for e in range(getPartCount()):
+        if randomBoolean():
+            r += e
+
+def randomRange(f):
+    size = f.getFileSize()
+    start = random.randint(0, size)
+    end = start + random.randint(0, 40)
+    end = min(size, end)
+    return range(start, end)
+
+def md5(a):
     import hashlib
+    return hashlib.md5(a).digest()
+
+def getData(ra):
     r = b''
-    for i in it:
-        r += bytes([hashlib.md5(bytes(str(i),'utf8')).digest()[0]])
+    for e in ra:
+        r += bytes([md5(bytes(str(e),'utf8'))[0]])
     return r
 
-def createWriter():
-    import dfile
-    state = dfile.State(root, partSize)
-    state.loadOrCreate()
-    files = getFiles()
-    f = dfile.Writer(state, files.openForWrite)
-    return f
+def readRange(f, ra):
+    if ra:
+        f.seek(ra[0])
+        return f.read(len(ra))
+    else:
+        return b''
 
-def createReader():
-    import dfile
-    state = dfile.State(root, partSize)
-    state.load()
-    files = getFiles()
-    f = dfile.Reader(state, files.openForRead)
-    return f
+def readCorrect(f, ra = None):
+    if not ra:
+        ra = randomRange(f)
+    expect = getData(ra)
+    actual = readRange(f, ra)
+    assert expect == actual
+
+def randomLength():
+    return random.randint(0, 40)
 
 def writeRandom(f):
-    start = f.tell()
-    length = random.randint(0, 40)
-    f.write(md5bytes(range(start, start + length)))
+    p = f.tell()
+    length = randomLength()
+    ra = range(p, p + length)
+    data = getData(ra)
+    f.write(data)
 
-def testBulkWrite():
-    f = createWriter()
-    for i in range(10):
-        writeRandom(f)
-    f.close()
+def createWriter():
+    s = createState()
+    s.loadOrCreate()
+    return dfile.Writer(s, createFiles())
 
-def readRandom(f):
-    size = f.getFileSize()
-    start = random.randint(0,size)
-    end = start + random.randint(0, 40)
-    if end > size:
-        end = size
-    f.seek(start)
-    length = end - start
-    return {'start':start,'end':end,'data':f.read(length)}
+def bulkWrite():
+    with createWriter() as f:
+        for _ in range(random.randint(0,3)):
+            writeRandom(f)
 
-def testBulkRead():
-    f = createReader()
-    try:
-        for i in range(1000):
-            r = readRandom(f)
-            if md5bytes(range(r['start'],r['end'])) != r['data']:
-                raise Exception('read error [{},{}] '.format(r['start'],r['end']) + ''.join(['{:02x}'.format(e)for e in r['data']]))
-    finally:
-        f.close()
+def multiBulkWrite():
+    for _ in range(random.randint(1, 4)):
+        bulkWrite()
 
 def deleteDFile():
     import shutil
-    shutil.rmtree(root)
-
-def testNormal():
-    testBulkWrite()
-    testBulkRead()
-    deleteDFile()
-
-def getParts():
-    import os
-    a = os.walk(root)[2]
-    a.remove('state')
-    for e in a:
-        os.path.join(root,e)
-
-def deleteAllParts():
-    for e in getParts():
-        os.remove(e)
-
-def readExpectMissingPart(f):
-    import dfile
-    error = None
     try:
-        r = readRandom(f)
-    except dfile.MissingPart as e:
-        error = e
-    finally:
-        f.close()
-    if not error:
-        raise Exception('expect missing part, but read ' + r)
+        shutil.rmtree(root)
+    except:
+        pass
 
-def testReadMissingPart():
-    f = createReader()
-    for i in range(1000):
-        readExpectMissingPart()
-    f.close()
+def testBulkWrite():
+    print('Testing BulkWrite')
+    multiBulkWrite()
+        
+def testCorrectRead():
+    print('Testing CorrectRead')
+    with createReader() as f:
+        for _ in range(1000):
+            readCorrect(f)
 
-def testPartMissing():
-    testBulkWrite()
-    deleteAllParts()
-    testReadMissingPart()
-
-def getFileSize(filename):
-    import os
-    return os.path.getsize(filename)
-
-def corrupt(filename):
-    size = getFileSize(filename)
-    with open(filename,'r+b') as f:
-        pos = random.randint(0,size-1)
-        f.seek(pos)
-        raw = f.read(1)
-        f.seek(pos)
-        f.write(random.sample(range(256).remove(raw)))
-
-def corruptEveryPartOneBit():
-    for e in getParts():
-        corrupt(e)
-
-def readDataCorrupt(f):
-    import dfile
-    error = None
+def readRandom(f):
+    ra = randomRange()
+    return readRange(f, ra)
+        
+def readExpectError(f, err, ra = None):
+    if not ra:
+        ra = randomRange(f)
     try:
-        r = readRandom(f)
-    except dfile.DataCorrupt as e:
-        error = e
-    if not error:
-        raise Exception('expect DataCorrupt but read ' + r)
+        r = readRange(f, ra)
+    except err:
+        return
+    raise Exception('Expect error, but read ' + ''.join(['{:02x}'.format(e) for e in r]))
 
-def testReadDataCorrupt():
-    f = createReader()
-    for i in range(1000):
-        readDataCorrupt(f)
-    f.close()
+def testDecryptError():
+    print('Testing DecryptError')
+    with createReader(keySet2) as f:
+        for _ in range(1000):
+            readExpectError(f, dfile.DecryptError)
+
+def contains(a,b):
+    for e in b:
+        if a.count(e):
+            return True
+    return False
+
+def getPartId(a):
+    return a // partSize
+
+def relatedParts(ra):
+    start = ra[0]
+    end = start + len(ra) - 1
+    return range(getPartId(start), getPartId(end))
+
+def readDataCorrupt(f, parts):
+    ra = randomRange()
+    if contains(parts, relatedParts(ra)):
+        readExpectError(f, dfile.DataCorrupt, ra)
+    else:
+        readCorrect(f, ra)
+
+def getPartFileName(n):
+    return '{:04d}'.format(n)
+
+def openPart(n,mode='r+b'):
+    return open(getPartFileName(n),mode)
+
+def getFileLength(file):
+    import os
+    return os.path.getsize(file.name)
+
+def corruptFile(f):
+    length = getFileLength(f)
+    p = random.randint(0, length-1)
+    f.seek(p)
+    before = f.read(1)
+    after = bytes([random.sample(range(256).remove(before[0]))])
+    f.seek(p)
+    f.write(after)
+
+def corruptPart(n):
+    with openPart(n) as f:
+        corruptFile(f)
+
+def corruptParts(parts):
+    for e in parts:
+        corruptPart(e)
 
 def testDataCorrupt():
-    testBulkWrite()
-    corruptEveryPartOneBit()
-    testReadDataCorrupt()
+    print('Testing DataCorrupt')
+    parts = randomParts()
+    corruptParts(parts)
+    with createReader() as f:
+        for _ in range(1000):
+            readDataCorrupt(f, parts)
 
-def testKeyError():
-    testBulkWrite()
-    
+def deleteFileName(fileName):
+    import os
+    os.remove(fileName)
 
-import os
-if os.path.exists(root):
+def deletePart(part):
+    deleteFileName(getPartFileName(part))
+
+def deleteParts(parts):
+    for e in parts:
+        deletePart(e)
+
+def readPartMissing(f, missing):
+    ra = randomRange()
+    if contains(missing, relatedParts(ra)):
+        readExpectError(f, dfile.MissingPart, ra)
+    else:
+        readCorrect(f, ra)
+
+def testPartMissing():
+    print('Testing PartMissing')
+    parts = randomParts()
+    deleteParts(parts)
+    with createReader() as f:
+        for _ in range(1000):
+            readPartMissing(f, parts)
+
+def deployDFile():
+    print('Deploy File')
     deleteDFile()
+    multiBulkWrite()
+
+def oneRun():
+    deleteDFile()
+    testBulkWrite()
+    testCorrectRead()
+    testDecryptError()
+    testDataCorrupt()
+    deployDFile()
+    testPartMissing()
+    deleteDFile()
+
 for i in range(100):
-    print('Case {}: Testing...'.format(i+1), end = '')
-    testNormal()
+    print('Case {}:'.format(i+1))
+    oneRun()
     print('OK')

@@ -51,7 +51,7 @@ class State:
 class Writer:
     def __init__(self,state,files):
         self.state = state
-        self.files = files
+        self.files = files.openForWrite
         self.modify = set()
     
     def write(self, b):
@@ -85,11 +85,17 @@ class Writer:
     def flush(self):
         if self.state.buffer:
             self.flushPart(self.state.fileSize//self.state.partSize, self.state.buffer)
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self,*k):
+        self.close()
 
 class Reader:
     def __init__(self,state,files):
         self.state = state
-        self.files = files
+        self.files = files.openForRead
         self.part = None
         self.pointer = 0
     
@@ -152,6 +158,12 @@ class Reader:
         self.part = Part()
         self.part.id = self.pointer//self.state.partSize
         self.part.file = self.files(self.part.id)
+        
+    def __enter__(self):
+        return self
+    
+    def __exit__(self,*k):
+        self.close()
         
 class MissingPart(IOError):
     pass

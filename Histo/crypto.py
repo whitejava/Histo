@@ -1,4 +1,7 @@
-class XorEncrypt:
+class VerifyError:
+    pass
+
+class _XorEncrypt:
     def __init__(self,sequence):
         self.s = sequence
         self.firstUpdate = True
@@ -16,7 +19,7 @@ class XorEncrypt:
     def final(self):
         return b''
 
-class XorDecrypt:
+class _XorDecrypt:
     def __init__(self,sequence):
         self.s = sequence
         self.seed = b''
@@ -34,7 +37,7 @@ class XorDecrypt:
     def final(self):
         return b''
 
-class HashSequence:
+class _HashSequence:
     def __init__(self, key, algorithm = 'md5'):
         self.key = key
         self.algorithm = algorithm
@@ -63,12 +66,12 @@ class XorCipher:
         self.algorithm = algorithm
     
     def encrypter(self):
-        return XorEncrypt(HashSequence(self.key, self.algorithm))
+        return _XorEncrypt(_HashSequence(self.key, self.algorithm))
     
     def decrypter(self):
-        return XorDecrypt(HashSequence(self.key, self.algorithm))
+        return _XorDecrypt(_HashSequence(self.key, self.algorithm))
 
-class VerifyEncrypt:
+class _VerifyEncrypt:
     def __init__(self, algorithm):
         import hashlib
         self.hasher = hashlib.new(algorithm)
@@ -80,7 +83,7 @@ class VerifyEncrypt:
     def final(self):
         return self.hasher.digest()
 
-class VerifyDecrypt:
+class _VerifyDecrypt:
     def __init__(self, algorithm):
         import hashlib
         self.hasher = hashlib.new(algorithm)
@@ -96,7 +99,7 @@ class VerifyDecrypt:
     def final(self):
         h = self.hasher.digest()
         if h != self.hashBytes:
-            raise IOError('Verify error.')
+            raise VerifyError()
         return b''
 
 class VerifyCipher:
@@ -104,7 +107,7 @@ class VerifyCipher:
         self.algorithm = algorithm
     
     def encrypter(self):
-        return VerifyEncrypt(self.algorithm)
+        return _VerifyEncrypt(self.algorithm)
     
     def decrypter(self):
-        return VerifyDecrypt(self.algorithm)
+        return _VerifyDecrypt(self.algorithm)
