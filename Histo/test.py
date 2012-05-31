@@ -242,9 +242,10 @@ def deleteParts(parts):
         deletePart(e)
 
 def readPartMissing(f, missing):
-    ra = randomRange()
+    import files
+    ra = randomRange(f)
     if contains(missing, relatedParts(ra)):
-        readExpectError(f, dfile.MissingPart, ra)
+        readExpectError(f, files.MissingPart, ra)
     else:
         readCorrect(f, ra)
 
@@ -262,11 +263,11 @@ def deployDFile():
     multiBulkWrite()
 
 def oneRun():
-    deleteDFile()
-    testBulkWrite()
+    #deleteDFile()
+    #testBulkWrite()
     #testCorrectRead()
     #testDecryptError()
-    testDataCorrupt()
+    #testDataCorrupt()
     deployDFile()
     testPartMissing()
     deleteDFile()

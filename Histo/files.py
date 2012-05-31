@@ -1,5 +1,8 @@
 defaultIdFormat = '{:04d}'.format
 
+class MissingPart(Exception):
+    pass
+
 class LocalFiles:
     def __init__(self, root, idFormat = defaultIdFormat):
         self.root = root
@@ -11,8 +14,14 @@ class LocalFiles:
     
     def openForRead(self, n):
         fileName = self.getFileName(n)
+        if not self.existFile(fileName):
+            raise MissingPart
         return open(fileName, 'rb')
-        
+    
+    def existFile(self, fileName):
+        import os
+        return os.path.exists(fileName)
+    
     def getFileName(self, n):
         import os
         return os.path.join(self.root, self.idFormat(n))
