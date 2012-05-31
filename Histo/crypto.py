@@ -1,4 +1,4 @@
-class VerifyError:
+class VerifyError(Exception):
     pass
 
 class _XorEncrypt:
@@ -11,9 +11,9 @@ class _XorEncrypt:
         if self.firstUpdate:
             self.firstUpdate = False
             import random
-            extra = bytes([random.randint(0,255) for i in range(self.s.getSeedSize())])
+            extra = bytes([random.randint(0,255) for _ in range(self.s.getSeedSize())])
             self.s.setSeed(extra)
-        r = bytes([e^self.s.next()for e in b])
+        r = bytes([e^next(self.s) for e in b])
         return extra + r
     
     def final(self):
@@ -32,7 +32,7 @@ class _XorDecrypt:
             b = b[needSize:]
             if len(self.seed) == seedSize:
                 self.s.setSeed(self.seed)
-        return bytes([e^self.s.next() for e in b])
+        return bytes([e^next(self.s) for e in b])
     
     def final(self):
         return b''
@@ -49,7 +49,7 @@ class _HashSequence:
     def setSeed(self, seed):
         self.seed = seed
     
-    def next(self):
+    def __next__(self):
         import hashlib
         self.seed = hashlib.new(self.algorithm, self.seed + self.key).digest()
         return self.xor(self.seed)

@@ -1,5 +1,11 @@
 defaultPartSize = 1000000
 
+class MissingPart(IOError):
+    pass
+
+class DataCorrupt(IOError):
+    pass
+
 class State:
     def __init__(self, root, partSize = defaultPartSize):
         self.root = root
@@ -164,12 +170,3 @@ class Reader:
     
     def __exit__(self,*k):
         self.close()
-        
-class MissingPart(IOError):
-    pass
-
-class DataCorrupt(IOError):
-    pass
-
-class DecryptError(Exception):
-    pass

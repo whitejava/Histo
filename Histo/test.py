@@ -44,7 +44,7 @@ def createReader(keys = keySet1):
 
 def getPartCount():
     import os
-    return len(os.walk(root)[2])-1
+    return len(list(os.walk(root))[0][2])-1
 
 def randomBoolean():
     return random.randint(0,1) == 0
@@ -53,7 +53,8 @@ def randomParts():
     r = []
     for e in range(getPartCount()):
         if randomBoolean():
-            r += e
+            r.append(e)
+    return r
 
 def randomRange(f):
     size = f.getFileSize()
@@ -89,12 +90,15 @@ def readCorrect(f, ra = None):
 def randomLength():
     return random.randint(0, 40)
 
-def writeRandom(f):
+def writeData(f, length):
     p = f.tell()
     length = randomLength()
     ra = range(p, p + length)
     data = getData(ra)
     f.write(data)
+
+def writeRandom(f):
+    writeData(f, randomLength())
 
 def createWriter():
     s = createState()
@@ -106,7 +110,12 @@ def bulkWrite():
         for _ in range(random.randint(0,3)):
             writeRandom(f)
 
+def writeOneBit():
+    with createWriter() as f:
+        writeData(f, 1)
+
 def multiBulkWrite():
+    writeOneBit()
     for _ in range(random.randint(1, 4)):
         bulkWrite()
 
@@ -132,8 +141,7 @@ def readRandom(f):
     return readRange(f, ra)
         
 def readExpectError(f, err, ra = None):
-    if not ra:
-        ra = randomRange(f)
+    if not ra: ra = randomRange(f)
     try:
         r = readRange(f, ra)
     except err:
@@ -141,10 +149,15 @@ def readExpectError(f, err, ra = None):
     raise Exception('Expect error, but read ' + ''.join(['{:02x}'.format(e) for e in r]))
 
 def testDecryptError():
+    import crypto
     print('Testing DecryptError')
     with createReader(keySet2) as f:
         for _ in range(1000):
-            readExpectError(f, dfile.DecryptError)
+            ra = randomRange(f)
+            if ra:
+                readExpectError(f,crypto.VerifyError, ra)
+            else:
+                assert readRange(f, ra) == b'' 
 
 def contains(a,b):
     for e in b:
