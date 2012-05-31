@@ -88,19 +88,21 @@ class _VerifyDecrypt:
         import hashlib
         self.hasher = hashlib.new(algorithm)
         self.hashBytes = b''
+        self.buffer = b''
     
     def update(self,b):
         self.hashBytes += b
         r = self.hashBytes[:-self.hasher.digest_size]
         self.hashBytes = self.hashBytes[-self.hasher.digest_size:]
         self.hasher.update(r)
-        return r
+        self.buffer += r
+        return b''
     
     def final(self):
         h = self.hasher.digest()
         if h != self.hashBytes:
             raise VerifyError()
-        return b''
+        return self.buffer
 
 class VerifyCipher:
     def __init__(self, algorithm = 'md5'):

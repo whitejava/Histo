@@ -161,27 +161,35 @@ def testDecryptError():
 
 def contains(a,b):
     for e in b:
-        if a.count(e):
-            return True
+        for f in a:
+            if e == f:
+                return True
     return False
 
 def getPartId(a):
     return a // partSize
 
 def relatedParts(ra):
-    start = ra[0]
-    end = start + len(ra) - 1
-    return range(getPartId(start), getPartId(end))
+    if ra:
+        start = ra[0]
+        end = start + len(ra) - 1
+        return list(range(getPartId(start), getPartId(end)+1))
+    else:
+        return []
 
 def readDataCorrupt(f, parts):
-    ra = randomRange()
+    import crypto
+    ra = randomRange(f)
+    print('read range', repr(ra))
+    print('related',repr(relatedParts(ra)))
     if contains(parts, relatedParts(ra)):
-        readExpectError(f, dfile.DataCorrupt, ra)
+        readExpectError(f, crypto.VerifyError, ra)
     else:
         readCorrect(f, ra)
 
 def getPartFileName(n):
-    return '{:04d}'.format(n)
+    import os
+    return os.path.join(root, '{:04d}'.format(n))
 
 def openPart(n,mode='r+b'):
     return open(getPartFileName(n),mode)
@@ -190,12 +198,21 @@ def getFileLength(file):
     import os
     return os.path.getsize(file.name)
 
+def randomByteFrom(sample):
+    return bytes([random.sample(sample,1)[0]])
+
+def randomByteExcept(ex):
+    r = list(range(256))
+    for e in set(list(ex)):
+        r.remove(e)
+    return randomByteFrom(r)
+
 def corruptFile(f):
     length = getFileLength(f)
     p = random.randint(0, length-1)
     f.seek(p)
     before = f.read(1)
-    after = bytes([random.sample(range(256).remove(before[0]))])
+    after = randomByteExcept(before)
     f.seek(p)
     f.write(after)
 
@@ -211,6 +228,7 @@ def testDataCorrupt():
     print('Testing DataCorrupt')
     parts = randomParts()
     corruptParts(parts)
+    print('corrupt parts',repr(parts))
     with createReader() as f:
         for _ in range(1000):
             readDataCorrupt(f, parts)
@@ -249,14 +267,22 @@ def deployDFile():
 def oneRun():
     deleteDFile()
     testBulkWrite()
-    testCorrectRead()
-    testDecryptError()
+    #testCorrectRead()
+    #testDecryptError()
     testDataCorrupt()
     deployDFile()
     testPartMissing()
     deleteDFile()
 
-for i in range(100):
-    print('Case {}:'.format(i+1))
-    oneRun()
-    print('OK')
+def bigTest():
+    for i in range(100):
+        print('Case {}:'.format(i+1))
+        oneRun()
+        print('OK')
+
+def temp():
+    with createReader() as f:
+        readRange(f, range(94,110))
+        readRange(f, range(87,87))
+
+bigTest()

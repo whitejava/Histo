@@ -72,11 +72,17 @@ class DecryptFile:
             return False
         read = self.file.read(self.bufferSize)
         if not read:
-            self.buffer += self.close()
+            self.close()
+            self.buffer += self.finalizeDecrypter()
             return True
         else:
             self.buffer += self.decrypter.update(read)
             return True
+
+    def finalizeDecrypter(self):
+        r = self.decrypter.final()
+        self.decrypter = None
+        return r
 
     def close(self):
         if self.file:
@@ -86,7 +92,6 @@ class DecryptFile:
             self.tell = b
             self.file.close()
             self.file = None
-            return self.decrypter.final()
     
     def readBuffer(self, limit):
         if not limit:
