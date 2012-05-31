@@ -152,12 +152,17 @@ class Reader:
         return self.state.fileSize
     
     def openPart(self):
+        import files
         self.closePart()
         class Part:
             pass
-        self.part = Part()
-        self.part.id = self.pointer//self.state.partSize
-        self.part.file = self.files(self.part.id)
+        try:
+            self.part = Part()
+            self.part.id = self.pointer//self.state.partSize
+            self.part.file = self.files(self.part.id)
+        except files.MissingPart as e:
+            self.part = None
+            raise e
         
     def __enter__(self):
         return self

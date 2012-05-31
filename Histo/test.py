@@ -263,11 +263,11 @@ def deployDFile():
     multiBulkWrite()
 
 def oneRun():
-    #deleteDFile()
-    #testBulkWrite()
-    #testCorrectRead()
-    #testDecryptError()
-    #testDataCorrupt()
+    deleteDFile()
+    testBulkWrite()
+    testCorrectRead()
+    testDecryptError()
+    testDataCorrupt()
     deployDFile()
     testPartMissing()
     deleteDFile()
@@ -277,10 +277,5 @@ def bigTest():
         print('Case {}:'.format(i+1))
         oneRun()
         print('OK')
-
-def temp():
-    with createReader() as f:
-        readRange(f, range(94,110))
-        readRange(f, range(87,87))
 
 bigTest()
