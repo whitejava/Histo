@@ -60,7 +60,7 @@ class Writer:
         flushCount = len(self.state.buffer)//self.state.partSize
         for i in range(flushCount):
             part = self.state.buffer[:self.state.partSize]
-            self.flushPart(partId+i, part)
+            self.flushPart(partId + i, part)
             self.state.buffer = self.state.buffer[self.state.partSize:]
         self.state.increaseFileSize(len(b))
 
