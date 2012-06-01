@@ -21,14 +21,14 @@ class State:
             m = eval(f.read())
             self.partSize = m['partSize']
             self.fileSize = m['fileSize']
-            self.buffer = m['buffer']
+            self.buffer = bytearray(m['buffer'])
     
     def create(self):
         import os
         if not os.path.exists(self.root):
             os.makedirs(self.root)
         self.fileSize = 0
-        self.buffer = b''
+        self.buffer = bytearray()
     
     def increaseFileSize(self, delta):
         self.fileSize += delta
@@ -55,7 +55,7 @@ class Writer:
         self.modify = set()
     
     def write(self, b):
-        self.state.buffer += b
+        self.state.buffer.extend(b)
         partId = self.state.fileSize//self.state.partSize
         flushCount = len(self.state.buffer)//self.state.partSize
         for i in range(flushCount):

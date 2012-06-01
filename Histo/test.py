@@ -7,7 +7,7 @@ key5 = b'fd5as6f4ds5a6f4dsa5fsa'
 key6 = b'fdsa4f45d6sa18c9e18aw49r98a1fd8as9fd4safdsa9618cd9as1f8dsa94fd8d'
 keySet1 = [key1, key2, key3]
 keySet2 = [key4, key5, key6]
-partSize = 10000000
+partSize = 10*1024*1024
 
 import random
 import dfile
@@ -16,13 +16,13 @@ def createCiphers(keys = keySet1):
     from crypto import VerifyCipher
     from crypto import XorCipher
     r = []
-    #r.append(VerifyCipher('md5'))
-    #r.append(VerifyCipher('sha1'))
-    #r.append(XorCipher(keys[0], 'md5'))
+    r.append(VerifyCipher('md5'))
+    r.append(VerifyCipher('sha512'))
+    r.append(XorCipher(keys[0], 'md5'))
     #r.append(XorCipher(keys[1], 'sha1'))
     #r.append(XorCipher(keys[2], 'sha512'))
-    #r.append(VerifyCipher('md5'))
-    #r.append(VerifyCipher('sha1'))
+    r.append(VerifyCipher('md5'))
+    r.append(VerifyCipher('sha512'))
     return r
 
 def createFiles(keys = keySet1):
@@ -280,7 +280,18 @@ def bigTest():
 
 def speedWrite():
     with createWriter() as f:
-        for _ in range(100000):
+        for _ in range(1000000):
             f.write(b'0'*1000)
 
-speedWrite()
+class Timer:
+    def __enter__(self):
+        import time
+        self.start = time.clock()
+    
+    def __exit__(self,*k):
+        import time
+        print(time.clock() - self.start)
+
+deleteDFile()
+with Timer():
+    speedWrite()

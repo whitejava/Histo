@@ -52,7 +52,7 @@ class _HashSequence:
     def __next__(self):
         import hashlib
         self.seed = hashlib.new(self.algorithm, self.seed + self.key).digest()
-        return self.xor(self.seed)
+        return self.seed[0]
     
     def xor(self,b):
         r = 0
