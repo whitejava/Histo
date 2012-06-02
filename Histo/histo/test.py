@@ -161,6 +161,7 @@ def testDecryptError():
     with createReader(keySet2) as f:
         for _ in range(1000):
             ra = randomRange(f)
+            print('read',ra)
             if ra:
                 readExpectError(f,histo.crypto.VerifyError, ra)
             else:
@@ -325,4 +326,13 @@ def testReadSpeed():
     with Timer():
         speedRead()
         
+        
+def temp():
+    with createReader() as f:
+        f.seek(0)
+        f.read(14)
+        f.seek(8)
+        f.read(6)
+ 
+temp()
 testFunction()

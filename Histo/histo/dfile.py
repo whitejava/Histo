@@ -107,7 +107,11 @@ class Reader:
             self.ensurePart()
             partRemain = self.state.partSize - self.pointer%self.state.partSize
             readSize = min(partRemain, limit)
-            read = self.part.file.read(readSize)
+            try:
+                read = self.part.file.read(readSize)
+            except BaseException as e:
+                self.part.file.close()
+                raise e
             if len(read) != readSize:
                 raise IOError('read length not enough')
             self.pointer += readSize

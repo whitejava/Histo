@@ -158,21 +158,12 @@ class DecryptFile:
         self.pointer = 0
 
     def read(self, limit):
-        if limit == None:
-            raise IOError('not limit')
-            r = b''
-            while True:
-                r += self.readBuffer()
-                if not self.supplyBuffer():
-                    self.pointer += len(r)
-                    return r
-        else:
-            while self.buffer.available() < limit:
-                if not self.supplyBuffer():
-                    break
-            r = self.buffer.read(limit)
-            self.pointer += len(r)
-            return r
+        while self.buffer.available() < limit:
+            if not self.supplyBuffer():
+                break
+        r = self.buffer.read(limit)
+        self.pointer += len(r)
+        return r
     
     def tell(self):
         return self.pointer
