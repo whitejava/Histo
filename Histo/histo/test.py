@@ -12,11 +12,11 @@ keySet2 = [key4, key5, key6, key8]
 partSize = 10#10*1024*1024
 
 import random
-import dfile
+import histo.dfile
 
 def createCiphers(keys = keySet1):
-    from crypto import VerifyCipher
-    from crypto import XorCipher
+    from histo.crypto import VerifyCipher
+    from histo.crypto import XorCipher
     #from crypto import AesCipher
     r = []
     r.append(VerifyCipher('md5'))
@@ -30,9 +30,9 @@ def createCiphers(keys = keySet1):
     return r
 
 def createFiles(keys = keySet1):
-    from files import LocalFiles
-    from files import CipherFiles
-    from files import MonitorFiles
+    from histo.files import LocalFiles
+    from histo.files import CipherFiles
+    from histo.files import MonitorFiles
     files = LocalFiles(root)
     #files = MonitorFiles(files)
     ciphers = createCiphers(keys)
@@ -42,12 +42,12 @@ def createFiles(keys = keySet1):
     return files
 
 def createState():
-    return dfile.State(root, partSize)
+    return histo.dfile.State(root, partSize)
 
 def createReader(keys = keySet1):
     s = createState()
     s.load()
-    return dfile.Reader(s, createFiles(keys))
+    return histo.dfile.Reader(s, createFiles(keys))
 
 def getPartCount():
     import os
@@ -110,7 +110,7 @@ def writeRandom(f):
 def createWriter():
     s = createState()
     s.loadOrCreate()
-    return dfile.Writer(s, createFiles())
+    return histo.dfile.Writer(s, createFiles())
 
 def bulkWrite():
     with createWriter() as f:
@@ -156,13 +156,13 @@ def readExpectError(f, err, ra = None):
     raise Exception('Expect error, but read ' + ''.join(['{:02x}'.format(e) for e in r]))
 
 def testDecryptError():
-    import crypto
+    import histo.crypto
     print('Testing DecryptError')
     with createReader(keySet2) as f:
         for _ in range(1000):
             ra = randomRange(f)
             if ra:
-                readExpectError(f,crypto.VerifyError, ra)
+                readExpectError(f,histo.crypto.VerifyError, ra)
             else:
                 assert readRange(f, ra) == b'' 
 
@@ -185,10 +185,10 @@ def relatedParts(ra):
         return []
 
 def readDataCorrupt(f, parts):
-    import crypto
+    import histo.crypto
     ra = randomRange(f)
     if contains(parts, relatedParts(ra)):
-        readExpectError(f, crypto.VerifyError, ra)
+        readExpectError(f, histo.crypto.VerifyError, ra)
     else:
         readCorrect(f, ra)
 
@@ -249,10 +249,10 @@ def deleteParts(parts):
         deletePart(e)
 
 def readPartMissing(f, missing):
-    import files
+    import histo.files
     ra = randomRange(f)
     if contains(missing, relatedParts(ra)):
-        readExpectError(f, files.MissingPart, ra)
+        readExpectError(f, histo.files.MissingPart, ra)
     else:
         readCorrect(f, ra)
 

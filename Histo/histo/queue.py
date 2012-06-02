@@ -41,8 +41,8 @@ class AutoSave:
 class NotExist(Exception):
     pass
 
-import store
-s = store.PrintStorage()
+import histo.store
+s = histo.store.PrintStorage()
 try:
     q = s.load()
 except NotExist:
