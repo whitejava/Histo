@@ -98,7 +98,7 @@ class Reader:
         self.files = files.openForRead
         self.part = None
         self.pointer = 0
-    
+
     def read(self, limit = None):
         if limit == None or limit > self.available():
             limit = self.available()
@@ -114,7 +114,7 @@ class Reader:
             r += read
             limit -= readSize
         return r
-            
+
     def seek(self, pos):
         self.pointer = pos
     

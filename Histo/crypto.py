@@ -41,6 +41,7 @@ class _HashSequence:
     def __init__(self, key, algorithm = 'md5'):
         self.key = key
         self.algorithm = algorithm
+        self.gen = self.generator()
     
     def getSeedSize(self):
         import hashlib
@@ -49,16 +50,15 @@ class _HashSequence:
     def setSeed(self, seed):
         self.seed = seed
     
-    def __next__(self):
+    def generator(self):
         import hashlib
-        self.seed = hashlib.new(self.algorithm, self.seed + self.key).digest()
-        return self.seed[0]
+        while True:
+            self.seed = hashlib.new(self.algorithm, self.seed + self.key).digest()
+            for e in self.seed:
+                yield e
     
-    def xor(self,b):
-        r = 0
-        for e in b:
-            r ^= e
-        return r
+    def __next__(self):
+        return next(self.gen)
     
 class XorCipher:
     def __init__(self, key, algorithm = 'md5'):
@@ -87,22 +87,21 @@ class _VerifyDecrypt:
     def __init__(self, algorithm):
         import hashlib
         self.hasher = hashlib.new(algorithm)
-        self.hashBytes = b''
-        self.buffer = b''
+        self.buffer = bytearray()
     
     def update(self,b):
-        self.hashBytes += b
-        r = self.hashBytes[:-self.hasher.digest_size]
-        self.hashBytes = self.hashBytes[-self.hasher.digest_size:]
-        self.hasher.update(r)
-        self.buffer += r
+        self.buffer.extend(b)
         return b''
     
     def final(self):
+        digestSize = self.hasher.digest_size
+        data = self.buffer[:-digestSize]
+        hashBytes = self.buffer[-digestSize:]
+        self.hasher.update(data)
         h = self.hasher.digest()
-        if h != self.hashBytes:
+        if h != hashBytes:
             raise VerifyError()
-        return self.buffer
+        return data
 
 class VerifyCipher:
     def __init__(self, algorithm = 'md5'):
@@ -113,3 +112,27 @@ class VerifyCipher:
     
     def decrypter(self):
         return _VerifyDecrypt(self.algorithm)
+
+class _AesEncrypt:
+    def __init__(self, key):
+        import aespython
+        self.cipher = aespython.aes_cipher.AESCipher(key)
+        self.iv = randomIv()
+        self.cbc = aespython.cbc_mode.CBCMode(self.cipher, 16)
+        self.cbc.set_iv(self.iv)
+        
+    def update(self, b):
+        return self.cipher.cipher_block(b)
+    
+    def final(self):
+        raise Exception()
+
+class AesCipher:
+    def __init__(self, key):
+        self.key = key
+    
+    def encrypter(self):
+        return _AesEncrypt(self.key)
+    
+    def decrypter(self):
+        return _AesDecrypt(self.key)
