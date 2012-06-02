@@ -9,7 +9,7 @@ key7 = b'0'*32
 key8 = b'1'*32
 keySet1 = [key1, key2, key3, key7]
 keySet2 = [key4, key5, key6, key8]
-partSize = 10*1024*1024
+partSize = 10#10*1024*1024
 
 import random
 import dfile
@@ -20,13 +20,13 @@ def createCiphers(keys = keySet1):
     #from crypto import AesCipher
     r = []
     r.append(VerifyCipher('md5'))
-    #r.append(VerifyCipher('sha1'))
-    #r.append(XorCipher(keys[0], 'md5'))
+    r.append(VerifyCipher('sha1'))
+    r.append(XorCipher(keys[0], 'md5'))
     #r.append(XorCipher(keys[1], 'sha1'))
     #r.append(XorCipher(keys[2], 'sha512'))
     #r.append(AesCipher(keys[3]))
-    #r.append(VerifyCipher('md5'))
-    #r.append(VerifyCipher('sha1'))
+    r.append(VerifyCipher('md5'))
+    r.append(VerifyCipher('sha1'))
     return r
 
 def createFiles(keys = keySet1):
@@ -34,10 +34,11 @@ def createFiles(keys = keySet1):
     from files import CipherFiles
     from files import MonitorFiles
     files = LocalFiles(root)
-    files = MonitorFiles(files)
+    #files = MonitorFiles(files)
     ciphers = createCiphers(keys)
     for e in ciphers:
         files = CipherFiles(files, e)
+    files = MonitorFiles(files)
     return files
 
 def createState():
@@ -271,7 +272,7 @@ def deployDFile():
 def oneRun():
     deleteDFile()
     testBulkWrite()
-    testCorrectRead()
+    #testCorrectRead()
     testDecryptError()
     testDataCorrupt()
     deployDFile()
@@ -324,4 +325,4 @@ def testReadSpeed():
     with Timer():
         speedRead()
         
-testReadSpeed()
+testFunction()

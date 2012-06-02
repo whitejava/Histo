@@ -96,13 +96,65 @@ class EncryptFile:
         self.file.write(code)
         self.file.close()
         
+class BytesBuffer:
+    def __init__(self):
+        self.queue = []
+        self.pointer = 0
+    
+    def write(self, b):
+        if b:
+            self.queue.append(b)
+    
+    def read(self, limit = None):
+        if limit is None:
+            limit = self.available()
+        r = bytearray()
+        while limit and self.queue:
+            read = self.readQueue(limit)
+            r.extend(read)
+            limit -= len(read)
+        return r
+    
+    def currentAvailable(self):
+        if not self.queue:
+            return 0
+        r = len(self.queue[0]) - self.pointer
+        return r
+    
+    def available(self):
+        if not self.queue:
+            return 0
+        r = 0
+        for e in self.queue:
+            r += len(e)
+        return r - self.pointer
+    
+    def readQueue(self, limit):
+        if self.currentAvailable() <= limit:
+            return self.popQueue()
+        else:
+            return self.readCurrent(limit)
+        
+    def popQueue(self):
+        r = self.queue[0][self.pointer:]
+        del self.queue[0]
+        self.pointer = 0
+        return r
+    
+    def readCurrent(self, limit):
+        start = self.pointer
+        end = start + limit
+        r = self.queue[0][start:end]
+        self.pointer += len(r)
+        return r
+        
 class DecryptFile:
     bufferSize = 1024*1024
     
     def __init__(self, file, decrypter):
         self.file = file
         self.decrypter = decrypter
-        self.buffer = bytearray()
+        self.buffer = BytesBuffer()
         self.pointer = 0
 
     def read(self, limit):
@@ -115,15 +167,10 @@ class DecryptFile:
                     self.pointer += len(r)
                     return r
         else:
-            r = b''
-            while limit:
-                read = self.readBuffer(limit)
-                r += read
-                limit -= len(read)
-                if not limit:
-                    break
+            while self.buffer.available() < limit:
                 if not self.supplyBuffer():
                     break
+            r = self.buffer.read(limit)
             self.pointer += len(r)
             return r
     
@@ -138,10 +185,10 @@ class DecryptFile:
         read = self.file.read(self.bufferSize)
         if not read:
             self.close()
-            self.buffer += self.finalizeDecrypter()
+            self.buffer.write(self.finalizeDecrypter())
             return True
         else:
-            self.buffer += self.decrypter.update(read)
+            self.buffer.write(self.decrypter.update(read))
             return True
 
     def finalizeDecrypter(self):
@@ -158,7 +205,7 @@ class DecryptFile:
         if not limit:
             limit = len(self.buffer)
         r = self.buffer[:limit]
-        self.buffer = self.buffer[limit:]
+        del self.buffer[:limit]
         return r
 
 class CipherFiles:
@@ -175,3 +222,51 @@ class CipherFiles:
         file = self.files.openForRead(n)
         decrypter = self.cipher.decrypter()
         return DecryptFile(file, decrypter)
+    
+import unittest
+import random
+
+class TestBytesBuffer(unittest.TestCase):
+    def testWrite(self):
+        return
+        for _ in range(10):
+            self.bulkWrite()
+    
+    def testRead(self):
+        buffer = BytesBuffer()
+        writePointer = 0
+        readPointer = 0
+        for _ in range(100000):
+            length = self.randomLength()
+            if self.randomBoolean():
+                buffer.write(self.getData(range(writePointer,writePointer+length)))
+                writePointer += length
+            else:
+                read = buffer.read(length)
+                expect = self.getData(range(readPointer, readPointer+len(read)))
+                if read != expect:
+                    raise Exception('data corrupted, expect={}, actual={}'.format(list(expect),list(read)))
+                readPointer += len(read)
+                if len(read) != length:
+                    if buffer.available():
+                        raise Exception('data not read fully.')
+    
+    def bulkWrite(self):
+        buffer = BytesBuffer()
+        pointer = 0
+        for _ in range(1000):
+            length = self.randomLength()
+            buffer.write(self.getData(range(pointer, length)))
+            pointer += length
+    
+    def randomLength(self):
+        return random.randint(0,40)
+    
+    def getData(self, ra):
+        return bytes([e%256 for e in ra])
+    
+    def randomBoolean(self):
+        return random.randint(0,1)==1
+
+if __name__ == '__main__':
+    unittest.main()
