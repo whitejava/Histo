@@ -1,8 +1,12 @@
-import unittest
-import random
+from files.memory_files import memory_files
 from _data_generator import data_generator
+from unittest import TestCase
+from random import randint
+from dfile import reader
+from dfile import writer
+import unittest
 
-class dfile_test(unittest.TestCase):
+class dfile_test(TestCase):
     def test_memory_reader(self):
         files = self._create_sample_files()
         with self._create_reader(files, 10) as f:
@@ -48,21 +52,18 @@ class dfile_test(unittest.TestCase):
         return file.read(len(ra))
     
     def _random_length(self):
-        return random.randint(0,40)
+        return randint(0,40)
     
     def _create_memory_writer(self, part_size):
         return self._create_writer(self._create_memory_files(), part_size)
     
     def _create_memory_files(self):
-        from files import memory_files
         return memory_files()
     
     def _create_writer(self, files, part_size):
-        from dfile import writer
         return writer(files, part_size)
     
     def _create_reader(self, files, part_size):
-        from dfile import reader
         return reader(files, part_size)
 
 if __name__ == '__main__':
