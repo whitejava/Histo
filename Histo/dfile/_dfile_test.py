@@ -66,5 +66,4 @@ class dfile_test(TestCase):
     def _create_reader(self, files, part_size):
         return reader(files, part_size)
 
-if __name__ == '__main__':
-    unittest.main()
+unittest.main()

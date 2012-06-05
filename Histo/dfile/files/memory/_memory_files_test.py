@@ -33,5 +33,4 @@ class test(unittest.TestCase):
         with self.files.open_for_read(0) as f:
             assert f.read() == b''
 
-if __name__ == '__main__':
-    unittest.main()
+unittest.main()

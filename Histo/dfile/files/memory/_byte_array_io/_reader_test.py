@@ -53,5 +53,4 @@ class test(TestCase):
             with reader(b'123456') as f:
                 f.seek(7)
 
-if __name__ == '__main__':
-    unittest.main()
+unittest.main()

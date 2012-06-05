@@ -27,5 +27,4 @@ class test(unittest.TestCase):
         self.d.seek(ra[0])
         return self.d.read(len(ra))
 
-if __name__ == '__main__':
-    unittest.main()
+unittest.main()
