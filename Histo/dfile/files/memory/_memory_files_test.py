@@ -19,11 +19,11 @@ class test(unittest.TestCase):
             f.write(b'file1 part0')
             f.write(b'file1 part1')
         with self.files.open_for_read(0) as f:
-            assert f.read(5) == b'file1'
+            assert f.read(5) == b'file0'
             assert f.read(9) == b' part0fil'
-            assert f.read() == b'e1 part1'
+            assert f.read() == b'e0 part1'
         with self.files.open_for_read(1) as f:
-            assert f.read() == b'file0 part0file0 part1'
+            assert f.read() == b'file1 part0file1 part1'
     
     def test_overwrite(self):
         with self.files.open_for_write(0) as f:
