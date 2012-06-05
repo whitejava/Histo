@@ -8,16 +8,14 @@ class test(unittest.TestCase):
         
     def test_write(self):
         with self.files.open_for_write(0) as f:
-            f.write(b'12345')
-            f.write(b'123456')
+            f.dump(b'12345')
+            f.dump(b'123456')
             
     def test_read(self):
         with self.files.open_for_write(0) as f:
-            f.write(b'file0 part0')
-            f.write(b'file0 part1')
+            f.dump(b'file0 part0file0 part1')
         with self.files.open_for_write(1) as f:
-            f.write(b'file1 part0')
-            f.write(b'file1 part1')
+            f.dump(b'file1 part0file1 part1')
         with self.files.open_for_read(0) as f:
             assert f.read(5) == b'file0'
             assert f.read(9) == b' part0fil'
@@ -27,7 +25,7 @@ class test(unittest.TestCase):
     
     def test_overwrite(self):
         with self.files.open_for_write(0) as f:
-            f.write(b'123456789')
+            f.dump(b'123456789')
         with self.files.open_for_write(0) as f:
             pass
         with self.files.open_for_read(0) as f:

@@ -15,7 +15,7 @@ class test(TestCase):
         with reader(b'123456') as f:
             assert f.read(4) == b'1234'
             assert f.read(2) == b'56'
-            
+
     def test_read_eof(self):
         with reader(b'123') as f:
             assert f.read(5) == b'123'

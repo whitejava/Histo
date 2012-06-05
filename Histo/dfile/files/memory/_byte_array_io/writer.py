@@ -1,9 +1,10 @@
 class writer:
-    def __init__(self, out):
-        self.out = out
+    def __init__(self, data, n):
+        self.data = data
+        self.n = n
         
-    def write(self, b):
-        self.out.extend(b)
+    def dump(self, b):
+        self.data[self.n] = b
     
     def close(self):
         self.out = None

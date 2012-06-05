@@ -7,7 +7,7 @@ class memory_files:
     
     def open_for_write(self, n):
         self.library[n] = bytearray()
-        return bytes_writer(self.library[n])
+        return bytes_writer(self.library, n)
     
     def open_for_read(self, n):
         return bytes_reader(self.library[n])
