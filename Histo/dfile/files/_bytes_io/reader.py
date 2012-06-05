@@ -19,7 +19,7 @@ class reader:
         return len(self.data) - self.pointer
     
     def close(self):
-        self.data = None
+        pass
     
     def __enter__(self):
         return self

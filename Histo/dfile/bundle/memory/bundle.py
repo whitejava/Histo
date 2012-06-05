@@ -1,4 +1,4 @@
-class library:
+class bundle:
     def __init__(self):
         self.files = {}
     

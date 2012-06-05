@@ -1,19 +1,19 @@
 import unittest
 
-from library import library
+from bundle import bundle
 
 class test(unittest.TestCase):
     def test_dump(self):
-        lib = library()
+        lib = bundle()
         lib.dump(0,b'123')
     
     def test_load(self):
-        lib = library()
+        lib = bundle()
         lib.dump(0,b'123')
         assert lib.load(0) == b'123'
     
     def test_load_not_exist(self):
-        lib = library()
+        lib = bundle()
         with self.assertRaises(KeyError):
             lib.load(1)
 

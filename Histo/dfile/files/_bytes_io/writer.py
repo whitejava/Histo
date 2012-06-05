@@ -1,13 +1,12 @@
 class writer:
-    def __init__(self, data, n):
-        self.data = data
-        self.n = n
+    def __init__(self, out):
+        self.out = out
         
-    def dump(self, b):
-        self.data[self.n] = b
+    def write(self, b):
+        self.out.extend(b)
     
     def close(self):
-        self.out = None
+        pass
         
     def __enter__(self):
         return self
