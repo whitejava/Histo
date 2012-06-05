@@ -1,5 +1,5 @@
-from _byte_array_io.writer import writer as bytes_writer
-from _byte_array_io.reader import reader as bytes_reader
+from _writer import writer as bytes_writer
+from _reader import reader as bytes_reader
 
 class memory_files:
     def __init__(self):
