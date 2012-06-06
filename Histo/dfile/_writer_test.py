@@ -85,6 +85,29 @@ class Test(unittest.TestCase):
         assert b.load(0) == self._header(2,2,b'')
         assert b.load(1) == b'12'
         assert not b.exists(2)
+        
+    def test_double_close(self):
+        b = bundle()
+        f = writer(files(b),2)
+        f.close()
+        with self.assertRaises(Exception):
+            f.close()
+            
+    def test_write_after_close(self):
+        b = bundle()
+        f = writer(files(b),2)
+        f.close()
+        with self.assertRaises(Exception):
+            f.write(b'')
+            
+    def test_write_failed(self):
+        b = broken(bundle(), [2])
+        with writer(files(b),2) as f:
+            f.write(b'12')
+        with writer(files(b),2) as f:
+            f.write(b'3')
+        assert b.load(0) == self._header(2,2,b'')
+        assert b.load(1) == b'12'
 
 if __name__ == "__main__":
     unittest.main()

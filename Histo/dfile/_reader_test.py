@@ -58,6 +58,22 @@ class test(TestCase):
             d['bundle'].dump(b'12')
             assert f.read(3) == b'123'
     
+    def test_after_close(self):
+        f = self._reader(b'1234')
+        f.close()
+        with self.assertRaises(Exception):
+            f.close()
+        with self.assertRaises(Exception):
+            f.read(0)
+    
+    def test_read_noise_tail(self):
+        d = {}
+        with self._reader(b'123', out=d) as f:
+            d['bundle'].dump(2,b'34')
+            assert f.read(1) == b'1'
+            assert f.read(1) == b'2'
+            assert f.read(2) == b'3'
+    
     def _reader(self, data, part_size = 2, out = {}):
         b = bundle()
         fs = files(b)
