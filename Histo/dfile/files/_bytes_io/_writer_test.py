@@ -1,6 +1,5 @@
-import unittest
 from unittest import TestCase
-from writer import writer
+from .._bytes_io.writer import writer
 
 class test(TestCase):
     def test_write(self):
@@ -28,5 +27,3 @@ class test(TestCase):
         with writer(data) as f:
             f.write(b'')
         assert data == b''
-
-unittest.main()

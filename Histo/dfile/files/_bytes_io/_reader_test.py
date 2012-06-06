@@ -1,6 +1,5 @@
-import unittest
 from unittest import TestCase
-from reader import reader
+from .._bytes_io.reader import reader
 
 class test(TestCase):
     def test_read_all(self):
@@ -52,6 +51,3 @@ class test(TestCase):
         with self.assertRaises(IOError):
             with reader(b'123456') as f:
                 f.seek(7)
-
-if __name__ == '__main__':
-    unittest.main()
