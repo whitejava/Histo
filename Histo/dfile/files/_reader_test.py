@@ -2,7 +2,7 @@ import unittest
 from dfile.bundle.memory.bundle import bundle
 from _reader import reader
 
-class Test(unittest.TestCase):
+class test(unittest.TestCase):
     def setUp(self):
         b = bundle()
         b.dump(0,b'123456')
