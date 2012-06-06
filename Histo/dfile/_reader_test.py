@@ -3,7 +3,7 @@ from unittest import TestCase
 from reader import reader
 from writer import writer
 from bundle.bundle import bundle
-from files.memory.memory_files import memory_files as files
+from files.files import files
 
 class test(TestCase):
     def __init__(self,a):
@@ -42,7 +42,26 @@ class test(TestCase):
             f.seek(2)
             assert f.read(3) == b'345'
     
-    def _reader(self, data, part_size = 2):
+    def test_read_without_unrelated_part(self):
+        d = {}
+        with self._reader(b'1234', out = d) as f:
+            d['bundle'].delete(1)
+            f.seek(2)
+            assert f.read() == b'34'
+    
+    def test_read_without_related_part(self):
+        d = {}
+        with self._reader(b'1234',out=d) as f:
+            d['bundle'].delete(1)
+            with self.assertRaises(Exception):
+                f.read(1)
+            d['bundle'].dump(b'12')
+            assert f.read(3) == b'123'
+    
+    def _reader(self, data, part_size = 2, out = {}):
         b = bundle()
-        with writer(b, part_size) as f:
+        fs = files(b)
+        with writer(fs, part_size) as f:
             f.write(data)
+        out['bundle'] = b
+        return reader(fs, part_size)

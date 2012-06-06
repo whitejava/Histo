@@ -13,3 +13,6 @@ class bundle:
             if e == n:
                 return True
         return False
+    
+    def delete(self,n):
+        del self.files[n]

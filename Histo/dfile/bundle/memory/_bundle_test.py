@@ -22,6 +22,12 @@ class test(unittest.TestCase):
         assert lib.exists(0) == False
         lib.dump(0,b'123')
         assert lib.exists(0) == True
+        
+    def test_delete(self):
+        b = bundle()
+        b.dump(0,b'123')
+        b.delete(0)
+        assert not b.exists(0)
 
 if __name__ == "__main__":
     unittest.main()
