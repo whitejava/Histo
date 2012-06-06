@@ -107,7 +107,14 @@ class test(unittest.TestCase):
         with w: pass
         with self.assertRaises(Exception):
             w.write(b'123')
-            
+    
+    def test_write_fail_before_close(self):
+        b = broken(bundle(),[2])
+        with self.assertRaises(Exception):
+            with writer(files(b),2) as f:
+                f.write(b'123456')
+        assert b.load(0) == self._header(0,2,b'') 
+
     def _header(self,*k):
         d = dict(zip(['file_size','part_size','cache'],[k[0],k[1],bytearray(k[2])]))
         import pickle
