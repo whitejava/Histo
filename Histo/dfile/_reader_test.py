@@ -78,6 +78,14 @@ class test(unittest.TestCase):
             with self.assertRaises(Exception):
                 f.read(1)
     
+    def test_read_after_error(self):
+        d = {}
+        with self._reader(b'123', out=d) as f:
+            d['bundle'].delete(2)
+            with self.assertRaises(Exception):
+                f.read()
+            assert f.read(2) == b'12'
+    
     def _reader(self, data, part_size = 2, out = {}):
         b = bundle()
         with writer(files(b), part_size) as f:

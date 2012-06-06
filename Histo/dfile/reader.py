@@ -13,13 +13,18 @@ class reader:
         if size == None or size > self._available():
             size = self._available()
         r = bytearray()
-        while size:
-            self._correct_part()
-            part_remain = self._get_part_remain_size()
-            read_size = min(size, part_remain)
-            r.extend(self._read_part_fully(read_size))
-            size -= read_size
-            self._pointer += read_size
+        pointer = self._pointer
+        try:
+            while size:
+                self._correct_part()
+                part_remain = self._get_part_remain_size()
+                read_size = min(size, part_remain)
+                r.extend(self._read_part_fully(read_size))
+                size -= read_size
+                self._pointer += read_size
+        except BaseException as e:
+            self._pointer = pointer
+            raise e
         return bytes(r)
     
     def seek(self, p):
@@ -78,6 +83,7 @@ class reader:
     
     def _close_part(self):
         self._part.close()
+        self._part = None
         
     def _ensure_in_with_block(self):
         if not self._entered or self._exited:
