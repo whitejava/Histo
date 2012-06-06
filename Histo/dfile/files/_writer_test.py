@@ -1,6 +1,6 @@
 import unittest
 from ..bundle.memory.bundle import bundle
-from ..files._writer import writer
+from ._writer import writer
 
 class test(unittest.TestCase):
     def setUp(self):

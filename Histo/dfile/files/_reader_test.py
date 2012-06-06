@@ -1,6 +1,6 @@
 import unittest
 from ..bundle.memory.bundle import bundle
-from ..files._reader import reader
+from ._reader import reader
 
 class test(unittest.TestCase):
     def setUp(self):

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from .._bytes_io.writer import writer
+from .writer import writer
 
 class test(TestCase):
     def test_write(self):

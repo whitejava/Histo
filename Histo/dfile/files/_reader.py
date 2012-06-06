@@ -1,4 +1,4 @@
-from ..files._bytes_io.reader import reader as bytes_reader
+from ._bytes_io.reader import reader as bytes_reader
 
 class reader:
     def __init__(self, bundle, n):

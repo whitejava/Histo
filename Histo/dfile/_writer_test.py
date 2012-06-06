@@ -1,10 +1,10 @@
+from .bundle.memory.bundle import bundle
+from .bundle.broken.bundle import bundle as broken
+from .files.files import files
+from .writer import writer
 import unittest
 
-from bundle.memory.bundle import bundle
-from files.files import files
-from writer import writer
-
-class Test(unittest.TestCase):
+class test(unittest.TestCase):
     def test_just_open_close(self):
         b = bundle()
         fs = files(b)
@@ -108,6 +108,3 @@ class Test(unittest.TestCase):
             f.write(b'3')
         assert b.load(0) == self._header(2,2,b'')
         assert b.load(1) == b'12'
-
-if __name__ == "__main__":
-    unittest.main()

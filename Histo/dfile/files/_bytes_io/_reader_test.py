@@ -1,5 +1,5 @@
 from unittest import TestCase
-from .._bytes_io.reader import reader
+from .reader import reader
 
 class test(TestCase):
     def test_read_all(self):
