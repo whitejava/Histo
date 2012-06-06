@@ -1,8 +1,8 @@
 import unittest
-from bundle import bundle as broken
-from dfile.bundle.memory.bundle import bundle
+from ..broken.bundle import bundle as broken
+from ..memory.bundle import bundle
 
-class Test(unittest.TestCase):
+class test(unittest.TestCase):
     def test_normal(self):
         b = broken(bundle(), [1])
         b.dump(0,b'123')
@@ -12,6 +12,3 @@ class Test(unittest.TestCase):
         b = broken(bundle(),[1])
         with self.assertRaises(Exception):
             b.dump(1,b'123')
-
-if __name__ == "__main__":
-    unittest.main()

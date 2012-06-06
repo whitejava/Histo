@@ -1,6 +1,6 @@
 import unittest
 
-from bundle import bundle
+from ..memory.bundle import bundle
 
 class test(unittest.TestCase):
     def test_dump(self):
@@ -28,6 +28,3 @@ class test(unittest.TestCase):
         b.dump(0,b'123')
         b.delete(0)
         assert not b.exists(0)
-
-if __name__ == "__main__":
-    unittest.main()
