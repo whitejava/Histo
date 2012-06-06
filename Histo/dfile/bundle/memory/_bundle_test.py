@@ -16,6 +16,12 @@ class test(unittest.TestCase):
         lib = bundle()
         with self.assertRaises(KeyError):
             lib.load(1)
+    
+    def test_exists(self):
+        lib = bundle()
+        assert lib.exists(0) == False
+        lib.dump(0,b'123')
+        assert lib.exists(0) == True
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,7 +20,7 @@ class writer:
     
     def _ensure_not_closed(self):
         if self._closed:
-            raise IOError('writer is _closed')
+            raise IOError('writer is closed')
     
     def __enter__(self):
         return self

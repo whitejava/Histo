@@ -7,3 +7,9 @@ class bundle:
     
     def load(self,n):
         return self.files[n]
+    
+    def exists(self,n):
+        for e in self.files.keys():
+            if e == n:
+                return True
+        return False

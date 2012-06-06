@@ -1,6 +1,6 @@
 import unittest
 from dfile.bundle.memory.bundle import bundle
-from writer import writer
+from _writer import writer
 
 class Test(unittest.TestCase):
     def test_write_twice(self):
