@@ -1,8 +1,8 @@
 import unittest
 from dfile.bundle.memory.bundle import bundle
-from _writer import writer
+from ..files._writer import writer
 
-class Test(unittest.TestCase):
+class test(unittest.TestCase):
     def test_write_twice(self):
         b = bundle()
         with writer(b,0) as f:
@@ -50,6 +50,3 @@ class Test(unittest.TestCase):
         f.close()
         with self.assertRaises(Exception):
             f.write(b'234')
-
-if __name__ == "__main__":
-    unittest.main()

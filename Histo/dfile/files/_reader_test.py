@@ -1,6 +1,6 @@
 import unittest
 from dfile.bundle.memory.bundle import bundle
-from _reader import reader
+from ..files._reader import reader
 
 class test(unittest.TestCase):
     def setUp(self):
@@ -40,6 +40,3 @@ class test(unittest.TestCase):
         self.reader.close()
         with self.assertRaises(Exception):
             self.reader.seek(1)
-
-if __name__ == "__main__":
-    unittest.main()
