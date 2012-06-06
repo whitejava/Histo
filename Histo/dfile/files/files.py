@@ -1,5 +1,5 @@
-from ..files._reader import reader
-from ..files._writer import writer
+from ._reader import reader
+from ._writer import writer
 
 class files:
     def __init__(self,bundle):

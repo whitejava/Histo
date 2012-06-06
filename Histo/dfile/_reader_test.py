@@ -2,6 +2,7 @@ import unittest
 from .bundle.memory.bundle import bundle
 from .reader import reader
 from .writer import writer
+from .files.files import files
 
 class test(unittest.TestCase):
     def test_read(self):
@@ -50,14 +51,14 @@ class test(unittest.TestCase):
             d['bundle'].delete(1)
             with self.assertRaises(Exception):
                 f.read(1)
-            d['bundle'].dump(b'12')
+            d['bundle'].dump(1,b'12')
             assert f.read(3) == b'123'
     
-    def test_after_close(self):
-        f = self._reader(b'1234')
-        f.close()
+    def test_after_with(self):
+        with self._reader(b'1234') as f:
+            pass
         with self.assertRaises(Exception):
-            f.close()
+            f.seek(0)
         with self.assertRaises(Exception):
             f.read(0)
     
@@ -69,10 +70,17 @@ class test(unittest.TestCase):
             assert f.read(1) == b'2'
             assert f.read(2) == b'3'
     
+    def test_part_truncated(self):
+        d = {}
+        with self._reader(b'123', out=d) as f:
+            d['bundle'].dump(1,b'1')
+            assert f.read(1) == b'1'
+            with self.assertRaises(Exception):
+                f.read(1)
+    
     def _reader(self, data, part_size = 2, out = {}):
         b = bundle()
-        fs = files(b)
-        with writer(fs, part_size) as f:
+        with writer(files(b), part_size) as f:
             f.write(data)
         out['bundle'] = b
-        return reader(fs, part_size)
+        return reader(files(b), part_size)
