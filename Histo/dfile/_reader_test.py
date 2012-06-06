@@ -1,14 +1,9 @@
 import unittest
-from unittest import TestCase
-from reader import reader
-from writer import writer
-from bundle.bundle import bundle
-from files.files import files
+from .bundle.memory.bundle import bundle
+from .reader import reader
+from .writer import writer
 
-class test(TestCase):
-    def __init__(self,a):
-        TestCase.__init__(self,a)
-    
+class test(unittest.TestCase):
     def test_read(self):
         with self._reader(b'123') as f:
             assert f.read() == b'123'

@@ -1,7 +1,6 @@
 class writer:
     def __init__(self,files,part_size):
         self._files = files
-        self._closed = False
         self._part_size = part_size
         self._entered = False
         self._exited = False
@@ -11,8 +10,7 @@ class writer:
             self._create()
     
     def write(self,b):
-        if not self._entered or self._exited:
-            raise IOError('state error')
+        self._ensure_in_with_block()
         if not b:
             return
         while len(self._cache) + len(b) >= self._part_size:
@@ -24,6 +22,10 @@ class writer:
             self._file_size += len(p[0])
         self._cache.extend(b)
         self._file_size += len(b)
+
+    def get_file_size(self):
+        self._ensure_in_with_block()
+        return self._file_size
 
     def __enter__(self):
         if self._entered:
@@ -68,9 +70,9 @@ class writer:
                  'cache': self._cache}
             f.write(pickle.dumps(d))
     
-    def _ensure_not_closed(self):
-        if self._closed:
-            raise IOError('the writer is closed')
+    def _ensure_in_with_block(self):
+        if not self._entered or self._exited:
+            raise IOError('state error')
     
     def _cut(self, b, n):
         return (b[:n],b[n:])

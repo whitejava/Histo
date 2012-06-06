@@ -108,12 +108,32 @@ class test(unittest.TestCase):
         with self.assertRaises(Exception):
             w.write(b'123')
     
+    def test_write_after_with2(self):
+        b = bundle()
+        with writer(files(b),2) as f:
+            pass
+        with self.assertRaises(Exception):
+            f.write(b'123')
+    
     def test_write_fail_before_close(self):
         b = broken(bundle(),[2])
         with self.assertRaises(Exception):
             with writer(files(b),2) as f:
                 f.write(b'123456')
-        assert b.load(0) == self._header(0,2,b'') 
+        assert b.load(0) == self._header(0,2,b'')
+    
+    def test_get_file_size(self):
+        b = bundle()
+        with writer(files(b),2) as f:
+            f.write(b'123')
+            assert f.get_file_size() == 3
+            
+    def test_get_file_size_after_with(self):
+        b = bundle()
+        with writer(files(b),2) as f:
+            f.write(b'123')
+        with self.assertRaises(Exception):
+            f.get_file_size()
 
     def _header(self,*k):
         d = dict(zip(['file_size','part_size','cache'],[k[0],k[1],bytearray(k[2])]))
