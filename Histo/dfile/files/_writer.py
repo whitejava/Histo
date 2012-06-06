@@ -1,7 +1,4 @@
-try:
-    from ..file._bytes_io.writer import writer as bytes_writer
-except:
-    from _bytes_io.writer import writer as bytes_writer
+from ..files._bytes_io.writer import writer as bytes_writer
 
 class writer:
     def __init__(self, bundle, n):

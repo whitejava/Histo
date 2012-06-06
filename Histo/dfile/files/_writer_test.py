@@ -1,8 +1,11 @@
 import unittest
-from dfile.bundle.memory.bundle import bundle
+from ..bundle.memory.bundle import bundle
 from ..files._writer import writer
 
 class test(unittest.TestCase):
+    def setUp(self):
+        pass
+    
     def test_write_twice(self):
         b = bundle()
         with writer(b,0) as f:

@@ -1,9 +1,5 @@
-try:
-    from ..files._reader import reader
-    from ..files._writer import writer
-except:
-    from _reader import reader
-    from _writer import writer
+from ..files._reader import reader
+from ..files._writer import writer
 
 class files:
     def __init__(self,bundle):

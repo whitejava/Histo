@@ -1,5 +1,5 @@
 import unittest
-from dfile.bundle.memory.bundle import bundle
+from ..bundle.memory.bundle import bundle
 from ..files._reader import reader
 
 class test(unittest.TestCase):
