@@ -3,31 +3,40 @@ class writer:
         self._files = files
         self._closed = False
         self._part_size = part_size
+        self._entered = False
+        self._exited = False
         if files.exists(0):
             self._load()
         else:
             self._create()
     
-    def _write(self,b):
+    def write(self,b):
+        if not self._entered or self._exited:
+            raise IOError('state error')
         if not b:
             return
         while len(self._cache) + len(b) >= self._part_size:
-            cut = len(self._cache)+len(b) - self._part_size
-            self._cache.extend(b[:cut])
-            self._flush_cache()
-            b = b[cut:]
+            p = self._cut(b, self._part_size - len(self._cache))
+            self._cache.extend(p[0])
+            self._write_cache()
+            self._clear_cache()
+            b = p[1]
+            self._file_size += len(p[0])
         self._cache.extend(b)
+        self._file_size += len(b)
 
     def __enter__(self):
-        class c: pass
-        r = c()
-        r.write = self._write
-        return r
+        if self._entered:
+            raise IOError('enter twice is not allowed.')
+        self._entered = True
+        return self
     
     def __exit__(self,t,v,trace):
+        self._exited = True
         if v == None:
-            self._flush_cache()
-            self._save_state()
+            try: self._write_cache()
+            except: pass
+            else: self._save_state()
     
     def _load(self):
         with self._files.open_for_read(0) as f:
@@ -43,10 +52,13 @@ class writer:
         self._cache = bytearray()
         self._save_state()
     
-    def _flush_cache(self):
-        with self._files.open_for_write(1+self._file_size//self._part_size) as f:
-            f.write(self._cache)
+    def _clear_cache(self):
         self._cache = bytearray()
+        
+    def _write_cache(self):
+        if self._cache:
+            with self._files.open_for_write(1+self._file_size//self._part_size) as f:
+                f.write(self._cache)
     
     def _save_state(self):
         with self._files.open_for_write(0) as f:
@@ -59,3 +71,6 @@ class writer:
     def _ensure_not_closed(self):
         if self._closed:
             raise IOError('the writer is closed')
+    
+    def _cut(self, b, n):
+        return (b[:n],b[n:])

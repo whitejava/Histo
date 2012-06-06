@@ -15,8 +15,7 @@ class test(unittest.TestCase):
     
     def test_write_bit(self):
         b = bundle()
-        fs = files(b)
-        with writer(fs,2) as f:
+        with writer(files(b),2) as f:
             f.write(b'1')
         assert b.load(0) == self._header(1,2,b'1')
         assert b.load(1) == b'1'
@@ -60,7 +59,7 @@ class test(unittest.TestCase):
         assert b.load(2) == b'3'
         assert not b.exists(3)
         with writer(files(b),2) as f:
-            f.write('4')
+            f.write(b'4')
         assert b.load(0) == self._header(4,2,b'')
         assert b.load(1) == b'12'
         assert b.load(2) == b'34'
@@ -85,21 +84,7 @@ class test(unittest.TestCase):
         assert b.load(0) == self._header(2,2,b'')
         assert b.load(1) == b'12'
         assert not b.exists(2)
-        
-    def test_double_close(self):
-        b = bundle()
-        f = writer(files(b),2)
-        f.close()
-        with self.assertRaises(Exception):
-            f.close()
-            
-    def test_write_after_close(self):
-        b = bundle()
-        f = writer(files(b),2)
-        f.close()
-        with self.assertRaises(Exception):
-            f.write(b'')
-            
+
     def test_write_failed(self):
         b = broken(bundle(), [2])
         with writer(files(b),2) as f:
@@ -108,3 +93,22 @@ class test(unittest.TestCase):
             f.write(b'3')
         assert b.load(0) == self._header(2,2,b'')
         assert b.load(1) == b'12'
+
+    def test_double_with(self):
+        b = bundle()
+        w = writer(files(b),2)
+        with w: pass
+        with self.assertRaises(Exception):
+            with w: pass
+
+    def test_write_after_with(self):
+        b = bundle()
+        w = writer(files(b),2)
+        with w: pass
+        with self.assertRaises(Exception):
+            w.write(b'123')
+            
+    def _header(self,*k):
+        d = dict(zip(['file_size','part_size','cache'],[k[0],k[1],bytearray(k[2])]))
+        import pickle
+        return pickle.dumps(d)
