@@ -1,4 +1,4 @@
-from .decrypt_error import decrypt_error
+from ._decrypt_error import decrypt_error
 
 class test_cipher:
     def encrypt(self,b):

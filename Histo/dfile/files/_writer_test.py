@@ -3,9 +3,6 @@ from ..bundle.memory.bundle import bundle
 from ._writer import writer
 
 class test(unittest.TestCase):
-    def setUp(self):
-        pass
-    
     def test_write_twice(self):
         b = bundle()
         with writer(b,0) as f:
@@ -45,7 +42,7 @@ class test(unittest.TestCase):
         f.close()
         with self.assertRaises(Exception):
             f.close()
-            
+
     def test_write_after_close(self):
         b = bundle()
         f = writer(b,0)

@@ -1,6 +1,6 @@
 import unittest
 from ._test_cipher import test_cipher as cipher
-from .decrypt_error import decrypt_error
+from ._decrypt_error import decrypt_error
 
 class test(unittest.TestCase):
     def test_encrypt(self):

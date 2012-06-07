@@ -1,37 +1,31 @@
 import unittest
 from ..memory.bundle import bundle
 from .bundle import bundle as crypto
-
-def tohex(b):
-    return ''.join(['{:02x}'.format(e) for e in b])
-
-def tobytes(s):
-    return bytes([int(s[i:i+2],16) for i in range(0, len(s), 2)])
+from ._test_cipher import test_cipher as cipher
+from ._decrypt_error import decrypt_error
 
 class test(unittest.TestCase):
     def test_dump(self):
         b = bundle()
-        ci = cipher
-        c = crypto(b, ci)
-        c.dump(0,b'12345')
-        assert tohex(b.load(0)) == '000000'
+        c = crypto(b, cipher())
+        c.dump(0, b'12345')
+        assert b.load(0) == b'a12345b'
     
     def test_load(self):
         b = bundle()
-        b.dump(0,tobytes('000000'))
-        ci = 
-        c = crypto(b)
-        assert tohex(c.load(0)) == '12345'
+        b.dump(0,b'a12345b')
+        c = crypto(b, cipher())
+        assert c.load(0) == b'12345'
         
     def test_mix(self):
         b = bundle()
-        c = crypto(b)
-        c.dump(0,b'12345',seed=1)
+        c = crypto(b,cipher())
+        c.dump(0,b'12345')
         assert c.load(0) == b'12345'
     
-    def test_mix_random_iv(self):
+    def test_decrypt_error(self):
         b = bundle()
-        c = crypto(b)
-        c.dump(0,b'12345')
-        print('encrypted text:',tohex(b.load(0)))
-        assert c.load(0) == b'12345'
+        b.dump(0,b'12345')
+        c = crypto(b,cipher())
+        with self.assertRaises(decrypt_error):
+            c.load(0)
