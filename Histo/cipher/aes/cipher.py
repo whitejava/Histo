@@ -19,7 +19,7 @@ class cipher:
         return r
     
     def _encrypt_with_iv(self,b,iv):
-        self._encrypt_with_iv_no_padding(self._padding(b), iv)
+        return self._encrypt_with_iv_no_padding(self._padding(b), iv)
     
     def _encrypt_with_iv_no_padding(self,b,iv):
         c = AES.new(self._key, AES.MODE_CBC, iv)
