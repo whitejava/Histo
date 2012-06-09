@@ -9,6 +9,9 @@ def tobytes(a):
         r.append(int(a[i:i+2],16))
     return bytes(r)
 
+def tohex(b):
+    return ''.join(['{:02x}'.format(e) for e in b])
+
 class test(unittest.TestCase):
     sample_code = tobytes('0000009a') + b"[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ['readme.txt', 'main.cpp'])]"
     
@@ -16,7 +19,7 @@ class test(unittest.TestCase):
         b = BytesIO()
         with writer(b) as f:
             f.write(self.sample_commit1())
-        print(b.getbuffer().tobytes())
+        print(tohex(b.getbuffer().tobytes()))
         self.assertEquals(b.getbuffer(),self.sample_code)
     
     def test_double_open_double_write(self):
