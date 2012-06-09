@@ -1,5 +1,5 @@
 import unittest
-from _format import format
+from ._format import format
 
 class test(unittest.TestCase):
     def setUp(self):

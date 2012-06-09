@@ -14,6 +14,7 @@ def tohex(b):
 
 class test(unittest.TestCase):
     sample_code = tobytes('0000009a') + b"[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ['readme.txt', 'main.cpp'])]"
+    double_code = b"\x00\x00\x00\x9a[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ['readme.txt', 'main.cpp'])]\x00\x00\x00\x9b[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 16, 17, 22, 333)), ('range', (123, 520)), ('files', ['blue.txt', 'test.rar'])]"
     
     def test_write(self):
         b = BytesIO()
@@ -28,7 +29,8 @@ class test(unittest.TestCase):
             f.write(self.sample_commit1())
         with writer(b) as f:
             f.write(self.sample_commit2())
-            
+        print(b.getbuffer().tobytes())
+        
     def test_illegal(self):
         b = BytesIO()
         with writer(b) as f:
