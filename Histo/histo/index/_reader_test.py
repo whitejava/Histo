@@ -17,7 +17,7 @@ class test(unittest.TestCase):
         with reader(b) as f:
             commit = f.read()
         self.assertEquals(commit, self.s)
-        
+    
     def test_length_error(self):
         b = BytesIO(tobytes('000000ff')+b'[]')
         with self.assertRaises(Exception):
@@ -29,3 +29,8 @@ class test(unittest.TestCase):
         with self.assertRaises(Exception):
             with reader(b) as f:
                 f.read()
+    
+    def test_eof(self):
+        b = BytesIO()
+        with reader(b) as f:
+            self.assertEquals(f.read(), None)
