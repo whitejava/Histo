@@ -5,6 +5,7 @@ class test(unittest.TestCase):
     def setUp(self):
         self.s = [('version', 0),
                   ('commit_time',(2012,6,9)),
+                  ('name','asdf')
                   ('last_modify',(2012,6,9,1,1,1)),
                   ('range',(0,3)),
                   ('files',['Reader.java', 'reader.py'])]

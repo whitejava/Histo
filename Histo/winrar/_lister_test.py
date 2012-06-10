@@ -1,0 +1,36 @@
+import unittest
+from .lister import lister
+
+class test(unittest.TestCase):
+    def test_normal(self):
+        expect = ['1.txt','2','2/3.txt']
+        self.assertEquals(expect, self._list('normal'))
+    
+    def test_embed(self):
+        expect = ['1.txt', '2.rar', '2.rar>>3.txt']
+        self.assertEquals(expect, self._list('embed'))
+    
+    def test_part_unlistable(self):
+        expect = ['1.txt','2','2/3.rar']
+        self.assertEquals(expect, self._list('part_unlistable'))
+        
+    def test_unlistable(self):
+        expect = ['?']
+        self.assertEquals(expect, self._list('unlistable'))
+        
+    def test_encrypt(self):
+        expect = ['?']
+        self.assertEquals(expect, self._list('encrypt'))
+    
+    def test_part_encrypt(self):
+        expect = ['1.txt','2.rar']
+        self.assertEquals(expect, self._list('part_encrypt'))
+    
+    def test_hidden(self):
+        expect = ['1.jpg','1.jpg>>2.txt']
+        self.assertEquals(expect, self._list('hidden'))
+    
+    def _list(self,x):
+        import os
+        filename = os.path.join(os.path.dirname(__file__),'_test_rar',x+'.rar')
+        return lister(filename).list()
