@@ -32,6 +32,14 @@ class test(unittest.TestCase):
         code = c.encrypt(b'abc')
         print(tohex(code))
     
+    def test_encrypt_decrypt_with_wide_range_of_length(self):
+        for i in range(20):
+            c = cipher(self.key)
+            text = b'a' * i
+            encrypt = c.encrypt(text)
+            decrypt = c.decrypt(encrypt)
+            self.assertEquals(text, decrypt)
+    
     def test_decrypt(self):
         c = cipher(self.key)
         code1 = self._cipher_abc
