@@ -1,19 +1,25 @@
 import unittest
 from io import BytesIO
 from .loader import loader
+from .writer import writer
 
 class test(unittest.TestCase):
     def test_load(self):
-        code = b"\x00\x00\x00\x9a[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ['readme.txt', 'main.cpp'])]\x00\x00\x00\x9b[('version', 0), ('commit_time', (2012, 6, 9)), ('last_modify', (2012, 6, 9, 16, 17, 22, 333)), ('range', (123, 520)), ('files', ['blue.txt', 'test.rar'])]"
-        expect = [[('version',0),
+        s = [(('version',0),
              ('commit_time',(2012,6,9)),
+             ('name','sample1'),
              ('last_modify',(2012,6,9,0,11,22,333)),
              ('range',(0,123)),
-             ('files',['readme.txt','main.cpp'])],
-             [('version',0),
+             ('files',('readme.txt','main.cpp'))),
+             (('version',0),
              ('commit_time',(2012,6,9)),
+             ('name','sample2'),
              ('last_modify',(2012,6,9,16,17,22,333)),
              ('range',(123,520)),
-             ('files',['blue.txt','test.rar'])]]
-        actual = loader(BytesIO(code)).load()
-        self.assertEquals(expect, actual)
+             ('files',('blue.txt','test.rar')))]
+        io = BytesIO()
+        with writer(io) as f:
+            for e in s:
+                f.write(e)
+        actual = loader(BytesIO(io.getvalue())).load()
+        self.assertEquals(s, actual)
