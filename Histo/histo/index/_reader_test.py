@@ -2,17 +2,13 @@ import unittest
 from io import BytesIO
 from ._reader import reader
 from .writer import writer
+from ._test_common import common
 
 def tobytes(a):
     return bytes([int(a[i:i+2],16)for i in range(0,len(a),2)])
 
 class test(unittest.TestCase):
-    s = (('version', 0),
-         ('commit_time',(2012, 6, 9)),
-         ('name','sample'),
-         ('last_modify', (2012, 6, 9, 0, 11, 22, 333)),
-         ('range', (0, 123)),
-         ('files', ('readme.txt', 'main.cpp')))
+    s = common().sample
     
     def setUp(self):
         x = BytesIO()

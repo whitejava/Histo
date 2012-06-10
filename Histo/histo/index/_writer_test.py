@@ -2,6 +2,7 @@ import unittest
 from io import BytesIO
 from .writer import writer
 from .bad_commit_error import bad_commit_error
+from ._test_common import common
 
 def tobytes(a):
     r=[]
@@ -13,8 +14,10 @@ def tohex(b):
     return ''.join(['{:02x}'.format(e) for e in b])
 
 class test(unittest.TestCase):
-    sample_code = b"\x00\x00\x00\xaf(('version', 0), ('commit_time', (2012, 6, 9)), ('name', 'sample1'), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ('readme.txt', 'main.cpp')))"
-    double_code = b"\x00\x00\x00\xaf(('version', 0), ('commit_time', (2012, 6, 9)), ('name', 'sample1'), ('last_modify', (2012, 6, 9, 0, 11, 22, 333)), ('range', (0, 123)), ('files', ('readme.txt', 'main.cpp')))\x00\x00\x00\xb0(('version', 0), ('commit_time', (2012, 6, 9)), ('name', 'sample2'), ('last_modify', (2012, 6, 9, 16, 17, 22, 333)), ('range', (123, 520)), ('files', ('blue.txt', 'test.rar')))"
+    sample_code = b"\x00\x00\x00\xbe(('version', 0), ('commit_time', (2012, 6, 9, 0, 0, 0, 123456)), ('name', 'Test'), ('last_modify', (2012, 6, 9, 1, 1, 1, 123456)), ('range', (0, 3)), ('files', ('Reader.java', 'reader.py')))"
+    double_code = b"\x00\x00\x00\xbe(('version', 0), ('commit_time', (2012, 6, 9, 0, 0, 0, 123456)), ('name', 'Test'), ('last_modify', (2012, 6, 9, 1, 1, 1, 123456)), ('range', (0, 3)), ('files', ('Reader.java', 'reader.py')))\x00\x00\x00\xc1(('version', 0), ('commit_time', (2012, 6, 9, 0, 0, 0, 123456)), ('name', 'Sample2'), ('last_modify', (2012, 6, 7, 1, 1, 1, 123456)), ('range', (0, 3)), ('files', ('Reader.java', 'reader.py')))"
+    sample1 = common().sample
+    sample2 = common().sample2
     
     def test_write(self):
         b = BytesIO()
@@ -49,17 +52,3 @@ class test(unittest.TestCase):
             pass
         with a:
             pass
-    
-    sample1 = (('version',0),
-                ('commit_time',(2012,6,9)),
-                ('name','sample1'),
-                ('last_modify',(2012,6,9,0,11,22,333)),
-                ('range',(0,123)),
-                ('files',('readme.txt','main.cpp')))
-
-    sample2 = (('version',0),
-                ('commit_time',(2012,6,9)),
-                ('name','sample2'),
-                ('last_modify',(2012,6,9,16,17,22,333)),
-                ('range',(123,520)),
-                ('files',('blue.txt','test.rar')))

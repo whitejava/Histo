@@ -40,7 +40,7 @@ class format:
     def _check_time(self,v):
         if type(v) != tuple:
             return False
-        if len(v) <= 0:
+        if len(v) != 7:
             return False
         for e in v:
             if type(e) != int:
