@@ -4,8 +4,10 @@ from ..decrypt_error import decrypt_error
 
 class cipher:
     def __init__(self,key):
+        if type(key) != bytes:
+            raise TypeError()
         if len(key) != 32:
-            raise Exception('key length error')
+            raise ValueError('key length error')
         self._key = key
         self._block_size = 16
 
