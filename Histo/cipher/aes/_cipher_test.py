@@ -75,7 +75,7 @@ class test(unittest.TestCase):
     
     def test_decrypt_encrypt_diffrent_lengths(self):
         self._random_iv()
-        for i in range(30):
+        for i in range(20):
             self._decrypt_encrypt(bytes(i))
     
     def _decrypt_encrypt(self, text):
