@@ -5,10 +5,10 @@ class test(unittest.TestCase):
     def setUp(self):
         self.s = [('version', 0),
                   ('commit_time',(2012,6,9)),
-                  ('name','asdf')
+                  ('name','Test'),
                   ('last_modify',(2012,6,9,1,1,1)),
                   ('range',(0,3)),
-                  ('files',['Reader.java', 'reader.py'])]
+                  ('files',('Reader.java', 'reader.py'))]
     
     def test_correct(self):
         self.good()
@@ -29,26 +29,34 @@ class test(unittest.TestCase):
         self.s[1] = ('commit_time', (2011.1, 1))
         self.bad()
     
-    def test_last_modify(self):
-        self.s[2] = ('last_modify', (2012,))
+    def test_name(self):
+        self.s[2] = ('name', None)
+        self.bad()
+        self.s[2] = ('name', 'a')
         self.good()
-        self.s[2] = ('last_modify', None)
+        self.s[2] = ('name', '')
+        self.good()
+    
+    def test_last_modify(self):
+        self.s[3] = ('last_modify', (2012,))
+        self.good()
+        self.s[3] = ('last_modify', None)
         self.bad()
     
     def test_range(self):
-        self.s[3] = ('range', (0,2))
+        self.s[4] = ('range', (0,2))
         self.good()
-        self.s[3] = ('range', (-1,10))
+        self.s[4] = ('range', (-1,10))
         self.bad()
-        self.s[3] = ('range', (10,9))
+        self.s[4] = ('range', (10,9))
         self.bad()
     
     def test_files(self):
-        self.s[4] = ('files', [])
+        self.s[5] = ('files', ())
         self.good()
-        self.s[4] = ('files', 123)
+        self.s[5] = ('files', 123)
         self.bad()
-        self.s[4] = ('files', [b'bytes'])
+        self.s[5] = ('files', (b'bytes'))
         self.bad()
     
     def test_item_error(self):
@@ -71,12 +79,12 @@ class test(unittest.TestCase):
         del self.s[-1]
         self.bad()
     
-    def test_not_commit(self):
+    def test_type_error(self):
         self.s = dict(self.s)
         self.bad()
         
     def good(self):
-        self.assertTrue(format().check(self.s))
+        self.assertTrue(format().check(tuple(self.s)))
     
     def bad(self):
-        self.assertFalse(format().check(self.s))
+        self.assertFalse(format().check(tuple(self.s)))

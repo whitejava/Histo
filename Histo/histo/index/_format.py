@@ -1,15 +1,15 @@
 class format:
     def check(self, c):
-        if type(c) != list:
+        if type(c) != tuple:
             return False
-        if len(c) != 5:
+        if len(c) != 6:
             return False
         for e in c:
             if type(e) != tuple:
                 return False
             if len(e) != 2:
                 return False
-        keys = ['version','commit_time','last_modify','range','files']
+        keys = ['version','commit_time','name','last_modify','range','files']
         for a,b in zip([e[0] for e in c],keys):
             if a != b:
                 return False
@@ -17,11 +17,13 @@ class format:
             return False
         if not self._check_commit_time(c[1][1]):
             return False
-        if not self._check_last_modify(c[2][1]):
+        if not self._check_name(c[2][1]):
             return False
-        if not self._check_range(c[3][1]):
+        if not self._check_last_modify(c[3][1]):
             return False
-        if not self._check_files(c[4][1]):
+        if not self._check_range(c[4][1]):
+            return False
+        if not self._check_files(c[5][1]):
             return False
         return True
     
@@ -63,9 +65,14 @@ class format:
         return True
     
     def _check_files(self,v):
-        if type(v) != list:
+        if type(v) != tuple:
             return False
         for e in v:
             if type(e) != str:
                 return False
+        return True
+    
+    def _check_name(self,v):
+        if type(v) != str:
+            return False
         return True
