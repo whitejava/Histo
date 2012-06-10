@@ -29,11 +29,10 @@ class test(unittest.TestCase):
         method = case['method']
         cipher = cipher(key)
         if method == 'encrypt':
-            actual = cipher._encrypt_with_iv_no_padding(input, iv)
-        elif method == 'decrypt':
-            actual = cipher._decrypt_with_iv_no_padding(output, iv)
+            call = cipher._encrypt_with_iv_no_padding
         else:
-            self.fail('unknown method')
+            call = cipher._decrypt_with_iv_no_padding
+        actual = call(input, iv)
         from hex import hex
         print('{} {} key {} iv {} = {}'.format(method, hex.encode(input), hex.encode(key), hex.encode(iv), hex.encode(output)))
         self.assertEquals(output, actual)
