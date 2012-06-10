@@ -29,9 +29,13 @@ class cipher:
         return bytes([randint(0,255) for _ in range(AES.block_size)])
     
     def decrypt(self, b):
-        if type(b) != bytes:
-            raise Exception('cipher text type error')
+        if type(b) is not bytes:
+            raise TypeError('decrypt input type error')
         from Crypto.Cipher import AES
+        if len(b) < AES.block_size:
+            raise ValueError('decrypt input length error')
+        if len(b) % AES.block_size:
+            raise ValueError('decrypt input length error')
         iv = b[:AES.block_size]
         b = b[AES.block_size:]
         return self._decrypt_with_iv(b, iv)
@@ -46,11 +50,12 @@ class cipher:
         return c.decrypt(bytes(b))
     
     def _padding(self,b):
-        from .pkcs7padding import padding
-        from Crypto.Cipher import AES
-        return padding(AES.block_size).padding(b)
+        return self._get_padding().encode(b)
     
     def _unpadding(self,b):
-        from .pkcs7padding import padding
+        return self._get_padding().decode(b)
+    
+    def _get_padding(self):
+        from ._pkcs7padding import padding
         from Crypto.Cipher import AES
-        return padding(AES.block_size).unpadding(b)
+        return padding(AES.block_size)
