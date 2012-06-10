@@ -29,20 +29,20 @@ class repo:
                 self._data.write(read)
     
     def _make_index(self,rar,commit_time,name,range):
-        import datetime
         last_modify = self._get_last_modify(rar)
         files = self._list_rar(rar)
         c = (('version',0),
              ('commit_time', self._totuple(commit_time)),
              ('name', name),
-             ('last_modify', self._totuple(datetime.datetime.fromtimestamp(last_modify))),
+             ('last_modify', self._totuple(last_modify)),
              ('range', range),
              ('files', tuple(files)))
         return c
     
     def _get_last_modify(self,file):
         import os
-        return os.path.getmtime(file)
+        import datetime
+        return datetime.datetime.fromtimestamp(os.path.getmtime(file))
     
     def _totuple(self,t):
         return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
