@@ -28,3 +28,6 @@ class test(unittest.TestCase):
         b.dump(0,b'123')
         b.delete(0)
         assert not b.exists(0)
+
+    def test_minus_id(self):
+        pass

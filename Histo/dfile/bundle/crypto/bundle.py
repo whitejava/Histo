@@ -3,10 +3,12 @@ class bundle:
         self._base = base
         self._cipher = cipher
     
-    def dump(self,n,b):
-        code = self._cipher.encrypt(b)
-        return self._base.dump(n,code)
+    def dump(self, id, data):
+        if type(data) is not bytes:
+            raise TypeError('dump data type error')
+        code = self._cipher.encrypt(data)
+        return self._base.dump(id, code)
     
-    def load(self,n):
+    def load(self, n):
         code = self._base.load(n)
         return self._cipher.decrypt(code)
