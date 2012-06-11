@@ -12,16 +12,16 @@ class cipher:
         iv = self._get_random_iv()
         return self._encrypt_wrap_iv(b, iv)
     
-    def decrypt(self, b):
-        if type(b) is not bytes:
+    def decrypt(self, data):
+        if type(data) is not bytes:
             raise TypeError('decrypt input type error')
-        if len(b) < self._block_size:
+        if len(data) < self._block_size:
             raise ValueError('decrypt input length error')
-        if len(b) % self._block_size:
+        if len(data) % self._block_size:
             raise ValueError('decrypt input length error')
-        iv = b[:self._block_size]
-        b = b[self._block_size:]
-        return self._decrypt_with_iv(b, iv)
+        iv = data[:self._block_size]
+        data = data[self._block_size:]
+        return self._decrypt_with_iv(data, iv)
     
     def _get_random_iv(self):
         from Crypto.Random.random import randint
