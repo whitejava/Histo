@@ -43,15 +43,7 @@ class test(unittest.TestCase):
     def _good_dump(self, n, data = b'123'):
         self._dump(n, data)
         self._load(n, data)
-    
-    def _bad_dump(self, n, message, data = b'123'):
-        try:
-            self._dump(n, data)
-        except Exception as e:
-            self.assertEquals(message, e.args[0])
-        else:
-            self.fail('expect exception')
-    
+
     def _dump(self, n, data):
         self._bundle.dump(n, data)
     
@@ -62,25 +54,21 @@ class test(unittest.TestCase):
         self.assertEquals(expect, self._bundle.exists(n))
     
     def _bad_exists(self, n, message):
-        try:
+        with self._expect_error(message):
             self._bundle.exists(n)
-        except Exception as e:
-            self.assertEquals(e.args[0], message)
-        else:
-            self.fail('expect exception')
     
     def _bad_broken(self, li, message):
-        try:
+        with self._expect_error(message):
             self._broken(li)
-        except Exception as e:
-            self.assertEquals(message, e.args[0])
-        else:
-            self.fail('expect exception')
             
     def _bad_load(self, n, message):
-        try:
+        with self._expect_error(message):
             self._bundle.load(n)
-        except Exception as e:
-            self.assertEquals(message, e.args[0])
-        else:
-            self.fail('expect exception')
+            
+    def _bad_dump(self, n, message, data = b'123'):
+        with self._expect_error(message):
+            self._dump(n, data)
+    
+    def _expect_error(self, message):
+        from expecterr.expect_error import expect_error
+        return expect_error(message)
