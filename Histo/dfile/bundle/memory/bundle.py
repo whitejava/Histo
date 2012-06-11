@@ -2,17 +2,20 @@ class bundle:
     def __init__(self):
         self.files = {}
     
-    def dump(self,n,data):
-        self.files[n] = data
+    def dump(self, id, data):
+        self.files[id] = data
     
-    def load(self,n):
-        return self.files[n]
+    def load(self, id):
+        self._ensure_id_exists(id)
+        return self.files[id]
     
-    def exists(self,n):
-        for e in self.files.keys():
-            if e == n:
-                return True
-        return False
+    def exists(self, id):
+        return id in self.files.keys()
     
-    def delete(self,n):
-        del self.files[n]
+    def delete(self, id):
+        self._ensure_id_exists(id)
+        del self.files[id]
+    
+    def _ensure_id_exists(self, id):
+        if not self.exists(id):
+            raise KeyError('id not exists')
