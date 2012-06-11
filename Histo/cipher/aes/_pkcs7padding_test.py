@@ -110,17 +110,13 @@ class test(unittest.TestCase):
         return padding(self._size)
 
     def _bad_encode(self, message):
-        try:
+        with self._expect_error(message):
             self._encode()
-        except Exception as e:
-            self.assertEquals(e.args[0], message)
-        else:
-            self.fail('expect encode error')
 
     def _bad_decode(self, message):
-        try:
+        with self._expect_error(message):
             self._decode()
-        except Exception as e:
-            self.assertEquals(e.args[0], message)
-        else:
-            self.fail('expect decode error')
+            
+    def _expect_error(self, message):
+        from expecterr.expect_error import expect_error
+        return expect_error(message)

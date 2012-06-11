@@ -116,17 +116,13 @@ class test(unittest.TestCase):
         print(encode(self._output))
     
     def _bad_encrypt(self, message):
-        try:
+        with self._expect_error(message):
             self._encrypt()
-        except Exception as e:
-            self.assertEquals(e.args[0], message)
-        else:
-            self.fail('expect encrypt error')
     
     def _bad_decrypt(self, message):
-        try:
+        with self._expect_error(message):
             self._decrypt()
-        except Exception as e:
-            self.assertEquals(e.args[0], message)
-        else:
-            self.fail('expect decrypt error')
+    
+    def _expect_error(self, message):
+        from expecterr.expect_error import expect_error
+        return expect_error(message)
