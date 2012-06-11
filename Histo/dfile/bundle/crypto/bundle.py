@@ -9,6 +9,6 @@ class bundle:
         code = self._cipher.encrypt(data)
         return self._base.dump(id, code)
     
-    def load(self, n):
-        code = self._base.load(n)
+    def load(self, id):
+        code = self._base.load(id)
         return self._cipher.decrypt(code)
