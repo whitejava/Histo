@@ -1,5 +1,5 @@
 class writer:
-    def __init__(self,files,part_size):
+    def __init__(self, files, part_size):
         self._files = files
         self._part_size = part_size
         self._entered = False
