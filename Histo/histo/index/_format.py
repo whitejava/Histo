@@ -1,4 +1,4 @@
-_keys = ['version','commit_time','name','last_modify','range','files']
+_keys = ['version','time','name','last-modify','range','summary']
 
 def _check_type(commit):
     if type(commit) is not tuple:
@@ -22,11 +22,11 @@ def _check_item_length(item):
 
 def _check_item_lengths(commit):
     for e in commit:
-        _check_item_lengths(e)
+        _check_item_length(e)
 
 def _check_item_names(commit):
     for a,b in zip(commit, _keys):
-        if a != b:
+        if a[0] != b:
             raise ValueError('item name error')
 
 def _check_version(version):
@@ -57,6 +57,8 @@ def _check_range_length(range):
 def _check_range_value(range):
     if range[0] > range[1]:
         raise ValueError('range value error')
+    if range[0] < 0:
+        raise ValueError('range value minus')
 
 def _check_range(range):
     _check_range_type(range)
@@ -75,7 +77,7 @@ def _check_items(commit):
         _check_range,
         _check_summary]
     for i,check in enumerate(steps):
-        check(commit[i])
+        check(commit[i][1])
 
 def check(commit):
     steps = [

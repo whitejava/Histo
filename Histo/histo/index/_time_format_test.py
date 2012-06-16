@@ -17,6 +17,10 @@ class test(TestCase):
         self._input = '123'
         self._bad('input type error')
     
+    def test_item_type_error(self):
+        self._input = (2012,1,2,3,4,5,1.12)
+        self._bad('item type error')
+    
     def _good(self):
         self._check()
     
