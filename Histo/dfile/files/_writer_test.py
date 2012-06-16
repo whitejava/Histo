@@ -55,6 +55,13 @@ class test(unittest.TestCase):
         f.close()
         with self.assertRaises(Exception):
             f.write(b'234')
+            
+    def test_write_type_error(self):
+        with self._expect_error('write input type error'):
+            self._open_write([1])
+            
+    def test_write_id_allow(self):
+        self._open_write(id = 1.5)
     
     def _good_load(self, expect = None, id = 0):
         self._output = self._bundle.load(id)
@@ -68,3 +75,7 @@ class test(unittest.TestCase):
     def _get_bundle(self):
         from ..bundle.memory.bundle import bundle
         return bundle()
+    
+    def _expect_error(self, message):
+        from expecterr.expect_error import expect_error
+        return expect_error(message)

@@ -77,7 +77,7 @@ class test(unittest.TestCase):
             assert f.read(1) == b'1'
             with self.assertRaises(Exception):
                 f.read(1)
-    
+
     def test_read_after_error(self):
         d = {}
         with self._reader(b'123', out=d) as f:

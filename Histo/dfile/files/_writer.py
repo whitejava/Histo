@@ -1,16 +1,15 @@
-from ._bytes_io.writer import writer as bytes_writer
-
 class writer:
     def __init__(self, bundle, n):
         self._bundle = bundle
         self._n = n
         self._buffer = bytearray()
-        self._bytes_writer = bytes_writer(self._buffer)
         self._closed = False
     
     def write(self, b):
         self._ensure_not_closed()
-        self._bytes_writer.write(b)
+        if type(b) is not bytes:
+            raise TypeError('write input type error')
+        self._buffer.extend(b)
     
     def close(self):
         self._ensure_not_closed()
