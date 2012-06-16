@@ -1,78 +1,89 @@
-class format:
-    def check(self, c):
-        if type(c) != tuple:
-            return False
-        if len(c) != 6:
-            return False
-        for e in c:
-            if type(e) != tuple:
-                return False
-            if len(e) != 2:
-                return False
-        keys = ['version','commit_time','name','last_modify','range','files']
-        for a,b in zip([e[0] for e in c],keys):
-            if a != b:
-                return False
-        if not self._check_version(c[0][1]):
-            return False
-        if not self._check_commit_time(c[1][1]):
-            return False
-        if not self._check_name(c[2][1]):
-            return False
-        if not self._check_last_modify(c[3][1]):
-            return False
-        if not self._check_range(c[4][1]):
-            return False
-        if not self._check_files(c[5][1]):
-            return False
-        return True
-    
-    def _check_version(self,v):
-        if type(v) != int:
-            return False
-        if v != 0:
-            return False
-        return True
-    
-    def _check_commit_time(self,v):
-        return self._check_time(v)
-    
-    def _check_time(self,v):
-        if type(v) != tuple:
-            return False
-        if len(v) != 7:
-            return False
-        for e in v:
-            if type(e) != int:
-                return False
-        return True
-    
-    def _check_last_modify(self,v):
-        return self._check_time(v)
-    
-    def _check_range(self,v):
-        if type(v) != tuple:
-            return False
-        if len(v) != 2:
-            return False
-        for e in v:
-            if type(e) != int:
-                return False
-            if e < 0:
-                return False
-        if v[0] > v[1]:
-            return False
-        return True
-    
-    def _check_files(self,v):
-        if type(v) != tuple:
-            return False
-        for e in v:
-            if type(e) != str:
-                return False
-        return True
-    
-    def _check_name(self,v):
-        if type(v) != str:
-            return False
-        return True
+_keys = ['version','commit_time','name','last_modify','range','files']
+
+def _check_type(commit):
+    if type(commit) is not tuple:
+        raise TypeError('input type error')
+
+def _check_length(commit):
+    if len(commit) is not len(_keys):
+        raise ValueError('input length error')
+
+def _check_item_type(item):
+    if type(item) is not tuple:
+        raise TypeError('item type error')
+
+def _check_item_types(commit):
+    for e in commit:
+        _check_item_type(e)
+
+def _check_item_length(item):
+    if len(item) is not 2:
+        raise ValueError('item length error')
+
+def _check_item_lengths(commit):
+    for e in commit:
+        _check_item_lengths(e)
+
+def _check_item_names(commit):
+    for a,b in zip(commit, _keys):
+        if a != b:
+            raise ValueError('item name error')
+
+def _check_version(version):
+    if type(version) is not int:
+        raise ValueError('version type error')
+    if version is not 0:
+        raise ValueError('version value error')
+
+def _check_time(time):
+    from . import _time_format
+    _time_format.check(time)
+
+def _check_name(name):
+    if type(name) is not str:
+        raise TypeError('name type error')
+
+def _check_last_modify(last_modify):
+    _check_time(last_modify)
+
+def _check_range_type(range):
+    if type(range) is not tuple:
+        raise TypeError('range type error')
+
+def _check_range_length(range):
+    if len(range) is not 2:
+        raise ValueError('range length error')
+
+def _check_range_value(range):
+    if range[0] > range[1]:
+        raise ValueError('range value error')
+
+def _check_range(range):
+    _check_range_type(range)
+    _check_range_length(range)
+    _check_range_value(range)
+
+def _check_summary(summary):
+    if type(summary) is not str:
+        raise TypeError('summary type error')
+
+def _check_items(commit):
+    steps = [_check_version,
+        _check_time,
+        _check_name,
+        _check_last_modify,
+        _check_range,
+        _check_summary]
+    for i,check in enumerate(steps):
+        check(commit[i])
+
+def check(commit):
+    steps = [
+        _check_type,
+        _check_length,
+        _check_item_types,
+        _check_item_lengths,
+        _check_item_names,
+        _check_items]
+    for e in steps:
+        e(commit)

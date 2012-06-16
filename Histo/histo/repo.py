@@ -1,12 +1,25 @@
-from winrar.lister import lister
 from .index.writer import writer as index_writer
 
+def _copy(input, output):
+    
+
 class repo:
-    def __init__(self,index,data):
-        self._index = index
-        self._data = data
+    def __init__(self, index_output, data_output):
+        self._index_output = index_output
+        self._data_output = data_output
+    
+    def commit_file(self, filename, commit_name, commit_time = None):
+        start = self._data_output.tell()
+        _copy(filename, self._data_output)
+        end = self._data_output.tell()
+        index = _make_index(commit_time = commit_time,
+                            commit_name = commit_name,
+                            summary = summary,
+                            range = (start, end))
     
     def commit_rar(self, rar, name, commit_time = None):
+        
+        
         start = self._data.tell()
         self._write_data(file=rar)
         end = self._data.tell()

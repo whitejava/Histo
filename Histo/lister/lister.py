@@ -4,7 +4,6 @@ import os
 class lister:
     def __init__(self,rar):
         self._rar = rar
-        self._archive_extensions = 'RAR,ZIP,7Z,ACE,ARJ,BZ2,CAB,GZ,ISO,JAR,LZH,TAR,UUE,Z'.split(',')
 
     def list(self):
         r = []
