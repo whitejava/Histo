@@ -60,7 +60,7 @@ class writer:
     def _write_cache(self):
         if self._cache:
             with self._files.open_for_write(1+self._file_size//self._part_size) as f:
-                f.write(self._cache)
+                f.write(bytes(self._cache))
     
     def _save_state(self):
         with self._files.open_for_write(0) as f:

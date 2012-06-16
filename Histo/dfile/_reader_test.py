@@ -1,10 +1,10 @@
-import unittest
 from .bundle.memory.bundle import bundle
 from .reader import reader
 from .writer import writer
 from .files.files import files
+from unittest import TestCase
 
-class test(unittest.TestCase):
+class test(TestCase):
     def test_read(self):
         with self._reader(b'123') as f:
             assert f.read() == b'123'
