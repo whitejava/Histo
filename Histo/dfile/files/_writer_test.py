@@ -32,19 +32,6 @@ class test(unittest.TestCase):
             for e in input:
                 f.write(e)
     
-    def _good_load(self, expect = None, id = 0):
-        self._output = self._bundle.load(id)
-        self._good_output(expect)
-        
-    def _good_output(self, expect = None):
-        if expect is None:
-            expect = self._expect
-        self.assertEquals(expect, self._output)
-    
-    def _get_bundle(self):
-        from ..bundle.memory.bundle import bundle
-        return bundle()        
-    
     def test_before_close(self):
         b = bundle()
         b.dump(0,b'')
@@ -68,3 +55,16 @@ class test(unittest.TestCase):
         f.close()
         with self.assertRaises(Exception):
             f.write(b'234')
+    
+    def _good_load(self, expect = None, id = 0):
+        self._output = self._bundle.load(id)
+        self._good_output(expect)
+        
+    def _good_output(self, expect = None):
+        if expect is None:
+            expect = self._expect
+        self.assertEquals(expect, self._output)
+    
+    def _get_bundle(self):
+        from ..bundle.memory.bundle import bundle
+        return bundle()
