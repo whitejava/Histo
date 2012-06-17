@@ -1,4 +1,4 @@
-from ._format import format
+from . import _format as format
 
 class reader:
     def __init__(self,file):
@@ -19,8 +19,7 @@ class reader:
         return eval(str(data,'utf8'))
     
     def _check_commit(self,c):
-        if not format().check(c):
-            raise Exception('reading bad commitment')
+        format.check(c)
     
     def _read_data(self,length):
         r = self._file.read(length)
