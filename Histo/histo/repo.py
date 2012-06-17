@@ -1,64 +1,60 @@
-from .index.writer import writer as index_writer
+def _copy(input, output, chunk_size = 512*1024):
+    while True:
+        read = input.read(chunk_size)
+        if not read:
+            break
+        output.write(read)
 
-def _copy(input, output):
-    
+def _convert_time_to_tuple(t):
+    return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
+
+def _get_last_modify(filename):
+    import os
+    import datetime
+    return datetime.datetime.fromtimestamp(os.path.getmtime(filename))
+
+def _make_index(version,time,name,last_modify,range,summary):
+    return (('version',version),
+            ('time',time),
+            ('name',name),
+            ('last-modify',last_modify),
+            ('range',range),
+            ('summary',summary))
+
+def _get_now():
+    import datetime
+    return datetime.datetime.now()
+
+def _get_now_tuple():
+    return _convert_time_to_tuple(_get_now())
+
+def _get_last_modify_tuple(filename):
+    return _convert_time_to_tuple(_get_last_modify(filename))
 
 class repo:
     def __init__(self, index_output, data_output):
         self._index_output = index_output
         self._data_output = data_output
     
-    def commit_file(self, filename, commit_name, commit_time = None):
+    def commit_file(self, filename, name, summary, time = None):
+        if time == None:
+            time = _get_now_tuple()
         start = self._data_output.tell()
-        _copy(filename, self._data_output)
+        self._write_data(filename)
         end = self._data_output.tell()
-        index = _make_index(commit_time = commit_time,
-                            commit_name = commit_name,
-                            summary = summary,
-                            range = (start, end))
+        index = _make_index(version = 0,
+                            time = time,
+                            name = name,
+                            last_modify = _get_last_modify_tuple(filename),
+                            range = (start, end),
+                            summary = summary)
+        self._write_index(index)
     
-    def commit_rar(self, rar, name, commit_time = None):
-        
-        
-        start = self._data.tell()
-        self._write_data(file=rar)
-        end = self._data.tell()
-        index = self._make_index(rar=rar,commit_time=commit_time,name=name,range=(start,end))
-        with index_writer(self._index) as f:
-            f.write(index)
-    
-    def __enter__(self):
-        return self
-    
-    def __exit__(self,*k):
-        pass
-    
-    def _write_data(self,file,chunk_size = 512*1024):
-        with open(file,'rb') as f:
-            while True:
-                read = f.read(chunk_size)
-                if not read:
-                    break
-                self._data.write(read)
-    
-    def _make_index(self,rar,commit_time,name,range):
-        last_modify = self._get_last_modify(rar)
-        files = self._list_rar(rar)
-        c = (('version',0),
-             ('commit_time', self._totuple(commit_time)),
-             ('name', name),
-             ('last_modify', self._totuple(last_modify)),
-             ('range', range),
-             ('files', tuple(files)))
-        return c
-    
-    def _get_last_modify(self,file):
-        import os
-        import datetime
-        return datetime.datetime.fromtimestamp(os.path.getmtime(file))
-    
-    def _totuple(self,t):
-        return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
+    def _write_data(self, filename):
+        with open(filename, 'rb') as f:
+            _copy(f, self._data_output)
 
-    def _list_rar(self,rar):
-        return lister(rar).list()
+    def _write_index(self, index):
+        from .index.writer import writer
+        with writer(self._index_output) as f:
+            f.write(index)

@@ -1,6 +1,3 @@
-from .bad_commit_error import bad_commit_error
-from ._format import format
-
 class writer:
     def __init__(self,out):
         self._out = out
@@ -16,8 +13,8 @@ class writer:
         pass
     
     def _check_format(self,commit):
-        if not format().check(commit):
-            raise bad_commit_error()
+        from . import _format as format
+        format.check(commit)
         
     def _tobytes(self,commit):
         data = bytes(repr(commit),'utf8')
