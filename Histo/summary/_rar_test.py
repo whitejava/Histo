@@ -2,7 +2,7 @@ from unittest import TestCase
 
 def _tempdir(prefix = 'extract-rar-test-'):
     from tempdir.tempdir import tempdir
-    return tempdir(prefix)
+    return tempdir(prefix=prefix)
 
 def _expect_error(error):
     from expecterr.expect_error import expect_error
@@ -10,7 +10,7 @@ def _expect_error(error):
 
 def _get_test_file(filename):
     from os.path import join, dirname
-    return join(dirname(__file__), '_extract_rar_test', filename)
+    return join(dirname(__file__), '_rar', filename)
 
 def _list(folder):
     import os
@@ -20,7 +20,7 @@ def _list(folder):
             result.append(os.path.join(e[0],e2)[len(folder):])
     return result
 
-class test(TestCase):
+class extract_test(TestCase):
     def setUp(self):
         self._temp = _tempdir()
         self._target = self._temp.__enter__()
@@ -77,3 +77,19 @@ class test(TestCase):
     
     def _expect(self, v):
         self.assertEquals(v, self._output)
+
+class summary_test(TestCase):
+    def test_normal(self):
+        self._filename = 'normal.rar'
+        self._summary()
+        self._expect('')
+    
+    def test_encrypt(self):
+        self._filename = 'encrypt.rar'
+        self._summary()
+        self._expect('')
+    
+    def test_bad(self):
+        self._filename = 'bad.rar'
+        self._summary()
+        self._expect('')
