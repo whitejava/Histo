@@ -25,6 +25,14 @@ class test(TestCase):
         self._input = ':!@#$#!@#$///as/da/fs/d/result'
         self._good('result')
     
+    def test_linux_filename(self):
+        self._input = 'as:df:gh!<>/\\/\/\\\\\\/d/asdf/result'
+        self._good('result')
+    
+    def test_just_sep(self):
+        self._input = '/'
+        self._good('')
+    
     def _good(self, expect):
         self._run()
         self._good_output(expect)

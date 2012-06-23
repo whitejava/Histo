@@ -11,14 +11,14 @@ class test(TestCase):
     
     def test_no_extension(self):
         self._input = 'no-extension'
-        self._good(None)
+        self._good('')
     
     def test_folder_extension(self):
         import platform
         system = platform.system()
         if system == 'Linux':
             self._input = '/usr/pc.folder/text'
-            self._good(None)
+            self._good('')
         else:
             self.fail('unknown os')
     

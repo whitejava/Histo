@@ -32,7 +32,7 @@ class extract_test(TestCase):
         self._filename = _get_test_file('normal.rar')
         self._extract()
         self._list()
-        self._expect(['/a', '/a/2', '/a/3', '/a/1'])
+        self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
     def test_encrypt(self):
         self._filename = _get_test_file('encrypt.rar')
@@ -54,7 +54,7 @@ class extract_test(TestCase):
         self._filename = _get_test_file('contain space.rar')
         self._extract()
         self._list()
-        self._expect(['/a', '/a/2', '/a/3', '/a/1'])
+        self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
     def test_target_contain_space(self):
         with _tempdir('target contain space') as temp:
@@ -62,7 +62,7 @@ class extract_test(TestCase):
             self._target = temp
             self._extract()
             self._list()
-            self._expect(['/a', '/a/2', '/a/3', '/a/1'])
+            self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
     def _extract(self):
         from summary import _extract_rar
@@ -79,17 +79,32 @@ class extract_test(TestCase):
         self.assertEquals(v, self._output)
 
 class summary_test(TestCase):
+    def setUp(self):
+        self._name = 'sample'
+    
     def test_normal(self):
         self._filename = 'normal.rar'
         self._summary()
-        self._expect('')
-    
+        self._expect(('sample', ('rar', None, (('a', (('1', None), ('3', None), ('2', None))),))))
+        
     def test_encrypt(self):
         self._filename = 'encrypt.rar'
         self._summary()
-        self._expect('')
+        self._expect(('sample', ('rar', 'rar return error code 1', (('a', ()),))))
     
     def test_bad(self):
         self._filename = 'bad.rar'
         self._summary()
-        self._expect('')
+        self._expect(('sample', ('rar', 'rar return error code 10', ())))
+    
+    def test_embed(self):
+        self._filename = 'embed.rar'
+        self._summary()
+        self._expect(('sample', ('rar', 'rar return error code 10', ())))
+    
+    def _summary(self):
+        from summary import generate_summary
+        self._output = generate_summary(self._name, _get_test_file(self._filename))
+    
+    def _expect(self, v):
+        self.assertEquals(self._output, v)

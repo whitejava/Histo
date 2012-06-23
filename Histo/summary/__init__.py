@@ -6,7 +6,7 @@ def _get_extension(pathname):
     filename = _get_filename(pathname)
     split = filename.split('.')
     if len(split) == 1:
-        return None
+        return ''
     else:
         return split[-1]
 
@@ -19,13 +19,29 @@ def _extract_rar(filename, target):
         raise SystemError('rar return error code {}'.format(return_code))
 
 def _folder_summary(folder):
-    raise Exception('no impl')
+    import os
+    result = []
+    for files in os.listdir(folder):
+        for file in files:
+            path = os.path.join(folder, file)
+            result.append(generate_summary(file, path))
+    return tuple(result)
+
+def _is_directory(filename):
+    import os
+    return os.path.isdir(filename)
 
 def _rar_summary(filename):
     from tempdir.tempdir import tempdir
-    with tempdir('histo-rar-') as temp:
-        _extract_rar(filename, temp)
-        return _folder_summary(temp)
+    with tempdir(prefix='histo-rar-') as temp:
+        error = None
+        try:
+            _extract_rar(filename, temp)
+        except Exception as e:
+            error = e.args[0]
+            if error.startswith('rar return error code '):
+                pass
+        return ('rar', error, _folder_summary(temp))
 
 def _tar_summary(filename):
     pass
@@ -47,7 +63,11 @@ _dispatch_table = {
     'txt': _txt_summary,
 }
 
-def generate_summary(filename):
-    extension = _get_extension(filename).lower()
-    if extension in _dispatch_table:
-        return _dispatch_table[extension](filename)
+def generate_summary(name, filename):
+    if _is_directory(filename):
+        return (name, _folder_summary(filename))
+    else:
+        extension = _get_extension(filename).lower()
+        if extension in _dispatch_table:
+            return (name,_dispatch_table[extension](filename))
+        return (name, None)
