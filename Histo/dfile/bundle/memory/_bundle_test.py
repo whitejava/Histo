@@ -15,7 +15,7 @@ class test(TestCase):
         self._good_load()
     
     def test_load_not_exists(self):
-        self._error = 'id not exists'
+        self._error = "'id not exists'"
         self._bad_load()
     
     def test_not_exists(self):
@@ -42,7 +42,7 @@ class test(TestCase):
         self._dump()
     
     def test_delete_not_exists(self):
-        self._error = 'id not exists'
+        self._error = "'id not exists'"
         self._bad_delete()
     
     def test_dump_overwrite(self):
