@@ -12,14 +12,6 @@ def _get_test_file(filename):
     from os.path import join, dirname
     return join(dirname(__file__), '_rar', filename)
 
-def _list(folder):
-    import os
-    result = []
-    for e in os.walk(folder):
-        for e2 in e[1] + e[2]:
-            result.append(os.path.join(e[0],e2)[len(folder):])
-    return result
-
 class extract_test(TestCase):
     def setUp(self):
         self._temp = _tempdir()
@@ -36,19 +28,19 @@ class extract_test(TestCase):
     
     def test_encrypt(self):
         self._filename = _get_test_file('encrypt.rar')
-        self._bad_extract('rar error 1')
+        self._bad_extract('extract error 1')
     
     def test_bad(self):
         self._filename = _get_test_file('bad.rar')
-        self._bad_extract('rar error 10')
+        self._bad_extract('extract error 10')
     
     def test_nonexist_file(self):
         self._filename = _get_test_file('nonexist.rar')
-        self._bad_extract('rar error 10')
+        self._bad_extract('extract error 10')
     
     def test_command_inject(self):
         self._filename = '\"'
-        self._bad_extract('rar error 10')
+        self._bad_extract('extract error 10')
     
     def test_filename_contain_space(self):
         self._filename = _get_test_file('contain space.rar')
@@ -73,14 +65,16 @@ class extract_test(TestCase):
         self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
     def _extract(self):
-        _extract_archive('rar', self._filename, self._target)
+        from ._extract_archive import extract_archive
+        extract_archive('rar', self._filename, self._target)
     
     def _bad_extract(self, error):
         with _expect_error(error):
             self._extract()
         
     def _list(self):
-        self._output = _list(self._target)
+        from listfiles import listfiles
+        self._output = listfiles(self._target)
     
     def _expect(self, v):
         self.assertEquals(v, self._output)
@@ -97,17 +91,18 @@ class summary_test(TestCase):
     def test_encrypt(self):
         self._filename = 'encrypt.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar error 1', (('a', ()),))))
+        self._expect(('sample', ('rar', 'extract error 1', (('a', ()),))))
     
     def test_bad(self):
         self._filename = 'bad.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar error 10', ())))
+        self._expect(('sample', ('rar', 'extract error 10', ())))
     
     def test_embed(self):
         self._filename = 'embed.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar error 10', ())))
+        self._print_indent()
+        self._expect(('sample', ('rar', None, (('embed1.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),)))))), ('embed2.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),)))))), ('embed3.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))))))))))
     
     def _summary(self):
         from summary import generate_summary
@@ -115,3 +110,10 @@ class summary_test(TestCase):
     
     def _expect(self, v):
         self.assertEquals(self._output, v)
+    
+    def _print_output(self):
+        print(self._output)
+    
+    def _print_indent(self):
+        from indent import indent
+        print(indent(self._output))
