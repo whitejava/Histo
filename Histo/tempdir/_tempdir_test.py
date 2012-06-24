@@ -18,6 +18,7 @@ class test(unittest.TestCase):
             shutil.rmtree(d)
     
     def test_undeleteable(self):
+        # on linux, this test fails.
         with self.assertRaises(Exception):
             with tempdir() as d:
                 f = open(os.path.join(d,'1.txt'),'wb')
