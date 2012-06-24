@@ -36,19 +36,19 @@ class extract_test(TestCase):
     
     def test_encrypt(self):
         self._filename = _get_test_file('encrypt.rar')
-        self._bad_extract('rar return error code 1')
+        self._bad_extract('rar error 1')
     
     def test_bad(self):
         self._filename = _get_test_file('bad.rar')
-        self._bad_extract('rar return error code 10')
+        self._bad_extract('rar error 10')
     
     def test_nonexist_file(self):
         self._filename = _get_test_file('nonexist.rar')
-        self._bad_extract('rar return error code 10')
+        self._bad_extract('rar error 10')
     
     def test_command_inject(self):
         self._filename = '\"'
-        self._bad_extract('rar return error code 10')
+        self._bad_extract('rar error 10')
     
     def test_filename_contain_space(self):
         self._filename = _get_test_file('contain space.rar')
@@ -73,8 +73,7 @@ class extract_test(TestCase):
         self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
     def _extract(self):
-        from summary import _extract_rar
-        _extract_rar(self._filename, self._target)
+        _extract_archive('rar', self._filename, self._target)
     
     def _bad_extract(self, error):
         with _expect_error(error):
@@ -98,17 +97,17 @@ class summary_test(TestCase):
     def test_encrypt(self):
         self._filename = 'encrypt.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar return error code 1', (('a', ()),))))
+        self._expect(('sample', ('rar', 'rar error 1', (('a', ()),))))
     
     def test_bad(self):
         self._filename = 'bad.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar return error code 10', ())))
+        self._expect(('sample', ('rar', 'rar error 10', ())))
     
     def test_embed(self):
         self._filename = 'embed.rar'
         self._summary()
-        self._expect(('sample', ('rar', 'rar return error code 10', ())))
+        self._expect(('sample', ('rar', 'rar error 10', ())))
     
     def _summary(self):
         from summary import generate_summary

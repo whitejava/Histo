@@ -1,3 +1,7 @@
+def _is_directory(filename):
+    import os
+    return os.path.isdir(filename)
+
 def _get_filename(pathname):
     import os
     return pathname.split(os.path.sep)[-1]
@@ -10,14 +14,6 @@ def _get_extension(pathname):
     else:
         return split[-1]
 
-def _extract_rar(filename, target):
-    from subprocess import Popen, PIPE
-    proc = Popen(['rar', 'x', filename, target+'/'], stdin=PIPE)
-    proc.stdin.close() # prevent got blocked when should enter password.
-    return_code = proc.wait()
-    if return_code != 0:
-        raise SystemError('rar return error code {}'.format(return_code))
-
 def _folder_summary(folder):
     import os
     result = []
@@ -27,59 +23,29 @@ def _folder_summary(folder):
             result.append(generate_summary(file, path))
     return tuple(result)
 
-def _is_directory(filename):
-    import os
-    return os.path.isdir(filename)
-
-def _rar_summary(filename):
+def _archive_summary(filename, archive_type):
     from tempdir.tempdir import tempdir
-    with tempdir(prefix='histo-rar-') as temp:
+    from ._extract_archive import extract_error
+    from ._extract_archive import _extract_archive
+    with tempdir(prefix='histo-{}-'.format(archive_type)) as temp:
         error = None
         try:
-            _extract_rar(filename, temp)
-        except Exception as e:
-            error = e.args[0]
-            if error.startswith('rar return error code '):
-                pass
-            else:
-                raise
-        return ('rar', error, _folder_summary(temp))
+            _extract_archive(archive_type, filename, temp)
+        except extract_error as e:
+            error = str(e)
+        return (archive_type, error, _folder_summary(temp))
 
-def _extract_tar(filename, folder):
-    from subprocess import Popen
-    proc = Popen(['tar','-xf',filename,'-C',folder])
-    return_code = proc.wait()
-    if return_code != 0:
-        raise SystemError('tar return error code {}'.format(return_code))
-
-def _tar_summary(filename):
-    from tempdir.tempdir import tempdir
-    with tempdir(prefix='histo-tar-') as temp:
-        error = None
-        try:
-            _extract_tar(filename, temp)
-        except Exception as e:
-            error = e.args[0]
-            if error.startswith('tar return error code '):
-                pass
-            else:
-                raise
-        return ('tar', error, _folder_summary(temp))
-
-def _zip_summary(filename):
-    pass
-
-def _bz2_summary(filename):
-    pass
+def _archive_summarier(type):
+    return lambda x:_archive_summary(x,type)
 
 def _txt_summary(filename):
     pass
 
-_dispatch_table = {
-    'rar': _rar_summary,
-    'tar': _tar_summary,
-    'zip': _zip_summary,
-    'bz2': _bz2_summary,
+_summary_table = {
+    'rar': _archive_summarier('rar'),
+    'tar': _archive_summarier('tar'),
+    'zip': _archive_summarier('zip'),
+    'bz2': _archive_summarier('bz2'),
     'txt': _txt_summary,
 }
 
@@ -88,6 +54,6 @@ def generate_summary(name, filename):
         return (name, _folder_summary(filename))
     else:
         extension = _get_extension(filename).lower()
-        if extension in _dispatch_table:
-            return (name,_dispatch_table[extension](filename))
+        if extension in _summary_table:
+            return (name,_summary_table[extension](filename))
         return (name, None)
