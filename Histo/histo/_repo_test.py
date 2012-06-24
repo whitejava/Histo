@@ -29,7 +29,7 @@ class test(unittest.TestCase):
         self._set_time(None)
         self._good()
         self._print_output()
-    
+
     def _good(self, prefix = None):
         self._commit()
         if prefix is not None:
