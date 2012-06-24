@@ -64,6 +64,14 @@ class extract_test(TestCase):
             self._list()
             self._expect(['/a', '/a/1', '/a/3', '/a/2'])
     
+    def test_bad_target(self):
+        import os
+        self._filename = _get_test_file('normal.rar')
+        self._target = os.path.join(self._target, 'not-exist')
+        self._extract()
+        self._list()
+        self._expect(['/a', '/a/1', '/a/3', '/a/2'])
+    
     def _extract(self):
         from summary import _extract_rar
         _extract_rar(self._filename, self._target)

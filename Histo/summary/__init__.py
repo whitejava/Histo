@@ -41,10 +41,30 @@ def _rar_summary(filename):
             error = e.args[0]
             if error.startswith('rar return error code '):
                 pass
+            else:
+                raise
         return ('rar', error, _folder_summary(temp))
 
+def _extract_tar(filename, folder):
+    from subprocess import Popen
+    proc = Popen(['tar','-xf',filename,'-C',folder])
+    return_code = proc.wait()
+    if return_code != 0:
+        raise SystemError('tar return error code {}'.format(return_code))
+
 def _tar_summary(filename):
-    pass
+    from tempdir.tempdir import tempdir
+    with tempdir(prefix='histo-tar-') as temp:
+        error = None
+        try:
+            _extract_tar(filename, temp)
+        except Exception as e:
+            error = e.args[0]
+            if error.startswith('tar return error code '):
+                pass
+            else:
+                raise
+        return ('tar', error, _folder_summary(temp))
 
 def _zip_summary(filename):
     pass
