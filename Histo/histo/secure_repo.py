@@ -3,24 +3,28 @@ class secure_repo:
         import os
         from .repo import repo
         self._root = root
-        self._index_output = self._create_secure_dfile(os.path.join(root, 'index'))
-        self._data_output = self._create_secure_dfile(os.path.join(root, 'data'))
+        self._index_output = self._create_secure_dfile(os.path.join(root, 'index'), 'i{:06d}')
+        self._data_output = self._create_secure_dfile(os.path.join(root, 'data'), 'd{:06d}')
         self._repo = repo(self._index_output, self._data_output)
     
     def commit_file(self, filename, name, summary, time = None):
-        pass
+        self._repo.commit_file(filename, name, summary, time)
     
-    def _create_secure_dfile(self, folder):
+    def _create_secure_dfile(self, folder, idformat):
         import dfile
         from dfile.files.files import files
         from dfile.bundle.crypto.bundle import bundle as crypto_bundle
         from dfile.bundle.local.bundle import bundle as local_bundle
         cipher = self._create_cipher()
-        bundle = local_bundle(folder)
-        bundle = crypto_bundle(folder, cipher)
+        bundle = local_bundle(folder, idformat)
+        bundle = crypto_bundle(bundle, cipher)
         return dfile.writer(files(bundle))
     
     def _create_cipher(self):
         from cipher.aes.cipher import cipher
+        return cipher(self._load_key())
+    
+    def _load_key(self):
         from hex import hex
-        return cipher(hex.decode('00' * 32))
+        with open('histo-key') as f:
+            return hex.decode(f.read())
