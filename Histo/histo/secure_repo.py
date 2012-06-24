@@ -1,11 +1,12 @@
 class secure_repo:
-    def __init__(self, root):
+    def __init__(self, root, key):
         import os
         from .repo import repo
         self._root = root
         self._index_output = self._create_secure_dfile(os.path.join(root, 'index'), 'i{:06d}')
         self._data_output = self._create_secure_dfile(os.path.join(root, 'data'), 'd{:06d}')
         self._repo = repo(self._index_output, self._data_output)
+        self._key = key
     
     def commit_file(self, filename, name, summary, time = None):
         self._repo.commit_file(filename, name, summary, time)
@@ -22,9 +23,4 @@ class secure_repo:
     
     def _create_cipher(self):
         from cipher.aes.cipher import cipher
-        return cipher(self._load_key())
-    
-    def _load_key(self):
-        from hex import hex
-        with open('histo-key') as f:
-            return hex.decode(f.read())
+        return cipher(self._key)

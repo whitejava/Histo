@@ -1,5 +1,7 @@
 class bundle:
     def __init__(self, root, idformat):
+        import os
+        os.makedirs(root, exist_ok = True)
         self._root = root
         self._idformat = idformat
     
