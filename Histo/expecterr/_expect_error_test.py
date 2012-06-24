@@ -11,7 +11,7 @@ class test(unittest.TestCase):
                 pass
 
     def test_no_message_exception(self):
-        with self._expect_error('exception has no message'):
+        with self._expect_error('unexpected message: '):
             with self._expect_error('empty error'):
                 raise Exception()
     
@@ -23,7 +23,7 @@ class test(unittest.TestCase):
             raise Exception('test error')
     
     def test_unexpected_exception(self):
-        with self._expect_error('unexpected message'):
+        with self._expect_error('unexpected message: unexpected'):
             with self._expect_error('message'):
                 raise Exception('unexpected')
     
