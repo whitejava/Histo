@@ -1,36 +1,89 @@
-from pctest import test_case
+from pctest import testcase
 
-class encode_test(test_case):
-    def setUp(self):
-        test_case.setUp(self)
-        self._size = 3
-    
-    def test_0(self):
-        self._input = ''
-        self._run()
-        self.expect('030303')
-    
-    def test_1(self):
-        self._input = 'aa'
-        self._run()
-        self.expect('aa0202')
-    
-    def test_2(self):
-        self._input = 'aabb'
-        self._run()
-        self.expect('aabb01')
-    
-    def test_3(self):
-        self._input = 'aabbcc'
-        self._run()
-        self.expect('aabbcc030303')
-    
-    def _run(self):
-        from hex import hex
-        from ._pkcs7padding import padding
-        self._input = hex.decode(self._input)
-        self.output = padding(self._size).encode(self._input)
-        self.output = hex.encode(self.output)
+class test_encode(testcase):
+    def test(self):
+        from ._pkcs7padding import encode
+        self.batchtest(goodcases, 2, encode, [hex.decode, eval, hex.decode])
+        self.batchtest(badcases, 2, self.expecterror(encode), [eval, eval, None])
+
+goodcases = \
+'''
+aa
+1
+aa01
+
+
+2
+0202
+
+aa
+2
+aa01
+
+aabb
+2
+aabb0202
+
+
+3
+030303
+
+aa
+3
+aa0202
+
+aabb
+3
+aabb01
+
+aabbcc
+3
+aabbcc030303
+
+aabbcc
+None
+aabbcc0d0d0d0d0d0d0d0d0d0d0d0d0d
+'''
+
+badcases = \
+'''
+b''
+0
+error
+
+b''
+1.1
+error
+
+b''
+'a'
+error
+
+b''
+-1
+error
+
+b''
+-2
+error
+
+'a'
+3
+error
+
+[1]
+3
+error
+'''
+
+class encode_test2(test_case):
+    def test_good(self):
+        (cases = good_cases,
+          paramcount = 2,
+          method = encode,
+          translate = (hex.decode,
+                   eval,
+                   hex.decode))
 
 '''
 

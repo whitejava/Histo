@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-class test_case(TestCase):
+class testcase(TestCase):
     def setUp(self):
         self._pc_cleanups = []
     
