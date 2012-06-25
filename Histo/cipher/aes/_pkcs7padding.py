@@ -6,17 +6,15 @@ def _generate_pad(padsize):
     #Return
     return pad
 
-
-
 def encode(input, blocksize=16):
+    #Check parameter
+    if blocksize < 0: raise ValueError('block size must be greater than zero.')
     #Calculate pad size.
-    padsize = (len(input)-1) % blocksize +1
+    padsize = (blocksize-len(input)-1) % blocksize +1
     #Generate pad
     pad = _generate_pad(padsize)
     #Output
     return input + pad
-
-
 
 def decode(input):
     #Get pad size

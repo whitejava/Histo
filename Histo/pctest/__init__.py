@@ -7,20 +7,69 @@ class testcase(TestCase):
     def tearDown(self):
         for e in self._pc_cleanups:
             e()
-    
-    def expect(self, v):
-        self.assertEquals(v, self.output)
-    
-    def get_test_file(self, filename):
-        import os
-        return os.path.join(os.path.dirname(self.script_file), self.test_folder, filename)
 
-    def expect_error(self, error):
-        from expecterr.expect_error import expect_error
-        return expect_error(error)
+    def batchtest(self, data, paramcount, method, format):
+        #Split data by line.
+        data = data.split('\n')
+        #Strip first line, because it's empty.
+        data = data[1:]
+        #Group lines according to paramcount.
+        data = [[data[i+j] for j in range(paramcount+1)]for i in range(0,len(data),paramcount+2)]
+        #Get params from data.
+        params0 = [[e[i] for i in range(paramcount)] for e in data]
+        #Format params.
+        params = [[format[i](e[i])for i in range(len(e))]for e in params0]
+        #Get expects from data.
+        expects = [e[paramcount] for e in data]
+        #Define errors
+        errors = []
+        #Define fails
+        fails = []
+        #Run cases.
+        for i in range(len(params)):
+            #Call method
+            try:
+                result = method(*params[i])
+            except BaseException as e:
+                errors.append((i,e))
+            else:
+                #Format result
+                result = format[paramcount](result)
+                #Check result.
+                if result != expects[i]:
+                    fails.append((i, result))
+        def printcase(n):
+            #Print case number
+            print('Case {}'.format(n))
+            #Print params
+            for e in params0[n]:
+                print(e)
+            #Print expect
+            print('expect: {}'.format(expects[n]))
+        #Print errors
+        for caseid,error in errors:
+            print('{:+^20}'.format('Error'))
+            #Print case
+            printcase(caseid)
+            #Print error
+            print('error: {}'.format(repr(error)))
+        #Print fails
+        for caseid,result in fails:
+            print('{:+^20}'.format('Fail'))
+            #Print case
+            printcase(caseid)
+            #Print expect
+            print('got: {}'.format(result))
+        #Report unittest
+        if errors or fails:
+            self.fail()
     
-    def create_temp(self, prefix = ''):
-        from tempdir.tempdir import tempdir
-        t = tempdir(prefix = prefix)
-        self._pc_cleanups.append(lambda:t.__exit__())
-        return t.__enter__()
+    def expecterror(self, method):
+        def r(*k):
+            try:
+                result = method(*k)
+            except BaseException as e:
+                return e
+            else:
+                raise Exception('expect error, but {}'.format(result))
+        return r
