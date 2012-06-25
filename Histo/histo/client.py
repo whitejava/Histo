@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+
 def _cut(string, seg):
-    a = list(len(seg))
+    a = [None]*len(seg)
     a[0] = seg[0]
     for i in range(1,len(seg)):
         a[i] = a[i-1] + seg[i]
@@ -22,7 +24,7 @@ def _resolve_filename(filename):
 def commit_archive(filename):
     from io import BytesIO
     from struct import pack
-    from socket import socket
+    import socket
     import os
     datetime, name = _resolve_filename(filename)
     name = name.encode('utf8')
@@ -32,12 +34,16 @@ def commit_archive(filename):
     b.write(pack('i',len(datetime)))
     for e in datetime:
         b.write(pack('i',e))
-    b.write(os.path.getsize(filename))
-    s = socket(socket.AF_INET, socket.SOCK_STREAM)
+    b.write(pack('i',os.path.getsize(filename)))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('192.168.2.4', 13750))
     s.sendall(b.getvalue())
     with open(filename,'rb') as f:
-        read = f.read(128*1024)
-        if not read:
-            break
-        s.sendall(read)
+        while True:
+            read = f.read(128*1024)
+            if not read:
+                break
+            s.sendall(read)
+
+if __name__ == '__main__':
+    commit_archive("G:\\201206241236随手写.rar")
