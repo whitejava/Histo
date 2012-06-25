@@ -12,3 +12,6 @@ class bundle:
     def load(self, id):
         code = self._base.load(id)
         return self._cipher.decrypt(code)
+    
+    def exists(self, id):
+        return self._base.exists(id)

@@ -7,7 +7,7 @@ def _cut(string, seg):
         a[i] = a[i-1] + seg[i]
     a = [0] + a
     result = []
-    for i in range(1,len(seg)):
+    for i in range(1,len(a)):
         result.append(string[a[i-1]:a[i]])
     return result
 

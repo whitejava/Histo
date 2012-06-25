@@ -13,7 +13,7 @@ class writer:
     
     def close(self):
         self._ensure_not_closed()
-        self._bundle.dump(self._n, self._buffer)
+        self._bundle.dump(self._n, bytes(self._buffer))
         self._bundle = None
         self._closed = True
     

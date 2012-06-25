@@ -3,10 +3,10 @@ class secure_repo:
         import os
         from .repo import repo
         self._root = root
-        self._index_output = self._create_secure_dfile(os.path.join(root, 'index'), 'i{:06d}')
-        self._data_output = self._create_secure_dfile(os.path.join(root, 'data'), 'd{:06d}')
-        self._repo = repo(self._index_output, self._data_output)
         self._key = key
+        self._index_output = self._create_secure_dfile(os.path.join(root, 'index'), 'i{:06d}', 1024*1024)
+        self._data_output = self._create_secure_dfile(os.path.join(root, 'data'), 'd{:06d}', 10*1024*1024)
+        self._repo = repo(self._index_output, self._data_output)
     
     def commit_file(self, filename, name, summary, time = None):
         self._repo.commit_file(filename, name, summary, time)
@@ -20,15 +20,15 @@ class secure_repo:
         self._index_output.__exit__(*k)
         self._data_output.__exit__(*k)
     
-    def _create_secure_dfile(self, folder, idformat):
-        import dfile
+    def _create_secure_dfile(self, folder, idformat, partsize):
+        import dfile.writer
         from dfile.files.files import files
         from dfile.bundle.crypto.bundle import bundle as crypto_bundle
         from dfile.bundle.local.bundle import bundle as local_bundle
         cipher = self._create_cipher()
         bundle = local_bundle(folder, idformat)
         bundle = crypto_bundle(bundle, cipher)
-        return dfile.writer(files(bundle))
+        return dfile.writer.writer(files(bundle), partsize)
     
     def _create_cipher(self):
         from cipher.aes.cipher import cipher

@@ -1,12 +1,12 @@
 def _load_key():
     from hex import hex
     with open('/etc/histo-key') as f:
-        return hex.decode(f.read())
+        return hex.decode(f.read().strip())
 
 class my_repo:
     def __init__(self):
         from .secure_repo import secure_repo as repo
-        self._repo = repo(_load_key())
+        self._repo = repo('/var/histo', _load_key())
     
     def commit_file(self, filename, name, time = None):
         from summary import generate_summary
@@ -49,7 +49,7 @@ class commit_handler(StreamRequestHandler):
         else:
             time = tuple([int(unpack('i',self.rfile.read(4))[0])for _ in range(time)])
         log.write('time {}'.format(time))
-        size = unpack('q', self.rfile.read(8))
+        size = unpack('q', self.rfile.read(8))[0]
         log.write('size {}'.format(size))
         log.write('receiving data')
         from tempdir.tempdir import tempdir
@@ -71,6 +71,3 @@ def server():
     server = TCPServer(('0.0.0.0',13750), commit_handler)
     log.write('listening')
     server.serve_forever()
-
-if __name__ == '__main__':
-    server()

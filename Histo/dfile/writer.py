@@ -23,7 +23,7 @@ class writer:
         self._cache.extend(b)
         self._file_size += len(b)
 
-    def get_file_size(self):
+    def tell(self):
         self._ensure_in_with_block()
         return self._file_size
 
