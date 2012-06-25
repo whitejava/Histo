@@ -1,5 +1,5 @@
 from pctest import testcase
-from ._pkcs7padding import encode, decode
+from .pkcs7padding import encode, decode
 from hex import hex
 
 class test(testcase):
