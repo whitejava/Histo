@@ -37,17 +37,17 @@ class commit_handler(StreamRequestHandler):
     def handle(self):
         from struct import unpack
         log.write('on request')
-        name = unpack('i', self.rfile.read(4))
+        name = unpack('i', self.rfile.read(4))[0]
         log.write('name len {}'.format(name))
         name = self.rfile.read(name)
         name = str(name, 'utf8')
         log.write('name {}'.format(name))
-        time = unpack('i', self.rfile.read(4))
+        time = unpack('i', self.rfile.read(4))[0]
         log.write('time len {}'.format(time))
         if time == 0:
             time = None
         else:
-            time = tuple([int(self.rfile.read(4))for _ in range(time)])
+            time = tuple([int(unpack('i',self.rfile.read(4))[0])for _ in range(time)])
         log.write('time {}'.format(time))
         size = unpack('q', self.rfile.read(8))
         log.write('size {}'.format(size))
