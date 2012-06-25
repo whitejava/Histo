@@ -34,7 +34,7 @@ def commit_archive(filename):
     b.write(pack('i',len(datetime)))
     for e in datetime:
         b.write(pack('i',e))
-    b.write(pack('i',os.path.getsize(filename)))
+    b.write(pack('q',os.path.getsize(filename)))
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('192.168.2.4', 13750))
     s.sendall(b.getvalue())
