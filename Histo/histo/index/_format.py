@@ -66,8 +66,7 @@ def _check_range(range):
     _check_range_value(range)
 
 def _check_summary(summary):
-    if type(summary) is not str:
-        raise TypeError('summary type error')
+    pass
 
 def _check_items(commit):
     steps = [_check_version,
