@@ -1,3 +1,11 @@
+from Crypto.Cipher import AES
+
+def _encode(key, iv, data):
+    return AES.new(key, AES.MODE_CBC, iv).encrypt(data)
+
+def _decode(key, iv, data):
+    return AES.new(key, AES.MODE_CBC, iv).decrypt(data)
+
 class cipher:
     def __init__(self, key):
         if type(key) != bytes:
