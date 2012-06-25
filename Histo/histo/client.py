@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 def _cut(string, seg):
     a = [None]*len(seg)
     a[0] = seg[0]
@@ -44,6 +42,3 @@ def commit_archive(filename):
             if not read:
                 break
             s.sendall(read)
-
-if __name__ == '__main__':
-    commit_archive("G:\\201206241236随手写.rar")

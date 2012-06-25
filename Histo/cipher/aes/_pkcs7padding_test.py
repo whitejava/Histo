@@ -1,3 +1,39 @@
+from pctest import test_case
+
+class encode_test(test_case):
+    def setUp(self):
+        test_case.setUp(self)
+        self._size = 3
+    
+    def test_0(self):
+        self._input = ''
+        self._run()
+        self.expect('030303')
+    
+    def test_1(self):
+        self._input = 'aa'
+        self._run()
+        self.expect('aa0202')
+    
+    def test_2(self):
+        self._input = 'aabb'
+        self._run()
+        self.expect('aabb01')
+    
+    def test_3(self):
+        self._input = 'aabbcc'
+        self._run()
+        self.expect('aabbcc030303')
+    
+    def _run(self):
+        from hex import hex
+        from ._pkcs7padding import padding
+        self._input = hex.decode(self._input)
+        self.output = padding(self._size).encode(self._input)
+        self.output = hex.encode(self.output)
+
+'''
+
 import unittest
 from hex.hex import decode
 
@@ -119,4 +155,4 @@ class test(unittest.TestCase):
             
     def _expect_error(self, message):
         from expecterr.expect_error import expect_error
-        return expect_error(message)
+        return expect_error(message)'''

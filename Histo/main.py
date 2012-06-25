@@ -1,3 +1,3 @@
-import histo.server
+from histo.server import server
 
-histo.server.server()
+server()
