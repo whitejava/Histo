@@ -1,6 +1,6 @@
 from pctest import testcase
 from .cipher import cipher
-from hex import hex
+import hex
 
 class test(testcase):
     def test_goodencodedecode(self):

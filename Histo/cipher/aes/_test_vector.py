@@ -1,5 +1,5 @@
 from pctest import testcase
-from hex import hex 
+import hex 
 from .cipher import _encode as encrypt, _decode as decrypt
 
 class test(testcase):

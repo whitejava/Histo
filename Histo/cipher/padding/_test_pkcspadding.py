@@ -1,6 +1,6 @@
 from pctest import testcase
 from .pkcs7padding import encode, decode
-from hex import hex
+import hex
 
 class test(testcase):
     def test_goodencode(self):
