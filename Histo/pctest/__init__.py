@@ -21,8 +21,6 @@ class testcase(TestCase):
         params = [[format[i](e[i])for i in range(len(e))]for e in params0]
         #Get expects from data.
         expects = [e[paramcount] for e in data]
-        #Define errors
-        errors = []
         #Define fails
         fails = []
         #Run cases.
@@ -31,13 +29,12 @@ class testcase(TestCase):
             try:
                 result = method(*params[i])
             except BaseException as e:
-                errors.append((i,e))
-            else:
-                #Format result
-                result = format[paramcount](result)
-                #Check result.
-                if result != expects[i]:
-                    fails.append((i, result))
+                result = e
+            #Format result
+            result = format[paramcount](result)
+            #Check result.
+            if result != expects[i]:
+                fails.append((i, result))
         def printcase(n):
             #Print case number
             print('Case {}'.format(n))
@@ -47,12 +44,6 @@ class testcase(TestCase):
             #Print expect
             print('expect: {}'.format(expects[n]))
         #Print errors
-        for caseid,error in errors:
-            print('{:+^20}'.format('Error'))
-            #Print case
-            printcase(caseid)
-            #Print error
-            print('error: {}'.format(repr(error)))
         #Print fails
         for caseid,result in fails:
             print('{:+^20}'.format('Fail'))
@@ -61,7 +52,7 @@ class testcase(TestCase):
             #Print expect
             print('got: {}'.format(result))
         #Report unittest
-        if errors or fails:
+        if fails:
             self.fail()
     
     def expecterror(self, method):
