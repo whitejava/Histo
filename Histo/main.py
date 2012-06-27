@@ -1,3 +1,4 @@
 from histo.server import server
 
-server()
+if __name__ == '__main__':
+    server()

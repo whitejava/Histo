@@ -1,3 +1,5 @@
+
+
 def _load_key():
     from hex import hex
     with open('/etc/histo-key') as f:

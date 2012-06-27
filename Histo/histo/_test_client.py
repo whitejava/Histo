@@ -23,7 +23,7 @@ def gettestfile(filename):
 
 def commit(filename):
     output = io.BytesIO()
-    client.commit_archive(filename, output)
+    client.commit(filename, output)
     return output.getvalue()
 
 def transfer(input, indata, output, chunksize):

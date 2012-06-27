@@ -35,7 +35,7 @@ def _transferstream(input, output, chunksize = 128*1024):
         #Output
         output.write(read)
 
-def commit_archive(filename, output):
+def commit(filename, output):
     #Resolve file name.
     datetime, name = _resolvefilename(filename)
     #Encode name
