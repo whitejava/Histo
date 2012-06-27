@@ -1,3 +1,49 @@
+import struct
+import os
+import io
+
+def _packint(a):
+    return struct.pack('!i',a)
+
+def _packlong(a):
+    return struct.pack('!q',a)
+
+def _cut(string, seg):
+    string = io.StringIO(string)
+    return [string.read(e) for e in seg]
+
+def _resolvefilename(filename):
+    filename = os.path.basename(filename)
+    datetime = filename[:12]
+    datetime = tuple([int(e)for e in _cut(datetime,[4,2,2,2,2])]+[0,0])
+    name = filename[12:-4]
+    if name.startswith('_'):
+        name = name[1:]
+    return datetime,name
+
+def commit_archive(filename, output):
+    #Resolve file name.
+    datetime, name = _resolvefilename(filename)
+    #Encode name
+    name = name.encode('utf8')
+    #Output name
+    output.write(_packint(len(name)))
+    output.write(name)
+    #Output datetime
+    output.write(_packint(len(datetime)))
+    for e in datetime:
+        output.write(_packint(e))
+    #Output file size
+    output.write(_packlong(os.path.getsize(filename)))
+    #Output file data
+    with open(filename, 'rb') as f:
+        while True:
+            read = f.read(128*1024)
+            if not read: break
+            output.write(read)
+    
+
+'''
 def _cut(string, seg):
     a = [None]*len(seg)
     a[0] = seg[0]
@@ -42,3 +88,4 @@ def commit_archive(filename):
             if not read:
                 break
             s.sendall(read)
+'''

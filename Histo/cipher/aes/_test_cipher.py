@@ -8,9 +8,9 @@ class test(testcase):
     def test_goodencode(self):
         self.batchtest(goodencode, 2, _encode, (lambda x:bytes(int(x)), lambda x:bytes(int(x)), lambda x:str(len(x))))
     def test_badencode(self):
-        self.batchtest(badencode, 2, self.expecterror(_encode), (eval, eval, repr))
+        self.batchtest(badencode, 2, _encode, (eval, eval, repr))
     def test_baddecode(self):
-        self.batchtest(baddecode, 2, self.expecterror(_decode), (eval, eval, repr))
+        self.batchtest(baddecode, 2, _decode, (eval, eval, repr))
 
 def _encodedecode(key, data):
     #Code
@@ -21,11 +21,11 @@ def _encodedecode(key, data):
     return _decode(key, code)
 
 def _encode(key, data):
-    #Return code
+    #Return cipher
     return cipher(key).encode(data)
 
 def _decode(key, data):
-    #Return text
+    #Return plain
     return cipher(key).decode(data)
 
 goodencodedecode = \
