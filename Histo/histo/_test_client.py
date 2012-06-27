@@ -5,10 +5,6 @@ import io
 from . import client
 
 class test(testcase):
-    def test_packint(self):
-        self.batchtest(intdata, 1, client._packint, (eval, hex.encode))
-    def test_packlong(self):
-        self.batchtest(longdata, 1, client._packlong, (eval, hex.encode))
     def test_cut(self):
         self.batchtest(cutdata, 2, client._cut, (eval,eval,repr))
     def test_resolvefilename(self):
@@ -22,93 +18,15 @@ def gettestfile(filename):
     return os.path.join(os.path.dirname(__file__), '_test_commit', filename)
 
 def commit(filename):
-    output = io.BytesIO()
-    client.commit(filename, output)
-    return output.getvalue()
+    stream = io.BytesIO()
+    client.commitprevious(filename, stream)
+    return stream.getvalue()
 
 def transfer(input, indata, output, chunksize):
     t = {'BytesIO': io.BytesIO, 'StringIO': io.StringIO}
     output = t[output]()
     client._transferstream(t[input](indata), output, chunksize)
     return output.getvalue()
-
-intdata = \
-'''
-0
-00000000
-
-1
-00000001
-
-100
-00000064
-
--1
-ffffffff
-
--2
-fffffffe
-
-9999999999999999
-error('argument out of range',)
-
--9999999999999999
-error('argument out of range',)
-
-1.1
-error('required argument is not an integer',)
-
-0.1
-error('required argument is not an integer',)
-
-0.0
-error('required argument is not an integer',)
-
-None
-error('required argument is not an integer',)
-'''
-
-longdata = \
-'''
-0
-0000000000000000
-
-1
-0000000000000001
-
-100
-0000000000000064
-
-256
-0000000000000100
-
--1
-ffffffffffffffff
-
--2
-fffffffffffffffe
-
-999999999999999999999999999999999
-error('long too large to convert to int',)
-
--9999999999999999999999999999999
-error('long too large to convert to int',)
-
-1.1
-error('required argument is not an integer',)
-
-0.1
-error('required argument is not an integer',)
-
-0.0
-error('required argument is not an integer',)
-
-None
-error('required argument is not an integer',)
-
-[1]
-error('required argument is not an integer',)
-'''
 
 cutdata = \
 '''

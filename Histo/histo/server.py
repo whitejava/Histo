@@ -1,5 +1,23 @@
+import os
 
-
+def acceptcommit(stream, temp):
+    #Data stream
+    stream = datastream(stream)
+    #Read name
+    name = stream.readint()
+    name = stream.read(name)
+    #Read datetime
+    datetime = stream.readint()
+    datetime = (stream.readint() for _ in range(datetime))
+    if not datetime: datetime = None
+    #Read file size
+    filesize = stream.readint()
+    #Read file data
+    with open(temp, 'rb') as f:
+        transferstream(stream, f)
+    assert os.path.getsize(temp) == filesize
+      
+    
 def _load_key():
     from hex import hex
     with open('/etc/histo-key') as f:

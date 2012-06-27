@@ -2,11 +2,6 @@ import struct
 import os
 import io
 
-def _packint(a):
-    return struct.pack('!i',a)
-
-def _packlong(a):
-    return struct.pack('!q',a)
 
 def _cut(string, pieces):
     #Stream
@@ -35,19 +30,17 @@ def _transferstream(input, output, chunksize = 128*1024):
         #Output
         output.write(read)
 
-def commit(filename, output):
+def commitprevious(filename, stream):
+    #Object stream
+    stream = objectstream(stream)
     #Resolve file name.
     datetime, name = _resolvefilename(filename)
-    #Encode name
-    name = name.encode('utf8')
     #Output name
-    output.write(_packint(len(name)))
-    output.write(name)
+    stream.writeobject(name.encode('utf8'))
     #Output datetime
-    output.write(_packint(len(datetime)))
-    for e in datetime: output.write(_packint(e))
+    stream.writeobject(datetime)
     #Output file size
-    output.write(_packlong(os.path.getsize(filename)))
+    stream.writeobject(os.path.getsize(filename))
     #Output file data
     with open(filename, 'rb') as f:
-        _transferstream(f, output)
+        _transferstream(f, stream)
