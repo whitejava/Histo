@@ -8,18 +8,32 @@ def _packint(a):
 def _packlong(a):
     return struct.pack('!q',a)
 
-def _cut(string, seg):
+def _cut(string, pieces):
+    #Stream
     string = io.StringIO(string)
-    return [string.read(e) for e in seg]
+    #Read pieces
+    return [string.read(e) for e in pieces]
 
 def _resolvefilename(filename):
+    #Base name
     filename = os.path.basename(filename)
-    datetime = filename[:12]
-    datetime = tuple([int(e)for e in _cut(datetime,[4,2,2,2,2])]+[0,0])
-    name = filename[12:-4]
-    if name.startswith('_'):
-        name = name[1:]
-    return datetime,name
+    #Extract datetime, name
+    datetime, name = filename[:12], filename[12:-4]
+    #Tuple datetime
+    datetime = tuple([int(e) for e in _cut(datetime,[4,2,2,2,2])] + [0,0])
+    #Strip underline in name
+    if name.startswith('_'): name = name[1:]
+    #Return
+    return datetime, name
+
+def _transferstream(input, output, chunksize = 128*1024):
+    while True:
+        #Read chunk
+        read = input.read(chunksize)
+        #Check EOF
+        if not read: break
+        #Output
+        output.write(read)
 
 def commit_archive(filename, output):
     #Resolve file name.
@@ -31,61 +45,9 @@ def commit_archive(filename, output):
     output.write(name)
     #Output datetime
     output.write(_packint(len(datetime)))
-    for e in datetime:
-        output.write(_packint(e))
+    for e in datetime: output.write(_packint(e))
     #Output file size
     output.write(_packlong(os.path.getsize(filename)))
     #Output file data
     with open(filename, 'rb') as f:
-        while True:
-            read = f.read(128*1024)
-            if not read: break
-            output.write(read)
-    
-
-'''
-def _cut(string, seg):
-    a = [None]*len(seg)
-    a[0] = seg[0]
-    for i in range(1,len(seg)):
-        a[i] = a[i-1] + seg[i]
-    a = [0] + a
-    result = []
-    for i in range(1,len(a)):
-        result.append(string[a[i-1]:a[i]])
-    return result
-
-def _resolve_filename(filename):
-    import os
-    filename = os.path.basename(filename)
-    datetime = filename[:12]
-    datetime = tuple([int(e)for e in _cut(datetime,[4,2,2,2,2])]+[0,0])
-    name = filename[12:-4]
-    if name.startswith('_'):
-        name = name[1:]
-    return datetime,name
-
-def commit_archive(filename):
-    from io import BytesIO
-    from struct import pack
-    import socket
-    import os
-    datetime, name = _resolve_filename(filename)
-    name = name.encode('utf8')
-    b = BytesIO()
-    b.write(pack('i',len(name)))
-    b.write(name)
-    b.write(pack('i',len(datetime)))
-    for e in datetime:
-        b.write(pack('i',e))
-    b.write(pack('q',os.path.getsize(filename)))
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('192.168.2.4', 13750))
-    s.sendall(b.getvalue())
-    with open(filename,'rb') as f:
-        while True:
-            read = f.read(128*1024)
-            if not read:
-                break
-            s.sendall(read)
-'''
+        _transferstream(f, output)

@@ -13,6 +13,8 @@ class test(testcase):
         self.batchtest(cutdata, 2, client._cut, (eval,eval,repr))
     def test_resolvefilename(self):
         self.batchtest(resolvedata, 1, client._resolvefilename, (eval, repr))
+    def test_transferstream(self):
+        self.batchtest(transferdata, 4, transfer, (str, eval, str, eval, repr))
     def test_commit(self):
         self.batchtest(commitdata, 1, commit, (gettestfile, hex.encode))
 
@@ -22,6 +24,12 @@ def gettestfile(filename):
 def commit(filename):
     output = io.BytesIO()
     client.commit_archive(filename, output)
+    return output.getvalue()
+
+def transfer(input, indata, output, chunksize):
+    t = {'BytesIO': io.BytesIO, 'StringIO': io.StringIO}
+    output = t[output]()
+    client._transferstream(t[input](indata), output, chunksize)
     return output.getvalue()
 
 intdata = \
@@ -162,6 +170,51 @@ AttributeError("'NoneType' object has no attribute 'rfind'",)
 
 b'201206262245.tar.gz'
 TypeError('initial_value must be str or None, not bytes',)
+'''
+
+transferdata = \
+'''
+BytesIO
+b'abc'
+BytesIO
+2
+b'abc'
+
+BytesIO
+b'abc'
+BytesIO
+-2
+b'abc'
+
+StringIO
+'abcde'
+StringIO
+-3
+'abcde'
+
+BytesIO
+b'abc'
+BytesIO
+1.1
+TypeError("integer argument expected, got 'float'",)
+
+StringIO
+'abcd'
+StringIO
+2
+'abcd'
+
+BytesIO
+b'abcd'
+StringIO
+2
+TypeError("string argument expected, got 'bytes'",)
+
+StringIO
+'abcd'
+BytesIO
+2
+TypeError("'str' does not support the buffer interface",)
 '''
 
 commitdata = \
