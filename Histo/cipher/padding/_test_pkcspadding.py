@@ -1,77 +1,50 @@
 from pctest import testcase
 from .pkcs7padding import encode, decode
-import hex
 
 class test(testcase):
-    def test_goodencode(self):
-        self.batchtest(goodencode, 2, encode, [hex.decode, eval, hex.encode])
-    def test_badencode(self):
-        self.batchtest(badencode, 2, self.expecterror(encode), [eval, eval, repr])
-    def test_gooddecode(self):
-        self.batchtest(gooddecode, 1, decode, [hex.decode, hex.encode])
-    def test_gooddecode2(self):
-        self.batchtest(gooddecode2, 1, decode, [eval, repr])
-    def test_baddecode(self):
-        self.batchtest(baddecode, 1, self.expecterror(decode), [eval, repr])
+    def test_encode(self):
+        self.batchtest(goodencode, 2, encode, [eval, eval, repr])
+    def test_decode(self):
+        self.batchtest(gooddecode, 1, decode, [eval, repr])
 
 goodencode = \
 '''
-aa
+b'a'
 1
-aa01
+b'a\\x01'
 
-
+b''
 2
-0202
+b'\\x02\\x02'
 
-aa
+b'a'
 2
-aa01
+b'a\\x01'
 
-aabb
+b'ab'
 2
-aabb0202
+b'ab\\x02\\x02'
 
-
+b''
 3
-030303
+b'\\x03\\x03\\x03'
 
-aa
+b'a'
 3
-aa0202
+b'a\\x02\\x02'
 
-aabb
+b'ab'
 3
-aabb01
+b'ab\\x01'
 
-aabbcc
+b'abc'
 3
-aabbcc030303
-'''
+b'abc\\x03\\x03\\x03'
 
-gooddecode = \
-'''
-030303
+bytearray([1,2,3])
+3
+bytearray(b'\\x01\\x02\\x03\\x03\\x03\\x03')
 
-
-aa0202
-aa
-
-aabb01
-aabb
-'''
-
-gooddecode2 = \
-'''
-bytearray(b'\\x01')
-bytearray(b'')
-
-bytearray(b'\\xaa\\x02\\x02')
-bytearray(b'\\xaa')
-'''
-
-badencode = \
-'''
 b''
 0
 ZeroDivisionError('integer division or modulo by zero',)
@@ -105,8 +78,23 @@ None
 TypeError('unorderable types: NoneType() < int()',)
 '''
 
-baddecode =\
+gooddecode = \
 '''
+b'\\x03\\x03\\x03'
+b''
+
+b'\\xaa\\x02\\x02'
+b'\\xaa'
+
+b'\\xaa\\xbb\\x01'
+b'\\xaa\\xbb'
+
+bytearray(b'\\x01')
+bytearray(b'')
+
+bytearray(b'\\xaa\\x02\\x02')
+bytearray(b'\\xaa')
+
 b''
 IndexError('index out of range',)
 
