@@ -1,7 +1,6 @@
-import struct
 import os
 import io
-from stream import objectstream
+from stream import objectstream, transferstream
 
 def _cut(string, pieces):
     #Stream
@@ -21,15 +20,6 @@ def _resolvefilename(filename):
     #Return
     return datetime, name
 
-def _transferstream(input, output, chunksize = 128*1024):
-    while True:
-        #Read chunk
-        read = input.read(chunksize)
-        #Check EOF
-        if not read: break
-        #Output
-        output.write(read)
-
 def commitprevious(filename, stream):
     #Object stream
     stream = objectstream(stream)
@@ -43,4 +33,4 @@ def commitprevious(filename, stream):
     stream.writeobject(os.path.getsize(filename))
     #Output file data
     with open(filename, 'rb') as f:
-        _transferstream(f, stream)
+        transferstream(f, stream)

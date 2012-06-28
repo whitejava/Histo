@@ -9,8 +9,6 @@ class test(testcase):
         self.batchtest(cutdata, 2, client._cut, (eval,eval,repr))
     def test_resolvefilename(self):
         self.batchtest(resolvedata, 1, client._resolvefilename, (eval, repr))
-    def test_transferstream(self):
-        self.batchtest(transferdata, 4, transfer, (str, eval, str, eval, repr))
     def test_commit(self):
         self.batchtest(commitdata, 1, commit, (gettestfile, hex.encode))
 
@@ -21,12 +19,6 @@ def commit(filename):
     stream = io.BytesIO()
     client.commitprevious(filename, stream)
     return stream.getvalue()
-
-def transfer(input, indata, output, chunksize):
-    t = {'BytesIO': io.BytesIO, 'StringIO': io.StringIO}
-    output = t[output]()
-    client._transferstream(t[input](indata), output, chunksize)
-    return output.getvalue()
 
 cutdata = \
 '''
@@ -90,55 +82,10 @@ b'201206262245.tar.gz'
 TypeError('initial_value must be str or None, not bytes',)
 '''
 
-transferdata = \
-'''
-BytesIO
-b'abc'
-BytesIO
-2
-b'abc'
-
-BytesIO
-b'abc'
-BytesIO
--2
-b'abc'
-
-StringIO
-'abcde'
-StringIO
--3
-'abcde'
-
-BytesIO
-b'abc'
-BytesIO
-1.1
-TypeError("integer argument expected, got 'float'",)
-
-StringIO
-'abcd'
-StringIO
-2
-'abcd'
-
-BytesIO
-b'abcd'
-StringIO
-2
-TypeError("string argument expected, got 'bytes'",)
-
-StringIO
-'abcd'
-BytesIO
-2
-TypeError("'str' does not support the buffer interface",)
-'''
-
 commitdata = \
 '''
 201206262038normal.rar
-000000066e6f726d616c00000007000007dc000000060000001a00000014000000260000000000000000000000000000001054686973206973206120746573742e0a
+800358060000006e6f726d616c71002e8003284ddc074b064b1a4b144b264b004b007471002e80034b102e54686973206973206120746573742e0a
 
 bad.rar
 ValueError("invalid literal for int() with base 10: 'bad.'",)

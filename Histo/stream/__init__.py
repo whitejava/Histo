@@ -13,6 +13,15 @@ def _unpackint(a):
 def _unpacklong(a):
     return struct.unpack('!q', a)[0]
 
+def transferstream(input, output, chunksize = 128*1024):
+    while True:
+        #Read chunk
+        read = input.read(chunksize)
+        #Check EOF
+        if not read: break
+        #Output
+        output.write(read)
+
 class datastream:
     def __init__(self, stream):
         self._stream = stream
