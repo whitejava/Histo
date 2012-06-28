@@ -1,7 +1,7 @@
 import struct
 import os
 import io
-
+from stream import objectstream
 
 def _cut(string, pieces):
     #Stream
@@ -36,7 +36,7 @@ def commitprevious(filename, stream):
     #Resolve file name.
     datetime, name = _resolvefilename(filename)
     #Output name
-    stream.writeobject(name.encode('utf8'))
+    stream.writeobject(name)
     #Output datetime
     stream.writeobject(datetime)
     #Output file size

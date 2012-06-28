@@ -1,4 +1,5 @@
 import struct
+import pickle
 
 def _packint(a):
     return struct.pack('!i',a)
@@ -55,5 +56,7 @@ class objectstream:
         return self._stream.read(None)
     
     def writeobject(self, object):
-        import pickle
-        pickle.
+        pickle.dump(object, self._stream)
+    
+    def readobject(self):
+        return pickle.load(self._stream)
