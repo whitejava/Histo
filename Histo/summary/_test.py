@@ -28,5 +28,3 @@ class test(test_case):
     def do2(self):
         from summary import generate_summary
         return generate_summary('test', self.get_test_file(self._filename))
-    
-    
