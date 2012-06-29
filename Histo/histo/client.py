@@ -20,13 +20,11 @@ def _resolvefilename(filename):
     #Return
     return datetime, name
 
-def commitprevious(filename, stream):
+def commitfile(name, filename, stream, time = None):
     #Object stream
     stream = objectstream(stream)
-    #Resolve file name.
-    datetime, name = _resolvefilename(filename)
-    #Output datetime
-    stream.writeobject(datetime)
+    #Output time
+    stream.writeobject(time)
     #Output name
     stream.writeobject(name)
     #Output file size
@@ -34,3 +32,9 @@ def commitprevious(filename, stream):
     #Output file data
     with open(filename, 'rb') as f:
         copy(f, stream)
+
+def commitprevious(filename, stream):
+    #Resolve file name
+    time, name = _resolvefilename(filename)
+    #Commit
+    commitfile(name, filename, stream, time = time)
