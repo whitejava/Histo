@@ -1,14 +1,9 @@
-from pctest import testcase
+from pctest import testcase, gettestfile
+from histo.client import _resolvefilename as resolvefilename
 
 class test(testcase):
     def test(self):
-        self.batchtest(data, 1, (resolve, repr))
-
-def resolve(filename):
-    _gettestfile(filename)
-
-def _gettestfile(filename):
-    return os.path.join(__file__[:3],filename)
+        self.batchtest(data, 1, resolvefilename, (eval, repr))
 
 data = \
 '''
