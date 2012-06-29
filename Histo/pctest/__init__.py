@@ -35,6 +35,7 @@ class testcase(TestCase):
                 result = method(*params[i])
             except BaseException as e:
                 result = repr(e)
+                traceback.print_exception(type(e), e, False)
             else:
                 #Format result
                 result = format[paramcount](result)
