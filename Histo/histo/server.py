@@ -1,93 +1,39 @@
 import os
+from stream import objectstream, copy
+from socketserver import StreamRequestHandler, TCPServer
+from autotemp import tempfile
+from ._repo import repo
 
-def acceptcommit(stream, temp):
-    #Data stream
-    stream = datastream(stream)
-    #Read name
-    name = stream.readint()
-    name = stream.read(name)
+def _accept(stream, temp):
+    #Object stream
+    stream = objectstream(stream)
     #Read datetime
-    datetime = stream.readint()
-    datetime = (stream.readint() for _ in range(datetime))
-    if not datetime: datetime = None
-    #Read file size
-    filesize = stream.readint()
-    #Read file data
-    with open(temp, 'rb') as f:
-        transferstream(stream, f)
-    assert os.path.getsize(temp) == filesize
-      
-    
-def _load_key():
-    from hex import hex
+    datetime = stream.readobject()
+    #Read name
+    name = stream.readobject()
+    #Read filesize
+    filesize = stream.readobject()
+    #Read file data into temp
+    with open(temp, 'wb') as f:
+        copy(stream, f)
+    #Check file size.
+    assert filesize == os.path.getsize(temp)
+    #Return
+    return (datetime, name)
+
+def _loadkey():
     with open('/etc/histo-key') as f:
         return hex.decode(f.read().strip())
 
-class my_repo:
-    def __init__(self):
-        from .secure_repo import secure_repo as repo
-        self._repo = repo('/var/histo', _load_key())
-    
-    def commit_file(self, filename, name, time = None):
-        from summary import generate_summary
-        summary = generate_summary(name, filename)
-        self._repo.commit_file(filename, name, summary, time)
-    
-    def __enter__(self):
-        self._repo.__enter__()
-        return self
-    
-    def __exit__(self,*k):
-        self._repo.__exit__(*k)
+def _myrepo():
+    return repo('/var/histo', _loadkey())
 
-class logger:
-    def write(self, message):
-        import time
-        print('[{:8.2f}]{}'.format(time.clock(), message))
-
-from socketserver import StreamRequestHandler
-
-def transfer_stream(input, output, size, chunk_size = 128*1024):
-    while size:
-        read = input.read(chunk_size)
-        size -= len(read)
-        output.write(read)
-
-class commit_handler(StreamRequestHandler):
+class _commithandler(StreamRequestHandler):
     def handle(self):
-        from struct import unpack
-        log.write('on request')
-        name = unpack('i', self.rfile.read(4))[0]
-        log.write('name len {}'.format(name))
-        name = self.rfile.read(name)
-        name = str(name, 'utf8')
-        log.write('name {}'.format(name))
-        time = unpack('i', self.rfile.read(4))[0]
-        log.write('time len {}'.format(time))
-        if time == 0:
-            time = None
-        else:
-            time = tuple([int(unpack('i',self.rfile.read(4))[0])for _ in range(time)])
-        log.write('time {}'.format(time))
-        size = unpack('q', self.rfile.read(8))[0]
-        log.write('size {}'.format(size))
-        log.write('receiving data')
-        from tempdir.tempdir import tempdir
-        with tempdir(prefix='') as temp:
-            import os
-            filename = os.path.join(temp,'data')
-            with open(filename, 'wb') as f:
-                transfer_stream(self.rfile, f, size)
-            log.write('commiting')
-            with my_repo() as repo:
-                repo.commit_file(filename, name, time)
-            log.write('ok')
+        with tempfile('histo-server-') as temp:
+            ac = _accept(self.rfile, temp)
+            _myrepo().commitfile(temp, *ac)
 
-log = logger()
-
-def server():
-    log.write('starting server')
-    from socketserver import TCPServer
-    server = TCPServer(('0.0.0.0',13750), commit_handler)
-    log.write('listening')
+def serveforever():
+    server = TCPServer(('0.0.0.0',13750), _commithandler)
     server.serve_forever()

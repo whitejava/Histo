@@ -1,6 +1,6 @@
 import os
 import io
-from stream import objectstream, transferstream
+from stream import objectstream, copy
 
 def _cut(string, pieces):
     #Stream
@@ -25,12 +25,12 @@ def commitprevious(filename, stream):
     stream = objectstream(stream)
     #Resolve file name.
     datetime, name = _resolvefilename(filename)
-    #Output name
-    stream.writeobject(name)
     #Output datetime
     stream.writeobject(datetime)
+    #Output name
+    stream.writeobject(name)
     #Output file size
     stream.writeobject(os.path.getsize(filename))
     #Output file data
     with open(filename, 'rb') as f:
-        transferstream(f, stream)
+        copy(f, stream)

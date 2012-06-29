@@ -13,7 +13,7 @@ class test(testcase):
         self.batchtest(commitdata, 1, commit, (gettestfile, hex.encode))
 
 def gettestfile(filename):
-    return os.path.join(os.path.dirname(__file__), '_test_commit', filename)
+    return os.path.join(os.path.dirname(__file__), 'histo-client', filename)
 
 def commit(filename):
     stream = io.BytesIO()

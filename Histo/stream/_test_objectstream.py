@@ -22,6 +22,9 @@ def readwrite(x):
 
 wdata = \
 '''
+None
+80034e2e
+
 123
 80034b7b2e
 

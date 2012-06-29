@@ -1,18 +1,18 @@
 from pctest import testcase
-from stream import transferstream
+import stream
 import io
 
 class test(testcase):
-    def test_transferstream(self):
-        self.batchtest(transferdata, 4, transfer, (str, eval, str, eval, repr))
+    def test_copy(self):
+        self.batchtest(copydata, 4, copy, (str, eval, str, eval, repr))
 
-def transfer(input, indata, output, chunksize):
+def copy(input, indata, output, chunksize):
     t = {'BytesIO': io.BytesIO, 'StringIO': io.StringIO}
     output = t[output]()
-    transferstream(t[input](indata), output, chunksize)
+    stream.copy(t[input](indata), output, chunksize)
     return output.getvalue()
 
-transferdata = \
+copydata = \
 '''
 BytesIO
 b'abc'
