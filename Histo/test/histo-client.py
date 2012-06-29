@@ -2,7 +2,7 @@ from pctest import testcase
 import hex
 import os
 import io
-from . import client
+from histo import client
 
 class test(testcase):
     def test_cut(self):
