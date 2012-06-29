@@ -17,9 +17,6 @@ def _securedfile(root, idformat, partsize, key):
 def _totuple(t):
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
 
-def _getnow():
-    return _totuple(datetime.datetime.now())
-
 def _makeindex(time, name, lastmodify, range, summary):
     return (('version', time), ('name', name), ('last-modify',lastmodify), ('range',range), ('summary',summary))
 
@@ -32,7 +29,7 @@ class repo:
     
     def commitfile(self, filename, name, time = None):
         #Default time is now
-        if time == None: time = _getnow()
+        if time == None: time = _totuple(datetime.datetime.now())
         #Start position
         start = self._dataoutput.tell()
         #Output data
