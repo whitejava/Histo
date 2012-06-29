@@ -1,4 +1,4 @@
-from histo.server import server
+import histo.server
 
 if __name__ == '__main__':
-    server()
+    histo.server.serveforever()
