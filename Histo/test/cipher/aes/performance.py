@@ -1,5 +1,5 @@
 import unittest
-from .cipher import cipher
+from cipher.aes import cipher
 from timer import timer
 
 #2012 06 09 0.20145043181969796 win7/Core i5
