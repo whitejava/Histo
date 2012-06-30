@@ -2,7 +2,7 @@ import os
 from autotemp import tempdir
 from subprocess import Popen, PIPE
 
-__all__ = ['extracterror', 'generatesummary']
+__all__ = ['generatesummary']
 
 def _extractarchive(type, filename, target):
     command = {'rar': ['rar', 'x', filename, target+'/'],
@@ -69,21 +69,12 @@ def _archivesummary(archivetype, filename):
             error = repr(e)
         return (archivetype, error, _foldersummary(temp))
 
-def _rar_summary(filename):
-    return _archivesummary('rar', filename)
-
-def _tar_summary(filename):
-    return _archivesummary('tar', filename)
-
-def _zip_summary(filename):
-    return _archivesummary('zip', filename)
-
 _map = {
-    '.rar': _rar_summary,
-    '.tar': _tar_summary,
-    '.tar.gz': _tar_summary,
-    '.tar.bz2': _tar_summary,
-    '.zip': _zip_summary,
+    '.rar': lambda x:_archivesummary('rar',x),
+    '.tar': lambda x:_archivesummary('tar',x),
+    '.tar.gz': lambda x:_archivesummary('tar',x),
+    '.tar.bz2': lambda x:_archivesummary('tar',x),
+    '.zip': lambda x:_archivesummary('zip',x),
 }
 
 def generatesummary(name, filename):
