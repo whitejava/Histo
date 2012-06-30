@@ -1,3 +1,5 @@
+__all__ = ['listfiles']
+
 def listfiles(folder):
     import os
     result = []
