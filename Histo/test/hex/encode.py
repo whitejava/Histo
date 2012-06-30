@@ -3,7 +3,11 @@ import hex
 
 class test(testcase):
     def test(self):
-        self.batchtest(data, 1, hex.encode, (eval, repr))
+        self.bulktest(data, func)
+
+def func(input):
+    input = eval(input)
+    return repr(hex.encode(input))
 
 data = \
 '''
