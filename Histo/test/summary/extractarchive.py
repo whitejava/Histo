@@ -62,4 +62,16 @@ normal.tar.gz
 zip
 normal.zip
 ['/a', '/a/b', '/a/d', '/a/c']
+
+rar
+nonexist.rar
+extracterror('no file to extract')
+
+zip
+nonexist.zip
+extracterror('zipfile not found')
+
+tar
+nonexist.tar
+extracterror('bad tar file')
 '''
