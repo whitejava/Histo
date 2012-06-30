@@ -2,6 +2,8 @@ import tempfile as otemp
 import os
 import shutil
 
+__all__ = ['tempfile','tempdir']
+
 class tempfile:
     def __init__(self, prefix = 'tmp', suffix = '', dir = None):
         self._prefix = prefix

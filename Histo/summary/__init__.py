@@ -1,20 +1,12 @@
-def _is_directory(filename):
-    import os
-    return os.path.isdir(filename)
+import os
+from autotemp import tempdir
 
-def _folder_summary(folder):
-    import os
-    result = []
-    for file in os.listdir(folder):
-        path = os.path.join(folder, file)
-        result.append(generate_summary(file, path))
-    return tuple(result)
+def _foldersummary(folder):
+    #Generate each summary of files in folder
+    return tuple([generatesummary(file, os.path.join(folder, file)) for file in os.listdir(folder)])
 
-def _archive_summary(archive_type, filename):
-    from tempdir.tempdir import tempdir
-    from ._extract_archive import extract_error
-    from ._extract_archive import extract_archive
-    with tempdir(prefix='histo-{}-'.format(archive_type)) as temp:
+def _summaryarchive(archivetype, filename):
+    with tempdir('histo-summary-') as temp:
         error = None
         try:
             extract_archive(archive_type, filename, temp)
@@ -31,7 +23,7 @@ def _tar_summary(filename):
 def _zip_summary(filename):
     return _archive_summary('zip', filename)
 
-_summary_table = {
+_map = {
     '.rar': _rar_summary,
     '.tar': _tar_summary,
     '.tar.gz': _tar_summary,
@@ -39,11 +31,11 @@ _summary_table = {
     '.zip': _zip_summary,
 }
 
-def generate_summary(name, filename):
-    if _is_directory(filename):
-        return (name, _folder_summary(filename))
+def generatesummary(name, filename):
+    if os.path.isdir(filename):
+        return (name, _foldersummary(filename))
     else:
-        for k in _summary_table:
+        for k in _map:
             if filename.endswith(k):
-                return (name, _summary_table[k](filename))
+                return (name, _map[k](filename))
         return (name, None)

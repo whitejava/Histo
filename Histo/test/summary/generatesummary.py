@@ -1,5 +1,5 @@
 from pctest import testcase, gettestfile
-from summary import generate_summary as generatesummary
+from summary import generatesummary
 
 class test(testcase):
     def test(self):

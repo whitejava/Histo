@@ -5,6 +5,15 @@ import traceback
 def gettestfile(filename):
     return os.path.join(traceback.extract_stack()[-2][0][:-3], filename)
 
+def _split(a,sep):
+    result = [[]]
+    for e in a:
+        if e == sep:
+            result.append([])
+        else:
+            result[-1].append(e)
+    return result
+
 class testcase(TestCase):
     def setUp(self):
         self._pc_cleanups = []
@@ -60,3 +69,26 @@ class testcase(TestCase):
         #Report unittest
         if fails:
             self.fail()
+    
+    def bulktest(self, data, func):
+        #Assume no fails.
+        fail = False
+        #Split data
+        lines = data.splitlines()
+        #Iterator every case
+        for e in _split(lines, '')[1:]:
+            try:
+                result = func(*e[:-1])
+                expect = e[-1]
+                errormessage = ''
+            except BaseException as ex:
+                result = repr(ex)
+                expect = e[-1]
+                errormessage = ''.join(traceback.format_exception(type(ex), ex, False))
+            if result != expect:
+                fail = True
+                print('{:+^20}'.format('Fail'))
+                print(*e,sep='\n')
+                print(result)
+                print(errormessage)
+        self.assertFalse(fail)

@@ -1,3 +1,5 @@
+__all__ = ['encode', 'decode']
+
 def encode(b):
     return ''.join(['{:02x}'.format(e) for e in b])
 
