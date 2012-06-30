@@ -18,10 +18,10 @@ def _extractarchive(type, filename, target):
                   7: 'user error',
                   8: 'not enough memory',
                   9: 'create file error',
-                  10: 'no file to extract',
+                  10: 'no input file',
                   255: 'user abort'}
     tarmessage = {1: 'error occurs',
-                  2: 'bad tar file'}
+                  2: 'no input file'}
     zipmessage = {1: 'warning',
                   2: 'generic format error',
                   3: 'severe format error',
@@ -29,9 +29,9 @@ def _extractarchive(type, filename, target):
                   5: 'fail read password',
                   6: 'not enough memory during disk decompression',
                   7: 'not enough memory during in-memory decompression',
-                  9: 'zipfile not found',
+                  9: 'no input file',
                   10: 'invalid option',
-                  11: 'no matching files found',
+                  11: 'no input file because no matching files found',
                   80: 'aborted',
                   81: 'unsupport compression method',
                   82: 'bad password'}

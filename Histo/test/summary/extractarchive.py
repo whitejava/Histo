@@ -17,15 +17,15 @@ data = \
 '''
 rar
 bad.rar
-extracterror('no file to extract')
+extracterror('no input file')
 
 tar
 bad.tar
-extracterror('bad tar file')
+extracterror('no input file')
 
 zip
 bad.zip
-extracterror('zipfile not found')
+extracterror('no input file')
 
 rar
 contain space.rar
@@ -65,13 +65,13 @@ normal.zip
 
 rar
 nonexist.rar
-extracterror('no file to extract')
+extracterror('no input file')
 
 zip
 nonexist.zip
-extracterror('zipfile not found')
+extracterror('no input file')
 
 tar
 nonexist.tar
-extracterror('bad tar file')
+extracterror('no input file')
 '''

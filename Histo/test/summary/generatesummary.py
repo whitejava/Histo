@@ -13,15 +13,15 @@ data = \
 '''
 test
 bad.rar
-('test', ('rar', "extracterror('no file to extract')", ()))
+('test', ('rar', "extracterror('no input file')", ()))
 
 test
 bad.tar
-('test', ('tar', "extracterror('bad tar file')", ()))
+('test', ('tar', "extracterror('no input file')", ()))
 
 test
 bad.zip
-('test', ('zip', "extracterror('zipfile not found')", ()))
+('test', ('zip', "extracterror('no input file')", ()))
 
 test
 contain space.rar
@@ -61,15 +61,15 @@ normal.zip
 
 test
 nonexist.rar
-('test', ('rar', "extracterror('no file to extract')", ()))
+('test', ('rar', "extracterror('no input file')", ()))
 
 test
 nonexist.tar
-('test', ('tar', "extracterror('bad tar file')", ()))
+('test', ('tar', "extracterror('no input file')", ()))
 
 test
 nonexist.zip
-('test', ('zip', "extracterror('zipfile not found')", ()))
+('test', ('zip', "extracterror('no input file')", ()))
 
 test
 nonexist
