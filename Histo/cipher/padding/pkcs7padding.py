@@ -1,3 +1,5 @@
+__all__ = ['encode', 'decode']
+
 def _generate_pad(padsize):
     #Pad element
     pad = bytes([padsize])
@@ -6,7 +8,7 @@ def _generate_pad(padsize):
     #Return
     return pad
 
-def encode(input, blocksize=16):
+def encode(input, blocksize = 16):
     #Check parameter
     if blocksize < 0: raise ValueError('block size must be greater than zero.')
     #Calculate pad size.
