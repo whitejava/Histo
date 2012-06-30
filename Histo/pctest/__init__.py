@@ -2,8 +2,12 @@ from unittest import TestCase
 import os
 import traceback
 
-def gettestfile(filename):
-    return os.path.join(traceback.extract_stack()[-2][0][:-3], filename)
+def gettestfile(filename, source = None):
+    callerfile = traceback.extract_stack()[-2][0]
+    if source:
+        return os.path.join(os.path.dirname(callerfile), source, filename)
+    else:
+        return os.path.join(callerfile[:-3], filename)
 
 def _split(a,sep):
     result = [[]]
