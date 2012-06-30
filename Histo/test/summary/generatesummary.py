@@ -3,7 +3,11 @@ from summary import generatesummary
 
 class test(testcase):
     def test(self):
-        self.batchtest(data, 2, generatesummary, (str, lambda x:gettestfile(x), repr))
+        self.bulktest(data, func)
+
+def func(name, filename):
+    filename = gettestfile(filename, source = 'archive')
+    return repr(generatesummary(name, filename))
 
 data = \
 '''
@@ -13,13 +17,13 @@ normal.rar
 
 test
 bad.rar
-('test', ('rar', 'extract error 10', ()))
+('test', ('rar', "extracterror('no file to extract')", ()))
 
 test
 encrypt.rar
-('test', ('rar', 'extract error 1', (('a', ()),)))
+('test', ('rar', "extracterror('warning')", (('a', ()),)))
 
 test
-'embed.rar'
+embed.rar
 ('test', ('rar', None, (('embed1.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),)))))), ('embed2.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),)))))), ('embed3.rar', ('rar', None, (('normal.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),))), ('normal2.rar', ('rar', None, (('a', (('b', None), ('d', None), ('c', None))),)))))))))
 '''

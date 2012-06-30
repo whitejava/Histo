@@ -2,6 +2,8 @@ import os
 from autotemp import tempdir
 from subprocess import Popen, PIPE
 
+__all__ = ['extracterror', 'generatesummary']
+
 def _extractarchive(type, filename, target):
     command = {'rar': ['rar', 'x', filename, target+'/'],
                'tar': ['tar', '-xf', filename, '-C', target],
@@ -45,9 +47,9 @@ def _extractarchive(type, filename, target):
             message = message[exitcode]
         else:
             message = 'unknown exitcode {}'.format(exitcode)
-        raise extracterror(message)
+        raise _extracterror(message)
 
-class extracterror(OSError):
+class _extracterror(OSError):
     def __init__(self, message):
         self.message = message
     
@@ -63,8 +65,8 @@ def _archivesummary(archivetype, filename):
         error = None
         try:
             _extractarchive(archivetype, filename, temp)
-        except extracterror as e:
-            error = str(e)
+        except _extracterror as e:
+            error = repr(e)
         return (archivetype, error, _foldersummary(temp))
 
 def _rar_summary(filename):
