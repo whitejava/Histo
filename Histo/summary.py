@@ -4,6 +4,22 @@ from subprocess import Popen, PIPE
 
 __all__ = ['generatesummary']
 
+def generatesummary(name, filename):
+    if os.path.isdir(filename):
+        return (name, _foldersummary(filename))
+    else:
+        table = {
+            '.rar': lambda x:_archivesummary('rar',x),
+            '.tar': lambda x:_archivesummary('tar',x),
+            '.tar.gz': lambda x:_archivesummary('tar',x),
+            '.tar.bz2': lambda x:_archivesummary('tar',x),
+            '.zip': lambda x:_archivesummary('zip',x),
+        }
+        for k in table:
+            if filename.endswith(k):
+                return (name, table[k](filename))
+        return (name, None)
+
 def _extractarchive(type, filename, target):
     command = {'rar': ['rar', 'x', filename, target+'/'],
                'tar': ['tar', '-xf', filename, '-C', target],
@@ -50,15 +66,14 @@ def _extractarchive(type, filename, target):
         raise _extracterror(message)
 
 class _extracterror(OSError):
-    def __init__(self, message):
-        self.message = message
-    
     def __repr__(self):
-        return 'extracterror({})'.format(repr(self.message))
+        return 'extracterror({})'.format(repr(self.args[0]))
 
 def _foldersummary(folder):
-    #Generate each summary of files in folder
-    return tuple([generatesummary(file, os.path.join(folder, file)) for file in os.listdir(folder)])
+    #List files.
+    files = os.listdir(folder)
+    #Generate each summary of each file.
+    return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
 
 def _archivesummary(archivetype, filename):
     with tempdir('histo-summary-') as temp:
@@ -68,20 +83,3 @@ def _archivesummary(archivetype, filename):
         except _extracterror as e:
             error = repr(e)
         return (archivetype, error, _foldersummary(temp))
-
-_map = {
-    '.rar': lambda x:_archivesummary('rar',x),
-    '.tar': lambda x:_archivesummary('tar',x),
-    '.tar.gz': lambda x:_archivesummary('tar',x),
-    '.tar.bz2': lambda x:_archivesummary('tar',x),
-    '.zip': lambda x:_archivesummary('zip',x),
-}
-
-def generatesummary(name, filename):
-    if os.path.isdir(filename):
-        return (name, _foldersummary(filename))
-    else:
-        for k in _map:
-            if filename.endswith(k):
-                return (name, _map[k](filename))
-        return (name, None)
