@@ -122,6 +122,8 @@ class testcase(TestCase):
         for e in _split(lines, '')[1:]:
             try:
                 result = func(*e[:-1])
+                if type(result) is not str:
+                    result = repr(result)
                 expect = e[-1]
                 errormessage = ''
             except BaseException as ex:
