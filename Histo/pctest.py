@@ -4,6 +4,8 @@ import traceback
 import hex
 import os
 
+__all__ = ['dumpdir', 'gettestfile', 'testcase']
+
 def dumpdir(folder):
     #List files
     files = listfiles(folder)
@@ -26,6 +28,18 @@ def dumpdir(folder):
             result.append(item)
     #Format as "item,item,item"
     return ','.join(result)
+
+def createfiles(root,script):
+    script = script.split(',')
+    for item in script:
+        name,data = item.split(':')
+        path = os.path.join(root,name)
+        if data == '<folder>':
+            os.mkdir(path)
+        else:
+            data = hex.decode(data)
+            with open(path, 'wb') as f:
+                f.write(data)
 
 def gettestfile(filename, source = None):
     callerfile = traceback.extract_stack()[-2][0]
