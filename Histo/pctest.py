@@ -134,6 +134,6 @@ class testcase(TestCase):
                 fail = True
                 print('{:+^20}'.format('Fail'))
                 print(*e,sep='\n')
-                print(result)
+                print(repr(result)[1:-1])
                 print(errormessage)
         self.assertFalse(fail)
