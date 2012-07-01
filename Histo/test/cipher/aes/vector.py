@@ -3,7 +3,7 @@ from cipher.aes import _encode as encode, _decode as decode
 import hex
 
 class test(testcase):
-    def testencode(self):
+    def test(self):
         self.bulktest(data, func)
 
 def func(key, iv, data):
