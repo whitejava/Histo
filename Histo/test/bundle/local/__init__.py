@@ -33,7 +33,13 @@ dump 1 ccdd
 exists 1
 load 0
 load 1
-load 2
+dump 0 bbcc
+exists 0
+load 0
+dump 1 ddcc
+exists 1
+exists 2
+load 1
 dumpdir
-None-b'\\xaa\\xbb'-True-False-None-True-b'\\xaa\\xbb'-b'\\xcc\\xdd'-'0000:aabb,0001:ccdd'
+None-b'\\xaa\\xbb'-True-False-None-True-b'\\xaa\\xbb'-b'\\xcc\\xdd'-None-True-b'\\xbb\\xcc'-None-True-False-b'\\xdd\\xcc'-'0000:bbcc,0001:ddcc'
 '''
