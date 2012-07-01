@@ -1,6 +1,31 @@
 from unittest import TestCase
-import os
+from listfiles import listfiles
 import traceback
+import hex
+import os
+
+def dumpdir(folder):
+    #List files
+    files = listfiles(folder)
+    #Define result
+    result = []
+    #For each file.
+    #Use sorted to get the same result.
+    for file in sorted(files):
+        #Full path
+        path = os.path.join(folder, file)
+        #Read content
+        with open(path,'rb') as f:
+            #Read
+            content = f.read()
+            #To hex
+            content = hex.encode(content)
+            #Format as "file:data"
+            item = ':'.join([file, content])
+            #Output
+            result.append(item)
+    #Format as "item,item,item"
+    return ','.join(result)
 
 def gettestfile(filename, source = None):
     callerfile = traceback.extract_stack()[-2][0]
