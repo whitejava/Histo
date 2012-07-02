@@ -70,6 +70,7 @@ class _writer:
     def __init__(self, bundle, partsize):
         assert partsize > 0
         self._bundle = bundle
+        self._changes = {}
         #Check dfile exists
         if bundle.exists(0):
             #Load state
@@ -91,15 +92,25 @@ class _writer:
         self._closed = False
     
     def write(self, data):
+        #Ensure not closed
         assert not self._closed
+        #Append to buffer
         self._buffer.extend(data)
+        #File new size
         self._filesize2 = self._filesize + len(data)
+        #Flush buffer
         while len(self._buffer) >= self._partsize:
+            #Target
             id = self._filesize//self._partsize+1
+            #Data to write
             data = self._buffer[:self._partsize]
+            #Clear from buffer
             del self._buffer[:self._partsize]
+            #Dump data
             self._bundle.dump(id, data)
+            #Increase file size.
             self._filesize += len(data)
+        #Update file size.
         self._filesize = self._filesize2
 
     def tell(self):
