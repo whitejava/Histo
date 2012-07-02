@@ -45,7 +45,7 @@ aabb-True-False-True-aabb-ccdd-True-bbcc-True-False-ddcc-IOError(2, 'No such fil
 ['nonexists']
 dump 0 aabb
 load 0
-?
+aabb
 
 []
 createfiles 0000:<folder>

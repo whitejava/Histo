@@ -2,6 +2,7 @@ import os
 
 class local:
     def __init__(self, root, idformat):
+        if not os.path.exists(root): os.makedirs(root)
         self._root = root
         self._idformat = idformat
     
