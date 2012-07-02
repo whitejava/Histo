@@ -1,6 +1,8 @@
 import struct
 import pickle
 
+__all__ = ['copy','datastream','objectstream']
+
 def _packint(a):
     return struct.pack('!i',a)
 
