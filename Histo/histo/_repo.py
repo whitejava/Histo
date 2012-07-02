@@ -1,5 +1,5 @@
 from summary import generatesummary
-from cipher import aes
+from cipher import aes,hash
 from bundle import local,crypto
 import datetime
 import stream
@@ -9,7 +9,11 @@ import os
 
 def _securedfile(root, idformat, partsize, key, mode = 'wb'):
     bundle = local(root, idformat)
+    bundle = crypto(bundle, hash.cipher('md5'))
+    bundle = crypto(bundle, hash.cipher('sha1'))
     bundle = crypto(bundle, aes.cipher(key))
+    bundle = crypto(bundle, hash.cipher('md5'))
+    bundle = crypto(bundle, hash.cipher('sha1'))
     return dfile.open(bundle, partsize, mode)
 
 def _totuple(t):
