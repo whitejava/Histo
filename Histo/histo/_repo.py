@@ -1,8 +1,6 @@
 from summary import generatesummary
-from dfile.files.files import files
-from cipher.aes import cipher
-from dfile.bundle.local.bundle import bundle as localbundle
-from dfile.bundle.crypto.bundle import bundle as cryptobundle
+from cipher import aes
+from bundle import local,crypto
 import datetime
 import stream
 import pickle
@@ -10,7 +8,9 @@ import dfile
 import os
 
 def _securedfile(root, idformat, partsize, key, mode = 'wb'):
-    return dfile.open(files(cryptobundle(localbundle(root, idformat), cipher(key))), partsize, mode)
+    bundle = local(root, idformat)
+    bundle = crypto(bundle, aes.cipher(key))
+    return dfile.open(bundle, partsize, mode)
 
 def _totuple(t):
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)

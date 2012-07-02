@@ -23,10 +23,10 @@ data = \
 ValueError("invalid literal for int() with base 10: ''",)
 
 123
-AttributeError("'int' object has no attribute 'rfind'",)
+TypeError("object of type 'int' has no len()",)
 
 None
-AttributeError("'NoneType' object has no attribute 'rfind'",)
+TypeError("object of type 'NoneType' has no len()",)
 
 b'201206262245.tar.gz'
 TypeError('initial_value must be str or None, not bytes',)
