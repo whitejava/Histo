@@ -48,6 +48,22 @@ def gettestfile(filename, source = None):
     else:
         return os.path.join(callerfile[:-3], filename)
 
+def runins(instab, script):
+    result = []
+    for ins in script:
+        ins = ins.split(' ')
+        command = ins[0]
+        params = ins[1:]
+        try:
+            output = instab[command](*params)
+        except BaseException as ex:
+            output = ex
+            traceback.print_exception(type(ex), ex, False)
+        if output is not None:
+            if type(output) is not str: output = repr(output)
+            result.append(output)
+    return '-'.join(result)
+
 def _split(a,sep):
     result = [[]]
     for e in a:
