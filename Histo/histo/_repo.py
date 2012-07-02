@@ -30,15 +30,6 @@ class repo:
         #Create data output
         self._dataoutput = _securedfile(os.path.join(root, 'data'), 'd{:08d}', 10*1024*1024, self._key)
     
-    def __enter__(self):
-        self._indexoutput.__enter__()
-        self._dataoutput.__enter__()
-        return self
-    
-    def __exit__(self, *k):
-        return self._indexoutput.__exit__(*k) \
-            and self._dataoutput.__exit__(*k)
-    
     def commitfile(self, filename, name, time = None):
         #Default time is now
         if time == None: time = _totuple(datetime.datetime.now())
@@ -52,3 +43,7 @@ class repo:
         index = _makeindex(time,name,_totuple(datetime.datetime.fromtimestamp(os.path.getmtime(filename))),(start, end),generatesummary(name, filename))
         #Output index
         pickle.dump(index, self._indexoutput)
+    
+    def close(self):
+        self._dataoutput.close()
+        self._indexoutput.close()

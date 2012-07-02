@@ -4,7 +4,7 @@ import traceback
 import hex
 import os
 
-__all__ = ['dumpdir', 'gettestfile', 'testcase']
+__all__ = ['dumpdir', 'gettestfile', 'testcase', 'gettestdir']
 
 def dumpdir(folder):
     #List files
@@ -41,12 +41,15 @@ def createfiles(root,script):
             with open(path, 'wb') as f:
                 f.write(data)
 
-def gettestfile(filename, source = None):
+def gettestdir(source = None):
     callerfile = traceback.extract_stack()[-2][0]
     if source:
-        return os.path.join(os.path.dirname(callerfile), source, filename)
+        return os.path.join(os.path.dirname(callerfile), source)
     else:
-        return os.path.join(callerfile[:-3], filename)
+        return callerfile[:-3]
+
+def gettestfile(filename, source = None):
+    return os.path.join(gettestdir(source), filename)
 
 def runins(instab, script):
     result = []
