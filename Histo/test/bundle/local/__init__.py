@@ -35,5 +35,5 @@ exists 2
 load 1
 load 2
 dumpdir
-None-b'\\xaa\\xbb'-True-False-None-True-b'\\xaa\\xbb'-b'\\xcc\\xdd'-None-True-b'\\xbb\\xcc'-None-True-False-b'\\xdd\\xcc'-IOError(2, 'No such file or directory')-0000:bbcc,0001:ddcc
+b'\\xaa\\xbb'-True-False-True-b'\\xaa\\xbb'-b'\\xcc\\xdd'-True-b'\\xbb\\xcc'-True-False-b'\\xdd\\xcc'-IOError(2, 'No such file or directory')-0000:bbcc,0001:ddcc
 '''
