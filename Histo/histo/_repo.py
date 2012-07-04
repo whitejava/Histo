@@ -53,8 +53,6 @@ class repo:
         lastmodify = _totuple(lastmodify)
         range = (start, end)
         summary = generatesummary(name, filename)
-        print('summary',name,filename)
-        print(summary)
         index = _makeindex(time,name,lastmodify,range,summary)
         #Output index
         self._indexoutput.write(bytes(repr(index),'utf8'))
