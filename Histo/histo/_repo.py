@@ -7,7 +7,7 @@ import pickle
 import dfile
 import os
 
-def _securedfile(root, idformat, partsize, key, mode = 'wb', listener):
+def _securedfile(root, idformat, partsize, key, listener):
     b = []
     b.append(local(root, idformat))
     b.append(monitor(b[-1], lambda x:listener(b[0].getpath(x))))
@@ -16,7 +16,7 @@ def _securedfile(root, idformat, partsize, key, mode = 'wb', listener):
     b.append(crypto(b[-1], aes.cipher(key)))
     b.append(crypto(b[-1], hash.cipher('md5')))
     b.append(crypto(b[-1], hash.cipher('sha1')))
-    return dfile.open(b[-1], partsize, mode)
+    return dfile.open(b[-1], partsize, 'wb')
 
 def _totuple(t):
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
