@@ -1,6 +1,7 @@
 from stream import tcpstream
 from listfiles import listfiles
 import histo.server
+import histo.client
 import sys
 import hex
 import os

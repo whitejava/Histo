@@ -4,7 +4,6 @@ from socketserver import StreamRequestHandler, TCPServer
 from autotemp import tempfile
 from ._repo import repo
 from threading import Thread
-import threading
 import time
 
 _shutdowns = []
@@ -27,11 +26,14 @@ def _accept(stream, temp):
     return (datetime, name)
 
 def log(*message):
-    t = '[{:10f}]'.format(time.clock())
+    t = '[{:13f}]'.format(time.clock())
     print(t, *message)
 
-def _commithandler(root, key):
-    class R:
+def _sendfile(path):
+    log('send file:', path)
+
+def _acceptservice(root, key):
+    class _commithandler(StreamRequestHandler):
         def handle(self):
             with tempfile('histo-server-') as temp:
                 ac = _accept(self.rfile, temp)
@@ -39,13 +41,7 @@ def _commithandler(root, key):
                 rp = repo(root, key, _sendfile)
                 rp.commitfile(temp, *ac)
                 rp.close()
-    return R
-
-def _sendfile(path):
-    log('send file:', path)
-
-def _acceptservice(root, key):
-    server = TCPServer(('0.0.0.0',13750), _commithandler(root, key))
+    server = TCPServer(('0.0.0.0',13750), _commithandler)
     _shutdowns.append(server.shutdown)
     log('listening')
     server.serve_forever()
