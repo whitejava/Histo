@@ -40,7 +40,7 @@ class crypto:
         return data
     
     def exists(self, id):
-        return self._buundle.exists(id)
+        return self._bundle.exists(id)
 
 class monitor:
     def __init__(self, bundle, listener):
