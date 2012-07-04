@@ -8,17 +8,35 @@ import dfile
 import os
 
 def _securedfile(root, idformat, partsize, key, listener):
+    '''
+    Create a safe distributed file.
+    root: Root for dfile.
+    idformat: for example '{:04d}' will creates 0000, 0001, 0002, etc.
+    partsize: Distributed file is made up of many parts. This is the max size of each part.
+    key: The key used to encrypt dfile.
+    listener: Will be reported immediately after one part is changed.
+    '''
+    #Define bundle chain
     b = []
+    #Local bundle
     b.append(local(root, idformat))
+    #Monitor every dump
     b.append(monitor(b[-1], lambda x:listener(b[0].getpath(x))))
+    #Verify
     b.append(crypto(b[-1], hash.cipher('md5')))
     b.append(crypto(b[-1], hash.cipher('sha1')))
+    #Encrypt
     b.append(crypto(b[-1], aes.cipher(key)))
+    #Verify
     b.append(crypto(b[-1], hash.cipher('md5')))
     b.append(crypto(b[-1], hash.cipher('sha1')))
+    #DFile
     return dfile.open(b[-1], partsize, 'wb')
 
 def _totuple(t):
+    '''
+    Translate a python datetime object into tuple object.
+    '''
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
 
 def _makeindex(time, name, lastmodify, range, summary):

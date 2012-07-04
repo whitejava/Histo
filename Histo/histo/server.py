@@ -37,19 +37,28 @@ def _sendfile(path):
 def _acceptservice(root, key):
     class _commithandler(StreamRequestHandler):
         def handle(self):
-            with tempdir('histo-server-') as td:
+            #Tempdir for receive request.
+            with tempdir('histo-') as td:
+                #Stores the file received from network.
                 temp = os.path.join(td, 'noname')
+                #Resolve request using some protocol
                 ac = _accept(self.rfile, temp)
+                #Rename the file to be commited.
                 temp2 = os.path.join(td, ac[2])
                 os.rename(temp, temp2)
+                #Log
                 log('accept', ac[1])
-                rp = repo
+                #Commit to repo
                 rp = repo(root, key, _sendfile)
                 rp.commitfile(temp2, time = ac[0], name = ac[1])
                 rp.close()
+    #Create tcp server
     server = TCPServer(('0.0.0.0',13750), _commithandler)
+    #Add shutdown list
     _shutdowns.append(server.shutdown)
+    #Log
     log('listening')
+    #Run server
     server.serve_forever()
 
 def _sendservice():
