@@ -41,15 +41,15 @@ def createfiles(root,script):
             with open(path, 'wb') as f:
                 f.write(data)
 
-def gettestdir(source = None):
-    callerfile = traceback.extract_stack()[-2][0]
+def gettestdir(source = None, stackdepth = 2):
+    callerfile = traceback.extract_stack()[-stackdepth][0]
     if source:
         return os.path.join(os.path.dirname(callerfile), source)
     else:
         return callerfile[:-3]
 
 def gettestfile(filename, source = None):
-    return os.path.join(gettestdir(source), filename)
+    return os.path.join(gettestdir(source, 3), filename)
 
 def runins(instab, script):
     result = []

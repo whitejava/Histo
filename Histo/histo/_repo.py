@@ -13,9 +13,9 @@ def _securedfile(root, idformat, partsize, key, listener):
     b.append(monitor(b[-1], lambda x:listener(b[0].getpath(x))))
     b.append(crypto(b[-1], hash.cipher('md5')))
     b.append(crypto(b[-1], hash.cipher('sha1')))
-    b.append(crypto(b[-1], aes.cipher(key)))
-    b.append(crypto(b[-1], hash.cipher('md5')))
-    b.append(crypto(b[-1], hash.cipher('sha1')))
+    #b.append(crypto(b[-1], aes.cipher(key)))
+    #b.append(crypto(b[-1], hash.cipher('md5')))
+    #b.append(crypto(b[-1], hash.cipher('sha1')))
     return dfile.open(b[-1], partsize, 'wb')
 
 def _totuple(t):
@@ -50,7 +50,8 @@ class repo:
         #Make index
         index = _makeindex(time,name,_totuple(datetime.datetime.fromtimestamp(os.path.getmtime(filename))),(start, end),generatesummary(name, filename))
         #Output index
-        pickle.dump(index, self._indexoutput)
+        self._indexoutput.write(bytes(repr(index),'utf8'))
+        #pickle.dump(index, self._indexoutput)
     
     def close(self):
         self._dataoutput.close()

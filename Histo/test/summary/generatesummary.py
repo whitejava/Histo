@@ -7,7 +7,7 @@ class test(testcase):
 
 def func(name, filename):
     filename = gettestfile(filename, source = 'archive')
-    return repr(generatesummary(name, filename))
+    return generatesummary(name, filename)
 
 data = \
 '''
