@@ -4,6 +4,8 @@ from socketserver import StreamRequestHandler, TCPServer
 from autotemp import tempfile, tempdir
 from ._repo import repo
 from threading import Thread
+import threading
+import pickle
 import time
 
 _shutdowns = []
@@ -31,8 +33,46 @@ def log(*message):
     t = '[{:13f}]'.format(time.clock())
     print(t, *message)
 
+class sendqueue:
+    def __init__(self, file):
+        self._file = file
+        self._lock = threading.Lock()
+        if os.path.isfile(file):
+            with open(file, 'rb') as f:
+                self._queue = pickle.load(f)
+        else:
+            self._queue = []
+            self._save()
+    
+    def empty(self):
+        with self._lock:
+            return self._queue == []
+    
+    def front(self):
+        with self._lock:
+            return self._queue[0]
+    
+    def append(self, x):
+        with self._lock:
+            for i in range(1, len(self._queue)):
+                if self._queue[i] == x:
+                    del self._queue[i]
+                    break
+            self._queue.append(x)
+            self._save()
+    
+    def pop(self):
+        with self._lock:
+            del self._queue[0]
+            self._save()
+    
+    def _save(self):
+        with open(self._file, 'wb') as f:
+            pickle.dump(self._queue, f)
+
 def _sendfile(path):
-    log('send file:', path)
+    global _sendqueue
+    _sendqueue.append(path)
 
 def _acceptservice(root, key):
     class _commithandler(StreamRequestHandler):
@@ -62,12 +102,21 @@ def _acceptservice(root, key):
     server.serve_forever()
 
 def _sendservice():
-    pass
+    global _sendqueue
+    while True:
+        if not _sendqueue.empty():
+            f = _sendqueue.front()
+            log('sending', f)
+            time.sleep(5)
+            _sendqueue.pop()
+        time.sleep(1)
 
 def _startthread(callable):
     Thread(target = callable).start()
 
 def serveforever(root, key):
+    global _sendqueue
+    _sendqueue = sendqueue(os.path.join(root, 'sendqueue'))
     _startthread(lambda:_acceptservice(root, key))
     _startthread(lambda:_sendservice())
     try:
