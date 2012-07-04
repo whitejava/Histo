@@ -70,7 +70,6 @@ class _writer:
     def __init__(self, bundle, partsize):
         assert partsize > 0
         self._bundle = bundle
-        self._changes = set()
         #Check dfile exists
         if bundle.exists(0):
             #Load state
@@ -108,7 +107,6 @@ class _writer:
             del self._buffer[:self._partsize]
             #Dump data
             self._bundle.dump(id, data)
-            self._changes.add(id)
             #Increase file size.
             self._filesize += len(data)
         #Update file size.
@@ -118,9 +116,6 @@ class _writer:
         assert not self._closed
         return self._filesize
 
-    def changes(self):
-        return self._changes
-
     def close(self):
         assert not self._closed
         self._closed = True
@@ -129,7 +124,6 @@ class _writer:
             id = self._filesize//self._partsize + 1
             buffer = bytes(self._buffer)
             self._bundle.dump(id, buffer)
-            self._changes.add(id)
         #Save state
         state = io.BytesIO()
         stream = objectstream(state)
@@ -138,7 +132,6 @@ class _writer:
         buffer = bytes(self._buffer)
         stream.writeobject(buffer)
         self._bundle.dump(0, state.getvalue())
-        self._changes.add(0)
 
 def open(bundle, partsize, mode = 'rb'):
     t = {'rb': _reader,

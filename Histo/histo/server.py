@@ -3,6 +3,9 @@ from stream import objectstream, copy
 from socketserver import StreamRequestHandler, TCPServer
 from autotemp import tempfile
 from ._repo import repo
+from threading import Thread
+import threading
+import time
 
 def _accept(stream, temp):
     #Object stream
@@ -29,8 +32,18 @@ def _commithandler(root, key):
                 rp = repo(root, key)
                 rp.commitfile(temp, *ac)
                 rp.close()
+                
     return R
 
-def serveforever(root, key):
+def _acceptservice(root, key):
     server = TCPServer(('0.0.0.0',13750), _commithandler(root, key))
     server.serve_forever()
+
+def _sendservice():
+    pass
+
+def serveforever(root, key):
+    Thread(lambda:_acceptservice(root, key)).start()
+    Thread(lambda:_sendservice()).start()
+    while True:
+        time.sleep(1)
