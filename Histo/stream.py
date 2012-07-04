@@ -86,3 +86,9 @@ class tcpstream:
 
     def close(self):
         self._sock.close()
+        
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *k):
+        self.close()

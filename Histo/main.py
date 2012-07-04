@@ -1,11 +1,15 @@
 from stream import tcpstream
+from listfiles import listfiles
 import histo.server
 import sys
 import hex
+import os
 
-def commitprevious(filename, ip):
-    stream = tcpstream((ip,13750))
-    histo.client.commitprevious(filename, stream)
+def commitprevious(root, ip):
+    for e in listfiles(root):
+        path = os.path.join(root, e)
+        with tcpstream((ip,13750)) as stream:
+            histo.client.commitprevious(path, stream)
 
 def serveforever(root, key):
     key = hex.decode(key)
@@ -15,4 +19,4 @@ if __name__ == '__main__':
     command = sys.argv[1]
     t = {'server': serveforever,
          'commitprevious': commitprevious}
-    t[command](sys.argv[2:])
+    t[command](*sys.argv[2:])
