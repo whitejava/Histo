@@ -57,7 +57,7 @@ def serveforever(root, key):
     _startthread(lambda:_sendservice())
     try:
         while True:
-            time.sleep(1)
+            time.sleep(0.1)
     finally:
         log('shutting down')
         for e in _shutdowns: e()
