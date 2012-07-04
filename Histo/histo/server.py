@@ -1,7 +1,7 @@
 import os
 from stream import objectstream, copy
 from socketserver import StreamRequestHandler, TCPServer
-from autotemp import tempfile
+from autotemp import tempfile, tempdir
 from ._repo import repo
 from threading import Thread
 import time
@@ -15,6 +15,8 @@ def _accept(stream, temp):
     datetime = stream.readobject()
     #Read name
     name = stream.readobject()
+    #Read filename
+    filename = stream.readobject()
     #Read filesize
     filesize = stream.readobject()
     #Read file data into temp
@@ -23,7 +25,7 @@ def _accept(stream, temp):
     #Check file size.
     assert filesize == os.path.getsize(temp)
     #Return
-    return (datetime, name)
+    return (datetime, name, filename)
 
 def log(*message):
     t = '[{:13f}]'.format(time.clock())
@@ -35,11 +37,15 @@ def _sendfile(path):
 def _acceptservice(root, key):
     class _commithandler(StreamRequestHandler):
         def handle(self):
-            with tempfile('histo-server-') as temp:
+            with tempdir('histo-server-') as td:
+                temp = os.path.join(td, 'noname')
                 ac = _accept(self.rfile, temp)
+                temp2 = os.path.join(td, ac[2])
+                os.rename(temp, temp2)
                 log('accept', ac[1])
+                rp = repo
                 rp = repo(root, key, _sendfile)
-                rp.commitfile(temp, *ac)
+                rp.commitfile(temp2, time = ac[0], name = ac[1])
                 rp.close()
     server = TCPServer(('0.0.0.0',13750), _commithandler)
     _shutdowns.append(server.shutdown)

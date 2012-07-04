@@ -48,7 +48,14 @@ class repo:
         #End position
         end = self._dataoutput.tell()
         #Make index
-        index = _makeindex(time,name,_totuple(datetime.datetime.fromtimestamp(os.path.getmtime(filename))),(start, end),generatesummary(name, filename))
+        lastmodify = os.path.getmtime(filename)
+        lastmodify = datetime.datetime.fromtimestamp(lastmodify)
+        lastmodify = _totuple(lastmodify)
+        range = (start, end)
+        summary = generatesummary(name, filename)
+        print('summary',name,filename)
+        print(summary)
+        index = _makeindex(time,name,lastmodify,range,summary)
         #Output index
         self._indexoutput.write(bytes(repr(index),'utf8'))
         #pickle.dump(index, self._indexoutput)

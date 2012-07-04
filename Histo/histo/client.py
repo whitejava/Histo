@@ -29,6 +29,8 @@ def commitfile(name, filename, stream, time = None):
     stream.writeobject(time)
     #Output name
     stream.writeobject(name)
+    #Output filename
+    stream.writeobject(os.path.basename(filename))
     #Output file size
     stream.writeobject(os.path.getsize(filename))
     #Output file data
