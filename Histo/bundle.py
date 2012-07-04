@@ -43,19 +43,16 @@ class crypto:
         return self._buundle.exists(id)
 
 class monitor:
-    def __init__(self, bundle):
+    def __init__(self, bundle, listener):
         self._bundle = bundle
-        self._changes = set()
+        self._listener = listener
     
     def dump(self, id, data):
         self._bundle.dump(id, data)
-        self._changes.add(id)
+        self._listener(id)
     
     def load(self, id):
         return self._bundle.load(id)
     
     def exists(self, id):
         return self._bundle.exists(id)
-    
-    def changes(self):
-        return list(self._changes)

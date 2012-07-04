@@ -29,11 +29,13 @@ def _commithandler(root, key):
         def handle(self):
             with tempfile('histo-server-') as temp:
                 ac = _accept(self.rfile, temp)
-                rp = repo(root, key)
+                rp = repo(root, key, _sendfile)
                 rp.commitfile(temp, *ac)
                 rp.close()
-                
     return R
+
+def _sendfile(path):
+    print('send file:', path)
 
 def _acceptservice(root, key):
     server = TCPServer(('0.0.0.0',13750), _commithandler(root, key))

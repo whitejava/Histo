@@ -7,15 +7,16 @@ import pickle
 import dfile
 import os
 
-def _securedfile(root, idformat, partsize, key, mode = 'wb'):
-    bundle = local(root, idformat)
-    bundle = monitor(bundle)
-    bundle = crypto(bundle, hash.cipher('md5'))
-    bundle = crypto(bundle, hash.cipher('sha1'))
-    bundle = crypto(bundle, aes.cipher(key))
-    bundle = crypto(bundle, hash.cipher('md5'))
-    bundle = crypto(bundle, hash.cipher('sha1'))
-    return dfile.open(bundle, partsize, mode)
+def _securedfile(root, idformat, partsize, key, mode = 'wb', listener):
+    b = []
+    b.append(local(root, idformat))
+    b.append(monitor(b[-1], lambda x:listener(b[0].getpath(x))))
+    b.append(crypto(b[-1], hash.cipher('md5')))
+    b.append(crypto(b[-1], hash.cipher('sha1')))
+    b.append(crypto(b[-1], aes.cipher(key)))
+    b.append(crypto(b[-1], hash.cipher('md5')))
+    b.append(crypto(b[-1], hash.cipher('sha1')))
+    return dfile.open(b[-1], partsize, mode)
 
 def _totuple(t):
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
@@ -24,12 +25,18 @@ def _makeindex(time, name, lastmodify, range, summary):
     return (('version', time), ('name', name), ('last-modify',lastmodify), ('range',range), ('summary',summary))
 
 class repo:
-    def __init__(self, root, key):
+    def __init__(self, root, key, listener):
         self._key = key
         #Create index output
-        self._indexoutput = _securedfile(os.path.join(root, 'index'), 'i{:06d}', 1024*1024, self._key)
+        path = os.path.join(root, 'index')
+        format = 'i{:06d}'
+        partsize = 1024*1024
+        self._indexoutput = _securedfile(path, format, partsize, self._key, listener)
         #Create data output
-        self._dataoutput = _securedfile(os.path.join(root, 'data'), 'd{:08d}', 1*1024*1024, self._key)
+        path = os.path.join(root, 'data')
+        format = 'd{:08d}'
+        partsize = 1024*1024
+        self._dataoutput = _securedfile(path, format, partsize, self._key, listener)
     
     def commitfile(self, filename, name, time = None):
         #Default time is now
