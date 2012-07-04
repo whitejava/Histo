@@ -43,6 +43,7 @@ class crypto:
 class monitor:
     def __init__(self, bundle):
         self._bundle = bundle
+        self._changes = set()
     
     def dump(self, id, data):
         self._bundle.dump(id, data)
@@ -55,4 +56,4 @@ class monitor:
         return self._bundle.exists(id)
     
     def changes(self):
-        return self._changes[:]
+        return list(self._changes)
