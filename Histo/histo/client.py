@@ -33,7 +33,7 @@ def commitfile(name, filename, stream, time = None):
     with open(filename, 'rb') as f:
         copy(f, stream)
 
-def commitprevious(filename, stream):
+def commitprevious(filename, stream = None):
     #Resolve file name
     time, name = _resolvefilename(filename)
     #Commit

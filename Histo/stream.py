@@ -1,5 +1,6 @@
 import struct
 import pickle
+import socket
 
 __all__ = ['copy','datastream','objectstream']
 
@@ -71,3 +72,17 @@ class objectstream:
     
     def readobject(self):
         return pickle.load(self._stream)
+
+class tcpstream:
+    def __init__(self, target):
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.connect(target)
+    
+    def write(self, data):
+        self._sock.sendall(data)
+    
+    def read(self, limit = None):
+        return self._sock.recv(limit)
+
+    def close(self):
+        self._sock.close()

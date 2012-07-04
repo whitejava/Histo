@@ -21,19 +21,16 @@ def _accept(stream, temp):
     #Return
     return (datetime, name)
 
-def _loadkey():
-    with open('/etc/histo-key') as f:
-        return hex.decode(f.read().strip())
+def _commithandler(root, key):
+    class R:
+        def handle(self):
+            with tempfile('histo-server-') as temp:
+                ac = _accept(self.rfile, temp)
+                rp = repo(root, key)
+                rp.commitfile(temp, *ac)
+                rp.close()
+    return R
 
-def _myrepo():
-    return repo('/var/histo', _loadkey())
-
-class _commithandler(StreamRequestHandler):
-    def handle(self):
-        with tempfile('histo-server-') as temp:
-            ac = _accept(self.rfile, temp)
-            _myrepo().commitfile(temp, *ac)
-
-def serveforever():
-    server = TCPServer(('0.0.0.0',13750), _commithandler)
+def serveforever(root, key):
+    server = TCPServer(('0.0.0.0',13750), _commithandler(root, key))
     server.serve_forever()
