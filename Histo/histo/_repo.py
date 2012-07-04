@@ -1,6 +1,6 @@
 from summary import generatesummary
 from cipher import aes,hash
-from bundle import local,crypto
+from bundle import local,crypto,monitor
 import datetime
 import stream
 import pickle
@@ -9,6 +9,7 @@ import os
 
 def _securedfile(root, idformat, partsize, key, mode = 'wb'):
     bundle = local(root, idformat)
+    bundle = monitor(bundle)
     bundle = crypto(bundle, hash.cipher('md5'))
     bundle = crypto(bundle, hash.cipher('sha1'))
     bundle = crypto(bundle, aes.cipher(key))
@@ -28,7 +29,7 @@ class repo:
         #Create index output
         self._indexoutput = _securedfile(os.path.join(root, 'index'), 'i{:06d}', 1024*1024, self._key)
         #Create data output
-        self._dataoutput = _securedfile(os.path.join(root, 'data'), 'd{:08d}', 10*1024*1024, self._key)
+        self._dataoutput = _securedfile(os.path.join(root, 'data'), 'd{:08d}', 1*1024*1024, self._key)
     
     def commitfile(self, filename, name, time = None):
         #Default time is now

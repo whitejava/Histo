@@ -7,21 +7,23 @@ class local:
         self._idformat = idformat
     
     def dump(self, id, data):
-        id = self._idformat.format(id)
-        path = os.path.join(self._root, id)
+        path = self.getpath(id)
         with open(path, 'wb') as f:
             f.write(data)
     
     def load(self, id):
-        id = self._idformat.format(id)
-        path = os.path.join(self._root, id)
+        path = self.getpath(id)
         with open(path, 'rb') as f:
             return f.read()
     
     def exists(self, id):
+        path = self.getpath(id)
+        return os.path.isfile(path)
+    
+    def getpath(self, id):
         id = self._idformat.format(id)
         path = os.path.join(self._root, id)
-        return os.path.isfile(path)
+        return path
 
 class crypto:
     def __init__(self, bundle, cipher):
