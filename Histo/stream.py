@@ -16,15 +16,20 @@ def _unpackint(a):
 def _unpacklong(a):
     return struct.unpack('!q', a)[0]
 
-def copy(input, output, chunksize = 128*1024):
-    while True:
-        #Read chunk
-        read = input.read(chunksize)
-        #Check EOF
-        if not read: break
-        #Output
-        output.write(read)
-
+def copy(input, output, chunksize = 128*1024, limit = None):
+    if limit == None:
+        while True:
+            read = input.read(chunksize)
+            if not read: break
+            output.write(read)
+    else:
+        while limit:
+            readsize = min(chunksize, limit)
+            read = input.read(readsize)
+            if not read: break
+            output.write(read)
+            limit -= len(read)
+            
 class datastream:
     def __init__(self, stream):
         self._stream = stream
@@ -59,19 +64,24 @@ class datastream:
     
 class objectstream:
     def __init__(self, stream):
-        self._stream = stream
+        self._stream = datastream(stream)
         
     def write(self, data):
         self._stream.write(data)
     
     def read(self, limit = None):
-        return self._stream.read(None)
+        return self._stream.read(limit)
     
     def writeobject(self, object):
-        pickle.dump(object, self._stream)
+        dump = pickle.dumps(object)
+        self._stream.writeint(len(dump))
+        self._stream.write(dump)
     
     def readobject(self):
-        return pickle.load(self._stream)
+        length = self._stream.readint()
+        dump = self._stream.read(length)
+        assert len(dump) == length
+        return pickle.loads(dump)
 
 class tcpstream:
     def __init__(self, target):
@@ -82,6 +92,8 @@ class tcpstream:
         self._sock.sendall(data)
     
     def read(self, limit = None):
+        if limit == None:
+            limit = 1024
         return self._sock.recv(limit)
 
     def close(self):
@@ -92,3 +104,14 @@ class tcpstream:
     
     def __exit__(self, *k):
         self.close()
+        
+class iostream:
+    def __init__(self, input, output):
+        self._input = input
+        self._output = output
+    
+    def write(self, data):
+        self._output.write(data)
+    
+    def read(self, limit = None):
+        return self._input.read(limit)

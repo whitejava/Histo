@@ -1,5 +1,5 @@
 import os
-from stream import objectstream, copy
+from stream import objectstream, copy, iostream
 from socketserver import StreamRequestHandler, TCPServer
 from autotemp import tempdir
 from ._repo import repo
@@ -14,28 +14,10 @@ from email.mime.base import MIMEBase
 from email import encoders
 import dns.resolver
 import hashlib
-import filelock
+from filelock import filelock
+import hex
 
 _shutdowns = []
-
-def _accept(stream, temp):
-    #Object stream
-    stream = objectstream(stream)
-    #Read datetime
-    datetime = stream.readobject()
-    #Read name
-    name = stream.readobject()
-    #Read filename
-    filename = stream.readobject()
-    #Read filesize
-    filesize = stream.readobject()
-    #Read file data into temp
-    with open(temp, 'wb') as f:
-        copy(stream, f)
-    #Check file size.
-    assert filesize == os.path.getsize(temp)
-    #Return
-    return (datetime, name, filename)
 
 def log(*message):
     t = '[{:13f}]'.format(time.clock())
@@ -85,21 +67,22 @@ def _queuesend(path):
 def _acceptservice(root, key):
     class _commithandler(StreamRequestHandler):
         def handle(self):
-            #Tempdir for receive request.
             with tempdir('histo-') as td:
-                #Stores the file received from network.
-                temp = os.path.join(td, 'noname')
-                #Resolve request using some protocol
-                ac = _accept(self.rfile, temp)
-                #Rename the file to be commited.
-                temp2 = os.path.join(td, ac[2])
-                os.rename(temp, temp2)
-                #Log
-                log('accept', ac[1])
-                #Commit to repo
+                stream = iostream(self.rfile, self.wfile)
+                stream = objectstream(stream)
+                time = stream.readobject()
+                name = stream.readobject()
+                filename = stream.readobject()
+                filesize = stream.readobject()
+                temp = os.path.join(td, filename)
+                with open(temp, 'wb') as f:
+                    copy(stream, f, limit = filesize)
+                assert filesize == os.path.getsize(temp)
+                log('accept', name)
                 rp = repo(root, key, _queuesend)
-                rp.commitfile(temp2, time = ac[0], name = ac[1])
+                rp.commitfile(temp, time = time, name = name)
                 rp.close()
+                stream.writeobject('OK')
     #Create tcp server
     server = TCPServer(('0.0.0.0',13750), _commithandler)
     #Add shutdown list
@@ -121,8 +104,6 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
     part.add_header('Content-Disposition', 'attachment; filename="{}"'.format(attachmentname))
     message.attach(part)
     message = message.as_string()
-    print(message)
-    return None
     host = receiver.split('@')
     host = host[-1]
     host = dns.resolver.query(host, 'MX')
@@ -181,6 +162,7 @@ def _successsend(filename):
             hash = hex.encode(hash)
             sendmail(sender, receiver, name, hash, name, data)
         except BaseException as e:
+            raise
             log('SMTP Error: ' + str(e))
         else:
             return

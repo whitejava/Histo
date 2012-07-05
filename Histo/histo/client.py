@@ -36,6 +36,7 @@ def commitfile(name, filename, stream, time = None):
     #Output file data
     with open(filename, 'rb') as f:
         copy(f, stream)
+    assert 'OK' == stream.readobject()
 
 def commitprevious(filename, stream = None):
     #Resolve file name
