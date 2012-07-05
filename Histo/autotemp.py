@@ -1,6 +1,7 @@
 import tempfile as otemp
 import os
 import shutil
+import stat
 
 __all__ = ['tempfile','tempdir']
 
@@ -17,6 +18,10 @@ class tempfile:
     def __exit__(self, *k):
         os.remove(self._temp)
 
+def _forceremove(func, path, exc_info):
+    os.chmod(path, stat.S_IWRITE)
+    os.unlink(path)
+
 class tempdir:
     def __init__(self, prefix = 'tmp', suffix = '', dir = None):
         self._prefix = prefix
@@ -28,4 +33,4 @@ class tempdir:
         return self._temp
     
     def __exit__(self, *k):
-        shutil.rmtree(self._temp)
+        shutil.rmtree(self._temp, onerror = _forceremove)
