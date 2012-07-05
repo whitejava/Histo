@@ -2,18 +2,18 @@ from stream import tcpstream
 from listfiles import listfiles
 import histo.server
 import histo.client
+import pchex
 import sys
-import hex
 import os
 
 def commitprevious(root, ip):
     for e in listfiles(root):
         path = os.path.join(root, e)
-        with tcpstream((ip,13750)) as stream:
+        with tcpstream((ip, 13750)) as stream:
             histo.client.commitprevious(path, stream)
 
 def serveforever(root, key):
-    key = hex.decode(key)
+    key = pchex.decode(key)
     histo.server.serveforever(root, key)
 
 if __name__ == '__main__':

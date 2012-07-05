@@ -27,7 +27,7 @@ def _untilsuccess(callable):
     while True:
         try:
             return callable()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             raise
         except BaseException as e:
             log(str(e))
@@ -44,8 +44,8 @@ class service:
                 log('sending', f)
                 _untilsuccess(lambda:_sendpart(f))
                 self._queue.pop()
-                log('finish', f)
             time.sleep(0.1)
+        log('send shutdown')
     
     def addqueue(self, filename):
         self._queue.append(filename)
