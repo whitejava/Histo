@@ -1,7 +1,7 @@
 from unittest import TestCase
 from listfiles import listfiles
 import traceback
-import hex
+import pchex
 import os
 
 __all__ = ['dumpdir', 'gettestfile', 'testcase', 'gettestdir']
@@ -21,7 +21,7 @@ def dumpdir(folder):
             #Read
             content = f.read()
             #To hex
-            content = hex.encode(content)
+            content = pchex.encode(content)
             #Format as "file:data"
             item = ':'.join([file, content])
             #Output
