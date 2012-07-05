@@ -2,7 +2,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from pclog import log
 import dns.resolver
 import socket
 
@@ -35,14 +34,12 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
         data = sock.recv(1024)
         data = data[:-2]
         data = str(data, 'utf8')
-        log('S:',data)
         data = data.split(' ')
         data = data[0]
         data = int(data)
         assert data == code
     def send(data):
         sock.sendall(bytes(data + '\r\n','utf8'))
-        log('C:',data)
     try:
         recv(220)
         send('HELO caipeichao.com')
