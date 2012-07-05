@@ -1,12 +1,19 @@
 import os
 from stream import objectstream, copy
 from socketserver import StreamRequestHandler, TCPServer
-from autotemp import tempfile, tempdir
+from autotemp import tempdir
 from ._repo import repo
 from threading import Thread
 import threading
 import pickle
 import time
+import socket
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import dns.resolver
+import hashlib
 
 _shutdowns = []
 
@@ -70,7 +77,7 @@ class sendqueue:
         with open(self._file, 'wb') as f:
             pickle.dump(self._queue, f)
 
-def _sendfile(path):
+def _queuesend(path):
     global _sendqueue
     _sendqueue.append(path)
 
@@ -89,7 +96,7 @@ def _acceptservice(root, key):
                 #Log
                 log('accept', ac[1])
                 #Commit to repo
-                rp = repo(root, key, _sendfile)
+                rp = repo(root, key, _queuesend)
                 rp.commitfile(temp2, time = ac[0], name = ac[1])
                 rp.close()
     #Create tcp server
@@ -101,13 +108,87 @@ def _acceptservice(root, key):
     #Run server
     server.serve_forever()
 
+def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata):
+    message = MIMEMultipart()
+    message['From'] = '<{}>'.format(sender)
+    message['To'] = '<{}>'.format(receiver)
+    message['Subject'] = subject
+    message.attach(MIMEText(content))
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(attachmentdata)
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', 'attachment; filename="{}"'.format(attachmentname))
+    message.attach(part)
+    message = message.as_string()
+    print(message)
+    return None
+    host = receiver.split('@')
+    host = host[-1]
+    host = dns.resolver.query(host, 'MX')
+    host = host[-1]
+    host = host.to_text()
+    host = host.split(' ')
+    host = host[1]
+    host = dns.resolver.query(host, 'A')
+    host = host[0]
+    host = host.to_text()
+    port = 25
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    def recv(code):
+        data = sock.recv(1024)
+        data = data[:-2]
+        data = str(data, 'utf8')
+        data = data.split(' ')
+        data = data[0]
+        data = int(data)
+        assert data == code
+    def send(m):
+        sock.sendall(bytes(m+'\r\n','utf8'))
+    try:
+        recv(220)
+        send('HELO caipeichao.com')
+        recv(250)
+        send('MAIL FROM:<{}>'.format(sender))
+        recv(250)
+        send('RCPT TO:<{}>'.format(receiver))
+        recv(250)
+        send('DATA')
+        for line in message.splitlines():
+            send(line)
+        send('.')
+        recv(354)
+        send('QUIT')
+        recv(250)
+    finally:
+        sock.close()
+
+def _successsend(filename):
+    while True:
+        try:
+            name = os.path.basename(filename)
+            sender = 'histo@caipeichao.com'
+            type = name[0]
+            boxid = name[1:]
+            boxid = int(boxid)
+            boxid = boxid // 5000
+            receiver = 'cpc.histo.{}{}'.format(type, boxid)
+            with open(filename, 'rb') as f:
+                data = f.read()
+            hash = hashlib.new('md5', data).digest()
+            hash = hex.encode(hash)
+            sendmail(sender, receiver, name, hash, name, data)
+        except BaseException as e:
+            log('SMTP Error: ' + str(e))
+        else:
+            return
+
 def _sendservice():
     global _sendqueue
     while True:
         if not _sendqueue.empty():
             f = _sendqueue.front()
-            log('sending', f)
-            time.sleep(5)
+            _successsend(f)
             _sendqueue.pop()
         time.sleep(1)
 
