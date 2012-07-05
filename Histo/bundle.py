@@ -1,4 +1,5 @@
 import os
+from filelock import filelock
 
 class local:
     def __init__(self, root, idformat):
@@ -8,13 +9,15 @@ class local:
     
     def dump(self, id, data):
         path = self.getpath(id)
-        with open(path, 'wb') as f:
-            f.write(data)
+        with filelock(path):
+            with open(path, 'wb') as f:
+                f.write(data)
     
     def load(self, id):
         path = self.getpath(id)
-        with open(path, 'rb') as f:
-            return f.read()
+        with filelock(path):
+            with open(path, 'rb') as f:
+                return f.read()
     
     def exists(self, id):
         path = self.getpath(id)

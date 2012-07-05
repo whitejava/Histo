@@ -14,6 +14,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import dns.resolver
 import hashlib
+import filelock
 
 _shutdowns = []
 
@@ -173,8 +174,9 @@ def _successsend(filename):
             boxid = int(boxid)
             boxid = boxid // 5000
             receiver = 'cpc.histo.{}{}'.format(type, boxid)
-            with open(filename, 'rb') as f:
-                data = f.read()
+            with filelock(filename):
+                with open(filename, 'rb') as f:
+                    data = f.read()
             hash = hashlib.new('md5', data).digest()
             hash = hex.encode(hash)
             sendmail(sender, receiver, name, hash, name, data)
