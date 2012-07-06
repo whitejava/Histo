@@ -2,6 +2,7 @@ from stream import tcpstream
 from listfiles import listfiles
 import histo.server
 import histo.client
+import histo.search.server
 import pchex
 import sys
 import os
@@ -15,6 +16,10 @@ def commitprevious(root, ip):
 def serveforever(root, key):
     key = pchex.decode(key)
     histo.server.serveforever(root, key)
+
+def searchengine(index, key):
+    key = pchex.decode(key)
+    histo.search.server.serveforever(index, key)
 
 if __name__ == '__main__':
     command = sys.argv[1]
