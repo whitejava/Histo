@@ -24,5 +24,6 @@ def searchengine(index, key):
 if __name__ == '__main__':
     command = sys.argv[1]
     t = {'server': serveforever,
-         'commitprevious': commitprevious}
+         'commitprevious': commitprevious,
+         'searchengine': searchengine}
     t[command](*sys.argv[2:])

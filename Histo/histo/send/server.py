@@ -2,10 +2,39 @@ from diskqueue import diskqueue
 from filelock import filelock
 from smtp import sendmail
 from pclog import log
+from netserver import netserver
 import hashlib
 import pchex
 import time
+import sys
 import os
+
+def main():
+    path = sys.argv[1]
+    q = diskqueue(path)
+    s = service(q)
+    s.start()
+    while True:
+        if not q.empty():
+            f = q.front()
+            log('sending', f)
+            _untilsuccess(lambda:_sendpart(f))
+            q.pop()
+        time.sleep(1)
+    log('shutdown')
+    s.shutdown()
+
+class service(netserver):
+    def __init__(self, queue):
+        netserver.__init__(('0.0.0.0', 13751), self.handle)
+        self._queue = queue
+    
+    def handle(self, stream):
+        method = stream.readobject()
+        assert method == 'add'
+        item = stream.readobject()
+        self._queue.append(item)
+        stream.writeobject('ok')
 
 def _sendpart(filename):
     name = os.path.basename(filename)
@@ -31,21 +60,3 @@ def _untilsuccess(callable):
             raise
         except BaseException as e:
             log(str(e))
-
-class service:
-    def __init__(self, root):
-        path = os.path.join(root, 'sendqueue')
-        self._queue = diskqueue(path)
-    
-    def run(self):
-        while True:
-            if not self._queue.empty():
-                f = self._queue.front()
-                log('sending', f)
-                _untilsuccess(lambda:_sendpart(f))
-                self._queue.pop()
-            time.sleep(0.1)
-        log('send shutdown')
-    
-    def addqueue(self, filename):
-        self._queue.append(filename)

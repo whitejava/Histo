@@ -25,7 +25,7 @@ bad.zip
 
 test
 contain space.rar
-('test', ('rar', None, (('a', (('1', None), ('3', None), ('2', None))),)))
+('test', ('a', (('1', None), ('3', None), ('2', None))))
 
 test
 embed.rar

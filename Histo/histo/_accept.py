@@ -25,6 +25,7 @@ def _accept(root, key, sendservice, stream):
         log('committing to repo')
         rp = repo(root, key, sendservice.addqueue)
         rp.commitfile(temp, time = time, name = name)
+        #If any error happened, dfile will NOT close to prevent data corruption.
         rp.close()
         #Response OK
         stream.writeobject('OK')

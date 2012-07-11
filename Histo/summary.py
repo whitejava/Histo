@@ -17,8 +17,23 @@ def generatesummary(name, filename):
         }
         for k in table:
             if filename.endswith(k):
-                return (name, table[k](filename))
+                return (name,) + table[k](filename)
         return (name, None)
+
+def _foldersummary(folder):
+    #List files.
+    files = os.listdir(folder)
+    #Generate each summary of each file.
+    return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
+
+def _archivesummary(archivetype, filename):
+    with tempdir('histo-summary-') as temp:
+        error = None
+        try:
+            _extractarchive(archivetype, filename, temp)
+        except _extracterror as e:
+            error = repr(e)
+        return _foldersummary(temp), (archivetype, error)
 
 def _extractarchive(type, filename, target):
     command = {'rar': ['rar', 'x', filename, target+'/'],
@@ -68,18 +83,3 @@ def _extractarchive(type, filename, target):
 class _extracterror(OSError):
     def __repr__(self):
         return 'extracterror({})'.format(repr(self.args[0]))
-
-def _foldersummary(folder):
-    #List files.
-    files = os.listdir(folder)
-    #Generate each summary of each file.
-    return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
-
-def _archivesummary(archivetype, filename):
-    with tempdir('histo-summary-') as temp:
-        error = None
-        try:
-            _extractarchive(archivetype, filename, temp)
-        except _extracterror as e:
-            error = repr(e)
-        return (archivetype, error, _foldersummary(temp))

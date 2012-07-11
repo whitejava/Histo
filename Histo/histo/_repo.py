@@ -40,7 +40,11 @@ def _totuple(t):
     return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
 
 def _makeindex(time, name, lastmodify, range, summary):
-    return (('version', time), ('name', name), ('last-modify',lastmodify), ('range',range), ('summary',summary))
+    return (('version', time),
+            ('name', name),
+            ('last-modify',lastmodify),
+            ('range',range),
+            ('summary',summary))
 
 class repo:
     def __init__(self, root, key, listener):
