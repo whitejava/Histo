@@ -68,8 +68,6 @@ class commit:
         self._repo = repo
         
     def run(self, stream):
-        method = stream.readobject()
-        assert method == 'commit'
         datetime = stream.readobject()
         if datetime == None:
             datetime = nowtuple()
@@ -96,6 +94,7 @@ class commit:
             objectstream(indexfile).writeobject(index)
             datafile.close()
             indexfile.close()
+        stream.writeobject('ok')
 
 class search:
     def __init__(self, repo):

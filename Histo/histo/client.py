@@ -2,7 +2,45 @@ __all__ = ['commitfile', 'commitprevious']
 
 import os
 import io
-from stream import objectstream, copy
+from stream import objectstream, copy, tcpstream
+from timetuple import totuple
+from datetime import datetime
+
+class client:
+    def __init__(self, address):
+        self._address = address
+    
+    def commitfile(self, name, path, time = None):
+        stream = tcpstream(self._address)
+        stream = objectstream(stream)
+        lastmodify = totuple(datetime.fromtimestamp(os.path.getmtime(path)))
+        filesize = os.path.getsize(path)
+        stream.writeobject(time)
+        stream.writeobject(name)
+        stream.writeobject(lastmodify)
+        stream.writeobject(os.path.basename(path))
+        stream.writeobject(filesize)
+        with open(path, 'rb') as f:
+            copy(f, stream, filesize)
+        assert stream.readobject() == 'ok'
+    
+    def commitprevious(self, filename):
+        time, name = _resolvefilename(filename)
+        self.commitfile(name, filename, time = time)
+    
+    def search(self, keyword):
+        stream = tcpstream(self._address)
+        stream = objectstream(stream)
+        stream.writeobject(keyword)
+        return stream.readobject()
+    
+    def get(self, range, path):
+        stream = tcpstream(self._address)
+        stream = objectstream(stream)
+        stream.writeobject(range)
+        length = range[1] - range[0]
+        with open(path, 'wb') as f:
+            copy(stream, f, length)
 
 def _cut(string, pieces):
     #Stream
@@ -21,25 +59,3 @@ def _resolvefilename(filename):
     if name.startswith('_'): name = name[1:]
     #Return
     return datetime, name
-
-def commitfile(name, filename, stream, time = None):
-    #Object stream
-    stream = objectstream(stream)
-    #Output time
-    stream.writeobject(time)
-    #Output name
-    stream.writeobject(name)
-    #Output filename
-    stream.writeobject(os.path.basename(filename))
-    #Output file size
-    stream.writeobject(os.path.getsize(filename))
-    #Output file data
-    with open(filename, 'rb') as f:
-        copy(f, stream)
-    assert 'OK' == stream.readobject()
-
-def commitprevious(filename, stream = None):
-    #Resolve file name
-    time, name = _resolvefilename(filename)
-    #Commit
-    commitfile(name, filename, stream, time = time)
