@@ -60,3 +60,6 @@ def _untilsuccess(callable):
             raise
         except BaseException as e:
             log(str(e))
+
+if __name__ == '__main__':
+    main()

@@ -2,7 +2,7 @@ import os
 from autotemp import tempdir
 from subprocess import Popen, PIPE
 
-__all__ = ['generatesummary']
+__all__ = ['generatesummary', 'walk']
 
 def generatesummary(name, filename):
     if os.path.isdir(filename):
@@ -19,6 +19,19 @@ def generatesummary(name, filename):
             if filename.endswith(k):
                 return (name,) + table[k](filename)
         return (name, None)
+
+def walk(summary):
+    if type(summary) is tuple:
+        if summary and type(summary[0]) is str:
+            yield summary[0]
+            for e in walk(summary[1]):
+                yield e
+        else:
+            for e in summary:
+                for f in walk(e):
+                    yield f
+    elif type(summary) is str:
+        yield summary
 
 def _foldersummary(folder):
     #List files.
