@@ -30,6 +30,7 @@ def main():
     address = sys.argv[1]
     address = address.split(':')
     ip = address[0]
+    port = 13750
     if len(address) > 1:
         port = int(address[1])
     address = (ip, port)
