@@ -7,7 +7,11 @@ from repo import repo
 from diskqueue import diskqueue
 from filelock import filelock
 import hashlib, pchex, threading, summary
-import pickle, time, smtp, os, io, sys
+import pickle, time, smtp, os, io, sys, logging
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(levelname)s - - %(asctime)s %(message)s',
+                    datefmt='[%Y-%m%d %H:%M:%S]')
 
 usage = """\
 server root key
@@ -17,7 +21,9 @@ def run(root, key):
     print(usage)
     smtp = smtpserver(root)
     queue = smtp.getqueue()
+    logging.debug('Starting server')
     server(repo(root, key, queue)).start()
+    logging.debug('Running smtp service')
     smtp.run()
 
 class smtpserver:
@@ -44,6 +50,7 @@ class smtpserver:
                 content = hash
                 attachmentname = name
                 attachmentdata = data
+                logging.debug('sending {} to {}', name, receiver)
                 smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
                 q.pop()
             time.sleep(1)
@@ -58,6 +65,7 @@ class server(netserver):
     
     def handle(self, stream):
         method = stream.readobject()
+        logging.debug('request: ' + method)
         t = {'commit': self._commit.run,
              'search': self._search.run,
              'get': self._get.run}
@@ -76,6 +84,8 @@ class commit:
         lastmodify = stream.readobject()
         filename = stream.readobject()
         filesize = stream.readobject()
+        logging.debug('name: ' + name)
+        logging.debug('filesize: ' + filesize)
         with tempdir('histo-repo-') as t:
             temp = os.path.join(t, filename)
             with open(temp, 'wb') as f:
@@ -96,6 +106,7 @@ class commit:
             datafile.close()
             indexfile.close()
         stream.writeobject('ok')
+        logging.debug('ok')
 
 class search:
     def __init__(self, repo):
