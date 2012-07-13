@@ -85,7 +85,7 @@ class commit:
         filename = stream.readobject()
         filesize = stream.readobject()
         logging.debug('name: ' + name)
-        logging.debug('filesize: ' + filesize)
+        logging.debug('filesize: {}'.format(filesize))
         with tempdir('histo-repo-') as t:
             temp = os.path.join(t, filename)
             with open(temp, 'wb') as f:
