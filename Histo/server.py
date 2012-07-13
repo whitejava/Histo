@@ -9,7 +9,12 @@ from filelock import filelock
 import hashlib, pchex, threading, summary
 import pickle, time, smtp, os, io, sys
 
+usage = """\
+server root key
+"""
+
 def run(root, key):
+    print(usage)
     smtp = smtpserver()
     queue = smtp.getqueue()
     server(repo(root, key, queue)).start()
