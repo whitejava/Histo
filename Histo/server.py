@@ -9,7 +9,7 @@ from filelock import filelock
 import hashlib, pchex, threading, summary
 import pickle, time, smtp, os, io, sys, logging
 
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=logging.DEBUG,
                     format='%(levelname)s - - %(asctime)s %(message)s',
                     datefmt='[%Y-%m%d %H:%M:%S]')
 
