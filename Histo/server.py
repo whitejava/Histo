@@ -15,7 +15,7 @@ server root key
 
 def run(root, key):
     print(usage)
-    smtp = smtpserver()
+    smtp = smtpserver(root)
     queue = smtp.getqueue()
     server(repo(root, key, queue)).start()
     smtp.run()
@@ -23,6 +23,9 @@ def run(root, key):
 class smtpserver:
     def __init__(self, root):
         self._queue = diskqueue(os.path.join(root, 'sendqueue'))
+    
+    def getqueue(self):
+        return self._queue
     
     def run(self):
         q = self._queue
