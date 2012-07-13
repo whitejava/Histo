@@ -83,12 +83,14 @@ class client:
     def search(self, keyword):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
+        stream.writeobject('search')
         stream.writeobject(keyword)
         return stream.readobject()
     
     def get(self, range, path):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
+        stream.writeobject('get')
         stream.writeobject(range)
         length = range[1] - range[0]
         with open(path, 'wb') as f:
