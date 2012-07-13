@@ -20,9 +20,6 @@ def run(root, key):
     server(repo(root, key, queue)).start()
     smtp.run()
 
-if __name__ == '__main__':
-    run(sys.argv[1], pchex.decode(sys.argv[2]))
-
 class smtpserver:
     def __init__(self, root):
         self._queue = diskqueue(os.path.join(root, 'sendqueue'))
@@ -130,3 +127,6 @@ class get:
         f.seek(range[0])
         copy(f, stream, range[1] - range[0])
         f.close()
+
+if __name__ == '__main__':
+    run(sys.argv[1], pchex.decode(sys.argv[2]))

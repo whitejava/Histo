@@ -43,9 +43,6 @@ def main():
     t[command](*sys.argv[3:])
     print('ok')
 
-if __name__ == '__main__':
-    main()
-
 def showsearchresult(a):
     print(a)
 
@@ -102,3 +99,6 @@ def _resolvefilename(filename):
     if name.startswith('_'): name = name[1:]
     #Return
     return datetime, name
+
+if __name__ == '__main__':
+    main()
