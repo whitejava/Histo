@@ -6,21 +6,17 @@ from autotemp import tempdir
 from .repo import repo
 from diskqueue import diskqueue
 from filelock import filelock
-import hashlib
-import pchex
-import threading
-import summary
-import pickle
-import time
-import smtp
-import os
-import io
+import hashlib, pchex, threading, summary
+import pickle, time, smtp, os, io, sys
 
 def run(root, key):
     smtp = smtpserver()
     queue = smtp.getqueue()
     server(repo(root, key, queue)).start()
     smtp.run()
+
+if __name__ == '__main__':
+    run(sys.argv[1], pchex.decode(sys.argv[2]))
 
 class smtpserver:
     def __init__(self, root):
