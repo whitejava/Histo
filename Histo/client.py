@@ -69,6 +69,16 @@ class client:
         time, name = _resolvefilename(filename)
         self.commitfile(name, filename, time = time)
     
+    def commitprevious2(self, path):
+        name = os.path.dirname(path)
+        time = name[:19]
+        time = time.split()
+        time = [int(e) for e in time]
+        time += [0]
+        name = name[20:-4]
+        self.commitfile(name, path, time = time)
+        
+    
     def search(self, keyword):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
