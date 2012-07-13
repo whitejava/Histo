@@ -1,6 +1,6 @@
 from Crypto.Cipher import AES
 from Crypto.Random import random
-from .padding import pkcs7padding
+import pkcs7padding
 
 __all__ = ['cipher']
 

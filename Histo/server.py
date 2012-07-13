@@ -3,7 +3,7 @@ from summary import generatesummary
 from netserver import netserver
 from timetuple import nowtuple
 from autotemp import tempdir
-from .repo import repo
+import repo
 from diskqueue import diskqueue
 from filelock import filelock
 import hashlib, pchex, threading, summary
