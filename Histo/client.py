@@ -56,6 +56,7 @@ class client:
         stream = objectstream(stream)
         lastmodify = totuple(datetime.fromtimestamp(os.path.getmtime(path)))
         filesize = os.path.getsize(path)
+        stream.writeobject('commit')
         stream.writeobject(time)
         stream.writeobject(name)
         stream.writeobject(lastmodify)
