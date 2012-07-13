@@ -1,10 +1,53 @@
 __all__ = ['commitfile', 'commitprevious']
 
-import os
-import io
+import os, io, sys
 from stream import objectstream, copy, tcpstream
 from timetuple import totuple
 from datetime import datetime
+
+usage = '''\
+histo.client ip[:port] command[ parameter1[ parameter2[...]]]
+command can be one of following values:
+commitfile        name
+                  path
+                  
+commitv1          path
+
+commitv2          path
+
+search            keyword
+
+get               start
+                  end
+                  output path
+
+For example:
+histo.client 192.168.1.2:13750 commitfile Test /home/username/test.rar
+'''
+
+def main():
+    print(usage)
+    address = sys.argv[1]
+    address = address.split(':')
+    ip = address[0]
+    if len(address) > 1:
+        port = int(address[1])
+    address = (ip, port)
+    c = client(address)
+    t = {'commitfile': c.commitfile,
+         'commitv1': c.commitprevious,
+         'commitv2': c.commitprevious2,
+         'search': lambda *k:showsearchresult(c.search(*k)),
+         'get': c.get}
+    command = sys.argv[2]
+    t[command](*sys.argv[3:])
+    print('ok')
+
+if __name__ == '__main__':
+    main()
+
+def showsearchresult(a):
+    print(a)
 
 class client:
     def __init__(self, address):
