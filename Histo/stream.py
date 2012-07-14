@@ -18,17 +18,22 @@ def _unpacklong(a):
 
 def copy(input, output, chunksize = 128*1024, limit = None):
     if limit == None:
+        result = 0
         while True:
             read = input.read(chunksize)
             if not read: break
             output.write(read)
+            result += len(read)
+        return result
     else:
         while limit:
             readsize = min(chunksize, limit)
             read = input.read(readsize)
             if not read: break
             output.write(read)
+            result += len(read)
             limit -= len(read)
+        return result
             
 class datastream:
     def __init__(self, stream):

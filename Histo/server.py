@@ -86,10 +86,13 @@ class commit:
         filesize = stream.readobject()
         logging.debug('name: ' + name)
         logging.debug('filesize: {}'.format(filesize))
+        logging.debug('receiving data')
         with tempdir('histo-repo-') as t:
             temp = os.path.join(t, filename)
             with open(temp, 'wb') as f:
-                copy(stream, f, filesize)
+                assert copy(stream, f, filesize) == filesize
+            logging.debug('receive data ok')
+            logging.debug('writting to repo')
             datafile = self._repo.open('data', 'wb')
             start = datafile.tell()
             with open(temp, 'rb') as f:
@@ -105,8 +108,9 @@ class commit:
             objectstream(indexfile).writeobject(index)
             datafile.close()
             indexfile.close()
+            logging.debug('write ok')
         stream.writeobject('ok')
-        logging.debug('ok')
+        logging.debug('all ok')
 
 class search:
     def __init__(self, repo):

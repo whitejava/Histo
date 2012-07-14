@@ -63,7 +63,8 @@ class client:
         stream.writeobject(os.path.basename(path))
         stream.writeobject(filesize)
         with open(path, 'rb') as f:
-            copy(f, stream, filesize)
+            assert copy(f, stream, filesize) == filesize
+        print('client send finish')
         assert stream.readobject() == 'ok'
     
     def commitprevious(self, filename):
