@@ -115,5 +115,37 @@ def _resolvefilename(filename):
     #Return
     return datetime, name
 
+from netserver import netserver
+class test(netserver):
+    def __init__(self):
+        netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
+    
+    def handle(self, stream):
+        while True:
+            x = stream.read(128*1024)
+            if not x: break
+            print('server',len(x))
+
+import time
+import random
+class testc:
+    def run(self):
+        stream = tcpstream(('127.0.0.1',13750))
+        while True:
+            x = random.choice(b'0123456789')
+            x = bytes([x])
+            x = x*128*1024
+            print('client',len(x))
+            stream.write(x)
+            time.sleep(0.1)
+
+def testcs():
+    s = test()
+    try:
+        s.start()
+        testc().run()
+    finally:
+        s.shutdown()
+
 if __name__ == '__main__':
     main()

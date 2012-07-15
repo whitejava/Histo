@@ -29,12 +29,13 @@ def copy(input, output, chunksize = 128*1024, limit = None):
         while limit:
             readsize = min(chunksize, limit)
             read = input.read(readsize)
+            print('copy read', len(read))
             if not read: break
             output.write(read)
             result += len(read)
             limit -= len(read)
         return result
-            
+
 class datastream:
     def __init__(self, stream):
         self._stream = stream
