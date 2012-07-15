@@ -26,10 +26,48 @@ def run(root, key):
     main = mainserver(repo(root, key, queue))
     main.start()
     logging.debug('Running smtp service')
+    smtp.start()
     try:
-        smtp.run()
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
-        main.shutdown()
+        pass
+    smtp.shutdown()
+    main.shutdown()
+
+class sendthread(Thread):
+    def __init__(self, queue):
+        self.__init__()
+        self._queue = queue
+        self._exit = False
+    
+    def shutdown(self):
+        self._exit = True
+    
+    def run(self):
+        while not self._exit:
+            taskid, each = self._queue.fetchtask()
+            path = each[0]
+            name = os.path.basename(path)
+            with filelock(path):
+                with open(path, 'rb') as f:
+                    data = f.read()
+            hash = pchex.encode(hashlib.new('md5', data).digest())
+            sender = 'histo@caipeichao.com'
+            receiver = each[1]
+            subject = name
+            content = hash
+            attachmentname = name
+            attachmentdata = data
+            logging.debug('sending {} to {}'.format(name, receiver))
+            try:
+                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
+            except Exception as e:
+                self._queue.feedback(taskid, False)
+                logging.exception(e)
+            else:
+                self._queue.feedback(taskid, True)
+            logging.debug('finish send {}'.format(name))
 
 class smtpserver:
     def __init__(self, root):
@@ -38,47 +76,14 @@ class smtpserver:
     def getqueue(self):
         return self._queue
     
-    def run(self):
-        q = self._queue
-        lock = threading.Lock()
-        threadcount = 0
-        while True:
-            try:
-                if not q.empty() and threadcount < 5:
-                    taskid, each = q.fetchtask()
-                    def sendthread():
-                        with lock:
-                            threadcount += 1
-                        taskid2, each2 = taskid, each
-                        path = each2[0]
-                        name = os.path.basename(path)
-                        with filelock(path):
-                            with open(path, 'rb') as f:
-                                data = f.read()
-                        hash = pchex.encode(hashlib.new('md5', data).digest())
-                        sender = 'histo@caipeichao.com'
-                        receiver = each2[1]
-                        subject = name
-                        content = hash
-                        attachmentname = name
-                        attachmentdata = data
-                        logging.debug('sending {} to {}'.format(name, receiver))
-                        try:
-                            smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
-                        except Exception:
-                            q.feedback(taskid, False)
-                        finally:
-                            with lock:
-                                threadcount -= 1
-                        q.feedback(taskid, True)
-                        logging.debug('finish send {}'.format(name))
-                    Thread(target = sendthread).start()
-            except NoTask:
-                pass
-            except Exception as e:
-                logging.exception(e)
-                q.feedback(taskid, False)
-            time.sleep(1)
+    def shutdown(self):
+        for e in self._threads:
+            e.shutdown()
+    
+    def start(self):
+        self._threads = [sendthread(self._queue) for i in range(5)]
+        for e in self._threads:
+            e.start()
 
 class mainserver(netserver):
     def __init__(self, repo):
