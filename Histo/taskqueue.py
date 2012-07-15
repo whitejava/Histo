@@ -26,11 +26,11 @@ class optimizedqueue:
                     self._base.removeat(i)
             self._base.append(x)
 
-    def __getattr__(self, x):
+    def __getitem__(self, x):
         with self._lock:
             return self._base[x]
 
-    def __delattr__(self, x):
+    def __delitem__(self, x):
         with self._lock:
             del self._base[x]
     
@@ -97,11 +97,11 @@ class diskqueue:
         with self._lock:
             return len(self._queue)
     
-    def __getattr__(self, x):
+    def __getitem__(self, x):
         with self._lock:
             return self._queue[x]
     
-    def __delattr__(self, x):
+    def __delitem__(self, x):
         with self._lock:
             del self._queue[x]
             self._save()
