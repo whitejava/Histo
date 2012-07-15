@@ -46,7 +46,7 @@ def _textsummary(path):
         r = f.read(100)
     for encoding in 'utf8','gbk':
         a = str(r, encoding, 'ignore')
-        if len(a) > result:
+        if len(a) > len(result):
             result = a
     print('textsummary', result)
     return result
