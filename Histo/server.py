@@ -50,7 +50,7 @@ class smtpserver:
                 content = hash
                 attachmentname = name
                 attachmentdata = data
-                logging.debug('sending {} to {}', name, receiver)
+                logging.debug('sending {} to {}'.format(name, receiver))
                 smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
                 q.pop()
             time.sleep(1)
