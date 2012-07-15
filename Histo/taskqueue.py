@@ -65,7 +65,7 @@ class taskqueue:
             self._fetched.remove(index)
             if result:
                 del self._base[index]
-                for i in len(self._fetched):
+                for i in range(len(self._fetched)):
                     if self._fetched[i] > index:
                         self._fetched[i] -= 1
 
