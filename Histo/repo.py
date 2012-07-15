@@ -43,7 +43,7 @@ class repo:
             typemark = typemarks[type]
             mailboxsize = mailboxsizes[type]
             boxid = id // mailboxsize
-            mailaddress = 'cpc.histo.{type}.{boxid}@gmail.com'.format(type = typemark, boxid = boxid)
+            mailaddress = 'cpc.histo.{type}{boxid}@gmail.com'.format(type = typemark, boxid = boxid)
             self._sendqueue.append((path, mailaddress))
         format = typemarks[type] + '{}'
         partsize = partsizes[type]
