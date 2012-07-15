@@ -22,9 +22,13 @@ def run(root, key):
     smtp = smtpserver(root)
     queue = smtp.getqueue()
     logging.debug('Starting main server')
-    server(repo(root, key, queue)).start()
+    main = mainserver(repo(root, key, queue))
+    main.start()
     logging.debug('Running smtp service')
-    smtp.run()
+    try:
+        smtp.run()
+    except KeyboardInterrupt:
+        main.shutdown()
 
 class smtpserver:
     def __init__(self, root):
@@ -59,7 +63,7 @@ class smtpserver:
                 logging.exception(e)
             time.sleep(1)
 
-class server(netserver):
+class mainserver(netserver):
     def __init__(self, repo):
         netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
         self._commit = commit(repo)
