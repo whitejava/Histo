@@ -49,7 +49,7 @@ def _textsummary(path):
         if len(a) > len(result):
             result = a
     print('textsummary', result)
-    return result
+    return (result,)
 
 def _archivesummary(archivetype, filename):
     with tempdir('histo-') as temp:
