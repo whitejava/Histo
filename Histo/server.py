@@ -36,23 +36,26 @@ class smtpserver:
     def run(self):
         q = self._queue
         while True:
-            if not q.empty():
-                each = q.front()
-                path = each[0]
-                name = os.path.basename(path)
-                with filelock(path):
-                    with open(path, 'rb') as f:
-                        data = f.read()
-                hash = pchex.encode(hashlib.new('md5', data).digest())
-                sender = 'histo@caipeichao.com'
-                receiver = each[1]
-                subject = name
-                content = hash
-                attachmentname = name
-                attachmentdata = data
-                logging.debug('sending {} to {}'.format(name, receiver))
-                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
-                q.pop()
+            try:
+                if not q.empty():
+                    each = q.front()
+                    path = each[0]
+                    name = os.path.basename(path)
+                    with filelock(path):
+                        with open(path, 'rb') as f:
+                            data = f.read()
+                    hash = pchex.encode(hashlib.new('md5', data).digest())
+                    sender = 'histo@caipeichao.com'
+                    receiver = each[1]
+                    subject = name
+                    content = hash
+                    attachmentname = name
+                    attachmentdata = data
+                    logging.debug('sending {} to {}'.format(name, receiver))
+                    smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
+                    q.pop()
+            except BaseException as e:
+                logging.exception(e)
             time.sleep(1)
 
 class server(netserver):
