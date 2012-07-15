@@ -46,7 +46,11 @@ class sendthread(Thread):
     
     def run(self):
         while not self._exit:
-            taskid, each = self._queue.fetchtask()
+            time.sleep(1)
+            try:
+                taskid, each = self._queue.fetchtask()
+            except NoTask:
+                continue
             path = each[0]
             name = os.path.basename(path)
             with filelock(path):
