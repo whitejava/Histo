@@ -14,6 +14,7 @@ def generatesummary(name, filename):
             '.tar.gz': lambda x:_archivesummary('tar',x),
             '.tar.bz2': lambda x:_archivesummary('tar',x),
             '.zip': lambda x:_archivesummary('zip',x),
+            '.txt': _textsummary,
         }
         for k in table:
             if filename.endswith(k):
@@ -38,6 +39,10 @@ def _foldersummary(folder):
     files = os.listdir(folder)
     #Generate each summary of each file.
     return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
+
+def _textsummary(path):
+    with open(path, 'r') as f:
+        return f.read(100)
 
 def _archivesummary(archivetype, filename):
     with tempdir('histo-') as temp:
