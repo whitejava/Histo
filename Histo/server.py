@@ -21,7 +21,7 @@ def run(root, key):
     print(usage)
     smtp = smtpserver(root)
     queue = smtp.getqueue()
-    logging.debug('Starting server')
+    logging.debug('Starting main server')
     server(repo(root, key, queue)).start()
     logging.debug('Running smtp service')
     smtp.run()

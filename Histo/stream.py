@@ -16,7 +16,7 @@ def _unpackint(a):
 def _unpacklong(a):
     return struct.unpack('!q', a)[0]
 
-def copy(input, output, chunksize = 128*1024, limit = None):
+def copy(input, output, limit = None, chunksize = 128*1024):
     if limit == None:
         result = 0
         while True:
