@@ -13,27 +13,23 @@ class optimizedqueue:
     def empty(self):
         with self._lock:
             return self._base.empty()
-    
-    def getall(self):
-        with self._lock:
-            return self._base.getall()
-        
+
     def append(self, x):
         with self._lock:
-            q = self._base.getall()
+            q = self._base
             for i in range(len(q)):
                 if q[i] == x:
-                    del self._base[i]
-            self._base.append(x)
+                    del q[i]
+            q.append(x)
 
     def __getitem__(self, x):
         with self._lock:
             return self._base[x]
-
+    
     def __delitem__(self, x):
         with self._lock:
             del self._base[x]
-    
+
     def __len__(self):
         with self._lock:
             return len(self._base)
@@ -42,11 +38,15 @@ class taskqueue:
     def __init__(self, base):
         self._base = base
         self._lock = threading.Lock()
-        self._fetched = []
+        self._fetched = dict()
     
     def empty(self):
         with self._lock:
             return self._base.empty()
+    
+    def __len__(self):
+        with self._lock:
+            return len(self._base)
     
     def append(self, x):
         with self._lock:
@@ -54,20 +54,36 @@ class taskqueue:
     
     def fetchtask(self):
         with self._lock:
-            for i in range(len(self._base)):
-                if i not in self._fetched:
-                    self._fetched.append(i)
-                    return (i, self._base[i])
-            raise NoTask
+            fetchid = self._availablefetchid()
+            taskid = self._availabletaskid()
+            task = self._base[taskid]
+            self._fetched[fetchid] = taskid
+            return (fetchid, task)
     
-    def feedback(self, index, result = True):
+    def _availabletaskid(self):
+        for i in range(len(self._base)):
+            if i not in self._fetched.values():
+                return i
+        raise NoTask
+    
+    def _availablefetchid(self):
+        for j in range(len(self._fetched)):
+            if j not in self._fetched:
+                return j
+        return len(self._fetched)
+    
+    def feedback(self, fetchid, result = True):
         with self._lock:
-            self._fetched.remove(index)
+            taskid = self._fetched[fetchid]
+            del self._fetched[fetchid]
             if result:
-                del self._base[index]
-                for i in range(len(self._fetched)):
-                    if self._fetched[i] > index:
-                        self._fetched[i] -= 1
+                self._removetask(taskid)
+    
+    def _removetask(self, taskid):
+        del self._base[taskid]
+        for e in self._fetched:
+            if self._fetched[e] > taskid:
+                self._fetched[e] -= 1
 
 class diskqueue:
     def __init__(self, file):
@@ -116,3 +132,36 @@ class diskqueue:
             os.makedirs(dir)
         with open(self._file, 'wb') as f:
             pickle.dump(self._queue, f)
+
+import time, random
+from threading import Thread
+
+def testmain():
+    q = taskqueue([])
+    def handlethread():
+        while True:
+            try:
+                taskid, name = q.fetchtask()
+                print('start', name)
+                time.sleep(random.randrange(1000)/1000)
+                if random.choice([True, True]):
+                    q.feedback(taskid, True)
+                    print('ok', name)
+                else:
+                    q.feedback(taskid, False)
+                    print('fail', name)
+            except NoTask:
+                pass
+            time.sleep(0.1)
+    def taskthread():
+        for i in range(100):
+            q.append(i)
+            #print('new', i)
+            time.sleep(0.1)
+            #time.sleep(random.randrange(1000)/1000*len(q)/100)
+    for i in range(10):
+        Thread(target = handlethread).start()
+    taskthread()
+
+if __name__ == '__main__':
+    testmain()
