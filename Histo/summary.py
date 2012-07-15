@@ -61,7 +61,8 @@ def _archivesummary(archivetype, filename):
         return _foldersummary(temp), (archivetype, error)
 
 def _extractarchive(type, filename, target):
-    command = {'rar': ['rar', 'x', filename, target+'/'],
+    p7zcommand = ['7z', 'x', filename, '-o', target]
+    command = {'rar': ['rar', 'x', filename, '-p-', target+'/'],
                'tar': ['tar', '-xf', filename, '-C', target],
                'zip': ['unzip', filename, '-d', target]}
     command = command[type]
