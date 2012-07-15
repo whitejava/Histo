@@ -23,7 +23,7 @@ class optimizedqueue:
             q = self._base.getall()
             for i in range(len(q)):
                 if q[i] == x:
-                    self._base.removeat(i)
+                    del self._base[i]
             self._base.append(x)
 
     def __getitem__(self, x):
