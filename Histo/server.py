@@ -54,6 +54,7 @@ class smtpserver:
                     logging.debug('sending {} to {}'.format(name, receiver))
                     smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
                     q.pop()
+                    logging.debug('finish send {}'.format(name))
             except BaseException as e:
                 logging.exception(e)
             time.sleep(1)
