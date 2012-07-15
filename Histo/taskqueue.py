@@ -2,7 +2,7 @@ import threading
 import pickle
 import os
 
-class NoTask:
+class NoTask(Exception):
     pass
 
 class optimizedqueue:

@@ -44,7 +44,7 @@ class smtpserver:
         threadcount = 0
         while True:
             try:
-                if not q.empty() and self._threadcount < 5:
+                if not q.empty() and threadcount < 5:
                     taskid, each = q.fetchtask()
                     def sendthread():
                         with lock:
