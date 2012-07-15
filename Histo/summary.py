@@ -40,7 +40,7 @@ def _foldersummary(folder):
     return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
 
 def _archivesummary(archivetype, filename):
-    with tempdir('histo-summary-') as temp:
+    with tempdir('histo-') as temp:
         error = None
         try:
             _extractarchive(archivetype, filename, temp)
