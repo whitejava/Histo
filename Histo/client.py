@@ -35,7 +35,7 @@ def main():
         port = int(address[1])
     address = (ip, port)
     c = client(address)
-    t = {'commitfile': c.commitfile,
+    t = {'commit': c.commitfile,
          'commitallv1': c.commitallv1,
          'commitallv2': c.commitallv2,
          'commitv1': c.commitv1,
