@@ -59,6 +59,8 @@ class smtpserver:
                     smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
                     q.pop()
                     logging.debug('finish send {}'.format(name))
+            except KeyboardInterrupt:
+                break
             except BaseException as e:
                 logging.exception(e)
             time.sleep(1)
