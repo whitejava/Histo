@@ -26,6 +26,7 @@ def copy(input, output, limit = None, chunksize = 128*1024):
             result += len(read)
         return result
     else:
+        result = 0
         while limit:
             readsize = min(chunksize, limit)
             read = input.read(readsize)
