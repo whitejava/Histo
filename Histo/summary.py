@@ -41,8 +41,15 @@ def _foldersummary(folder):
     return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
 
 def _textsummary(path):
-    with open(path, 'r') as f:
-        return f.read(100)
+    result = ''
+    with open(path,'rb') as f:
+        r = f.read(100)
+    for encoding in 'utf8','gbk':
+        a = str(r, encoding, 'ignore')
+        if len(a) > result:
+            result = a
+    print('textsummary', result)
+    return result
 
 def _archivesummary(archivetype, filename):
     with tempdir('histo-') as temp:
