@@ -60,7 +60,7 @@ class smtpserver:
                     q.pop()
                     logging.debug('finish send {}'.format(name))
             except KeyboardInterrupt:
-                break
+                raise
             except BaseException as e:
                 logging.exception(e)
             time.sleep(1)
