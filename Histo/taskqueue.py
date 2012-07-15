@@ -56,6 +56,7 @@ class taskqueue:
         with self._lock:
             for i in range(len(self._base)):
                 if i not in self._fetched:
+                    self._fetched.append(i)
                     return (i, self._base[i])
             raise Exception('no task to fetch')
     
