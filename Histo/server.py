@@ -37,7 +37,7 @@ def run(root, key):
 
 class sendthread(Thread):
     def __init__(self, queue):
-        self.__init__(self)
+        Thread.__init__(self)
         self._queue = queue
         self._exit = False
     
