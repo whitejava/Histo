@@ -95,7 +95,7 @@ def _extractarchive(type, filename, target):
                'tar': tarmessage,
                'zip': zipmessage}
     proc = Popen(command, stdin = PIPE)
-    proc.stdin.close()
+    proc.stdin.write('\n'*1000)
     exitcode = proc.wait()
     if exitcode:
         message = message[type]

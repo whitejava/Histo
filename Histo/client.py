@@ -36,8 +36,10 @@ def main():
     address = (ip, port)
     c = client(address)
     t = {'commitfile': c.commitfile,
-         'commitv1': c.commitprevious,
-         'commitv2': c.commitprevious2,
+         'commitallv1': c.commitallv1,
+         'commitallv2': c.commitallv2,
+         'commitv1': c.commitv1,
+         'commitv2': c.commitv2,
          'search': lambda *k:showsearchresult(c.search(*k)),
          'get': c.get}
     command = sys.argv[2]
@@ -67,11 +69,19 @@ class client:
         print('client send finish')
         assert stream.readobject() == 'ok'
     
-    def commitprevious(self, filename):
+    def commitallv1(self, path):
+        for e in os.listdir(path):
+            self.commitv1(os.path.join(path, e))
+    
+    def commitallv2(self, path):
+        for e in os.listdir(path):
+            self.commitv2(os.path.join(path, e))
+    
+    def commitv1(self, filename):
         time, name = _resolvefilename(filename)
         self.commitfile(name, filename, time = time)
     
-    def commitprevious2(self, path):
+    def commitv2(self, path):
         name = os.path.dirname(path)
         time = name[:19]
         time = time.split()
@@ -125,27 +135,6 @@ class test(netserver):
             x = stream.read(128*1024)
             if not x: break
             print('server',len(x))
-
-import time
-import random
-class testc:
-    def run(self):
-        stream = tcpstream(('127.0.0.1',13750))
-        while True:
-            x = random.choice(b'0123456789')
-            x = bytes([x])
-            x = x*128*1024
-            print('client',len(x))
-            stream.write(x)
-            time.sleep(0.1)
-
-def testcs():
-    s = test()
-    try:
-        s.start()
-        testc().run()
-    finally:
-        s.shutdown()
 
 if __name__ == '__main__':
     main()
