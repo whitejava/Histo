@@ -21,7 +21,7 @@ class taskqueue:
     
     def append(self, x):
         with self._lock:
-            for i in range(len(self._base)):
+            for i in reversed(range(len(self._base))):
                 if self._base[i] == x:
                     if not self._istaskfetched(i):
                         del self._base[i]
@@ -107,7 +107,7 @@ import time, random
 from threading import Thread
 
 def testmain():
-    q = taskqueue([])
+    q = taskqueue(diskqueue('D:\\testqueue'))
     def handlethread():
         while True:
             try:
@@ -133,6 +133,8 @@ def testmain():
             #time.sleep(random.randrange(1000)/1000*len(q)/100)
     for i in range(10):
         Thread(target = handlethread).start()
+    for i in range(3):
+        Thread(target = taskthread).start()
     taskthread()
 
 if __name__ == '__main__':
