@@ -26,8 +26,9 @@ def run(root, key):
     logging.debug('Starting main server')
     main = mainserver(repo(root, key, queue))
     main.start()
-    logging.debug('Running smtp service')
+    logging.debug('Starting smtp service')
     smtp.start()
+    logging.debug('Service running')
     try:
         while True:
             time.sleep(1)
