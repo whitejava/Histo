@@ -59,7 +59,7 @@ class sendthread(Thread):
                 with open(path, 'rb') as f:
                     data = f.read()
             lastmodify = datetime.fromtimestamp(lastmodify)
-            lastmodify = '{:04d}-{:02d}{:02d}-{:02d}{:02d}{:02d}-{:06d}'.format(*list(lastmodify.timetuple()))
+            lastmodify = '{:06d}-{:02d}{:02d}{:02d}-{:02d}{:02d}-{:04d}'.format(*reversed(list(lastmodify.timetuple())))
             hash = pchex.encode(hashlib.new('md5', data).digest())
             sender = 'histo@caipeichao.com'
             receiver = each[1]
