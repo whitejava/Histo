@@ -80,10 +80,6 @@ class diskqueue:
     
     def append(self, x):
         with self._lock:
-            for i in range(1, len(self._queue)):
-                if self._queue[i] == x:
-                    del self._queue[i]
-                    break
             self._queue.append(x)
             self._save()
     
