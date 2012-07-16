@@ -5,35 +5,6 @@ import os
 class NoTask(Exception):
     pass
 
-class optimizedqueue:
-    def __init__(self, base):
-        self._base = base
-        self._lock = threading.Lock()
-    
-    def empty(self):
-        with self._lock:
-            return self._base.empty()
-
-    def append(self, x):
-        with self._lock:
-            q = self._base
-            for i in range(len(q)):
-                if q[i] == x:
-                    del q[i]
-            q.append(x)
-
-    def __getitem__(self, x):
-        with self._lock:
-            return self._base[x]
-    
-    def __delitem__(self, x):
-        with self._lock:
-            del self._base[x]
-
-    def __len__(self):
-        with self._lock:
-            return len(self._base)
-        
 class taskqueue:
     def __init__(self, base):
         self._base = base
@@ -50,6 +21,10 @@ class taskqueue:
     
     def append(self, x):
         with self._lock:
+            for i in range(len(self._base)):
+                if self._base[i] == x:
+                    if not self._istaskfetched(i):
+                        del self._base[i]
             return self._base.append(x)
     
     def fetchtask(self):
@@ -62,7 +37,7 @@ class taskqueue:
     
     def _availabletaskid(self):
         for i in range(len(self._base)):
-            if i not in self._fetched.values():
+            if not self._istaskfetched(i):
                 return i
         raise NoTask
     
@@ -71,6 +46,9 @@ class taskqueue:
             if j not in self._fetched:
                 return j
         return len(self._fetched)
+    
+    def _istaskfetched(self, taskid):
+        return taskid in self._fetched.values()
     
     def feedback(self, fetchid, result = True):
         with self._lock:
@@ -82,7 +60,7 @@ class taskqueue:
     def _removetask(self, taskid):
         del self._base[taskid]
         for e in self._fetched:
-            if self._fetched[e] > taskid:
+            if self._fetched[e] >= taskid:
                 self._fetched[e] -= 1
 
 class diskqueue:
@@ -154,8 +132,10 @@ def testmain():
                 pass
             time.sleep(0.1)
     def taskthread():
-        for i in range(100):
-            q.append(i)
+        for i in range(1000):
+            x = random.randrange(10)
+            print('supply', x)
+            q.append(x)
             #print('new', i)
             time.sleep(0.1)
             #time.sleep(random.randrange(1000)/1000*len(q)/100)
