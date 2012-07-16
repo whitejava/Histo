@@ -106,10 +106,13 @@ def loadindex(repo):
     result = []
     while True:
         try:
-            result.append(stream.readobject())
+            result.append(indexitem(stream.readobject()))
         except EOFError:
             break
     return result
+
+def indexitem(x):
+    return dict(x)
 
 class mainserver(netserver):
     def __init__(self, repo):
@@ -167,7 +170,7 @@ class commit:
             datafile.close()
             indexfile.close()
             logging.debug('write ok')
-        self._index.append(index)
+        self._index.append(indexitem(index))
         stream.writeobject('ok')
         logging.debug('all ok')
 
