@@ -4,7 +4,7 @@ from netserver import netserver
 from timetuple import nowtuple
 from autotemp import tempdir
 from repo import repo
-from taskqueue import diskqueue,taskqueue, optimizedqueue, NoTask
+from taskqueue import diskqueue,taskqueue, NoTask
 from filelock import filelock
 from threading import Thread
 import hashlib, pchex, threading, summary
@@ -75,7 +75,7 @@ class sendthread(Thread):
 
 class smtpserver:
     def __init__(self, root):
-        self._queue = taskqueue(optimizedqueue(diskqueue(os.path.join(root, 'sendqueue'))))
+        self._queue = taskqueue(diskqueue(os.path.join(root, 'sendqueue')))
     
     def getqueue(self):
         return self._queue

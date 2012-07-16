@@ -78,10 +78,6 @@ class diskqueue:
         with self._lock:
             return self._queue == []
     
-    def getall(self):
-        with self._lock:
-            return self._queue[:]
-    
     def append(self, x):
         with self._lock:
             for i in range(1, len(self._queue)):
