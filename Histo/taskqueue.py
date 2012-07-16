@@ -133,7 +133,7 @@ def testmain():
             #time.sleep(random.randrange(1000)/1000*len(q)/100)
     for i in range(10):
         Thread(target = handlethread).start()
-    for i in range(3):
+    for i in range(1):
         Thread(target = taskthread).start()
     taskthread()
 
