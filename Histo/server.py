@@ -4,6 +4,7 @@ from netserver import netserver
 from timetuple import nowtuple
 from autotemp import tempdir
 from repo import repo
+from datetime import datetime
 from taskqueue import diskqueue,taskqueue, NoTask
 from filelock import filelock
 from threading import Thread
@@ -54,13 +55,16 @@ class sendthread(Thread):
             path = each[0]
             name = os.path.basename(path)
             with filelock(path):
+                lastmodify = os.path.getmtime(path)
                 with open(path, 'rb') as f:
                     data = f.read()
+            lastmodify = datetime.fromtimestamp(lastmodify)
+            lastmodify = '{:04d}-{:02d}{:02d}-{:02d}{:02d}{:02d}-{:06d}'.format(*list(lastmodify.timetuple()))
             hash = pchex.encode(hashlib.new('md5', data).digest())
             sender = 'histo@caipeichao.com'
             receiver = each[1]
             subject = name
-            content = hash
+            content = '%s-%s' % (lastmodify, hash)
             attachmentname = name
             attachmentdata = data
             logging.debug('sending {} to {}'.format(name, receiver))
