@@ -176,19 +176,10 @@ class search:
         self._index = index
     
     def run(self, stream):
-        index = []
-        f = self._repo.open('index', 'rb')
-        data = f.read()
-        f.close()
-        datalen = len(data)
-        data = io.BytesIO(data)
-        while data.tell() < datalen:
-            item = pickle.load(data)
-            index.append(dict(item))
         keyword = stream.readobject()
         result = []
-        for e in index:
-            for e2 in summary.walk(index['summary']):
+        for e in self._index:
+            for e2 in summary.walk(self._index['summary']):
                 if e2.find(keyword) >= 0:
                     result.append(e)
                     break
