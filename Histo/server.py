@@ -179,7 +179,7 @@ class search:
         keyword = stream.readobject()
         result = []
         for e in self._index:
-            for e2 in summary.walk(self._index['summary']):
+            for e2 in summary.walk(e['summary']):
                 if e2.find(keyword) >= 0:
                     result.append(e)
                     break
