@@ -95,11 +95,28 @@ class smtpserver:
         for e in self._threads:
             e.start()
 
+def loadindex(repo):
+    f = repo.open('index', 'rb')
+    missing = f.getmissingparts()
+    if missing:
+        raise Exception('Missing parts: ' + ' '.join(missing))
+    stream = f.read()
+    f.close()
+    stream = objectstream(io.BytesIO(stream))
+    result = []
+    while True:
+        try:
+            result.append(stream.readobject())
+        except EOFError:
+            break
+    return result
+
 class mainserver(netserver):
     def __init__(self, repo):
         netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
-        self._commit = commit(repo)
-        self._search = search(repo)
+        self._index = loadindex(repo)
+        self._commit = commit(repo, self._index)
+        self._search = search(self._index)
         self._get = get(repo)
         self._lock = threading.Lock()
     
@@ -109,12 +126,13 @@ class mainserver(netserver):
         t = {'commit': self._commit.run,
              'search': self._search.run,
              'get': self._get.run}
-        with self._lock:
+        with self._lock: #WARNING: Careful remove the lock. Thinking about multithread situation
             t[method](stream)
 
 class commit:
-    def __init__(self, repo):
+    def __init__(self, repo, index):
         self._repo = repo
+        self._index = index
         
     def run(self, stream):
         datetime = stream.readobject()
@@ -149,12 +167,13 @@ class commit:
             datafile.close()
             indexfile.close()
             logging.debug('write ok')
+        self._index.append(index)
         stream.writeobject('ok')
         logging.debug('all ok')
 
 class search:
-    def __init__(self, repo):
-        self._repo = repo
+    def __init__(self, index):
+        self._index = index
     
     def run(self, stream):
         index = []

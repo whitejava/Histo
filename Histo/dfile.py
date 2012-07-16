@@ -59,6 +59,20 @@ class _reader:
         #Set position
         self._pointer = position
     
+    def getmissingparts(self, start = None, end = None):
+        if start is None: start = 0
+        if end is None: end = self._filesize
+        assert start >= 0
+        assert end <= self._filesize
+        start = start // self._partsize + 1
+        end = (end-1) // self._partsize + 2
+        result = []
+        for i in range(start, end):
+            if not self._bundle.exists(i):
+                result.append(i)
+        return result
+        
+    
     def available(self):
         return self._filesize - self._pointer
     

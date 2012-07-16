@@ -56,8 +56,14 @@ class datastream:
     def read(self, limit = None):
         return self._stream.read(limit)
     
+    def readfully(self, limit):
+        result = self.read(limit)
+        if len(result) != limit:
+            raise EOFError()
+        return result
+    
     def readint(self):
-        return _unpackint(self.read(4))
+        return _unpackint(self.readfully(4))
     
     def readlong(self):
         return _unpacklong(self.read(8))
