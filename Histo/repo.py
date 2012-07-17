@@ -51,5 +51,7 @@ class repo:
     def add_raw(self, type, filename, data):
         path = os.path.join(self._root, type, filename)
         with filelock(path):
+            if os.path.exists(path):
+                raise ValueError('file existed')
             with open(path, 'wb') as f:
                 f.write(data)

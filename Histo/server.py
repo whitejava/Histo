@@ -207,5 +207,21 @@ class get:
         copy(f, stream, range[1] - range[0])
         f.close()
 
+class upload:
+    def __init__(self, repo):
+        self._repo = repo
+    
+    def run(self, stream):
+        type = stream.readobject()
+        filename = stream.readobject()
+        data = stream.readobject()
+        try:
+            self._repo.add_raw(type, filename, data)
+        except ValueError as e:
+            if e.args[0] == 'file existed':
+                stream.writeobject('fail')
+        else:
+            stream.writeobject('ok')
+
 if __name__ == '__main__':
     run(sys.argv[1], pchex.decode(sys.argv[2]))
