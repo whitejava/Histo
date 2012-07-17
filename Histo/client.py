@@ -34,11 +34,14 @@ def main():
         port = int(address[1])
     address = (ip, port)
     c = client(address)
-    t = {'commit': c.commitfile,
+    t = {'commit': c.commit,
          'commitallv1': c.commitallv1,
          'commitallv2': c.commitallv2,
          'commitv1': c.commitv1,
          'commitv2': c.commitv2,
+         'localcommit': c.localcommit,
+         'localcommitallv1': c.localcommitallv1,
+         'localcommitallv2': c.localcommitallv2,
          'search': lambda *k:showsearchresult(c.search(*k)),
          'browser': c.browser,
          'get': c.get,
@@ -59,7 +62,7 @@ class client:
     def __init__(self, address):
         self._address = address
     
-    def commitfile(self, name, path, time = None):
+    def commit(self, name, path, time = None):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
         lastmodify = totuple(datetime.fromtimestamp(os.path.getmtime(path)))
@@ -84,18 +87,36 @@ class client:
             self.commitv2(os.path.join(path, e))
     
     def commitv1(self, filename):
-        time, name = _resolvefilename(filename)
+        time, name = resolvev1(filename)
         self.commitfile(name, filename, time = time)
     
     def commitv2(self, path):
-        name = os.path.dirname(path)
-        time = name[:19]
-        time = time.split()
-        time = [int(e) for e in time]
-        time += [0]
-        name = name[20:]
+        time, name = resolvev2(path)
         self.commitfile(name, path, time = time)
-        
+    
+    def localcommit(self, name, path, time = None):
+        stream = objectstream(tcpstream(self._address))
+        stream.writeobject(time)
+        stream.writeobject(name)
+        stream.writeobject(path)
+        assert stream.readobject() == 'ok'
+    
+    def localcommitallv1(self, root):
+        for e in os.listdir(root):
+            self.localcommitv1(os.path.join(root, e))
+    
+    def localcommitallv2(self, root):
+        for e in os.listdir(root):
+            self.localcommitv2(os.path.join(root, e))
+    
+    def localcommitv1(self, path):
+        time, name = resolvev1(path)
+        self.localcommit(name, path, time)
+    
+    def localcommitv2(self, path):
+        time, name = resolvev2(path)
+        self.localcommit(name, path, time)
+    
     def search(self, keyword):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
@@ -155,7 +176,16 @@ def _cut(string, pieces):
     #Read pieces
     return [string.read(e) for e in pieces]
 
-def _resolvefilename(filename):
+def resolvev2(filename):
+    name = os.path.dirname(filename)
+    time = name[:19]
+    time = time.split()
+    time = [int(e) for e in time]
+    time += [0]
+    name = name[20:]
+    return time, name
+
+def resolvev1(filename):
     #Base name
     filename = os.path.basename(filename)
     #Extract datetime, name

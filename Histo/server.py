@@ -125,6 +125,7 @@ class mainserver(netserver):
         netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
         self._index = loadindex(repo)
         self._commit = commit(repo, self._index)
+        self._localcommit = localcommit(repo, self._index)
         self._search = search(self._index)
         self._get = get(repo)
         self._upload = upload(repo)
@@ -134,6 +135,7 @@ class mainserver(netserver):
         method = stream.readobject()
         logging.debug('request: ' + method)
         t = {'commit': self._commit.run,
+             'localcommit': self._localcommit.run,
              'search': self._search.run,
              'get': self._get.run,
              'upload': self._upload.run}
@@ -147,8 +149,6 @@ class commit:
         
     def run(self, stream):
         datetime = stream.readobject()
-        if datetime == None:
-            datetime = nowtuple()
         name = stream.readobject()
         lastmodify = stream.readobject()
         filename = stream.readobject()
@@ -162,25 +162,48 @@ class commit:
                 assert copy(stream, f, filesize) == filesize
             logging.debug('receive data ok')
             logging.debug('writting to repo')
-            datafile = self._repo.open('data', 'wb')
-            start = datafile.tell()
-            with open(temp, 'rb') as f:
-                copy(f, datafile, filesize)
-            end = datafile.tell()
-            summary = generatesummary(name, temp, depthlimit = 2)
-            index = (('datetime', datetime),
-                     ('name', name),
-                     ('last-modify', lastmodify),
-                     ('range', (start, end)),
-                     ('summary', summary))
-            indexfile = self._repo.open('index', 'wb')
-            objectstream(indexfile).writeobject(index)
-            datafile.close()
-            indexfile.close()
+            localcommit(self._repo, self._index).commit(datetime, name, lastmodify, temp)
             logging.debug('write ok')
-        self._index.append(indexitem(index))
         stream.writeobject('ok')
         logging.debug('all ok')
+
+class localcommit:
+    def __init__(self, repo, index):
+        self._repo = repo
+        self._index = index
+    
+    def run(self, stream):
+        time = stream.readobject()
+        if time == None:
+            time = nowtuple()
+        name = stream.readobject()
+        filename = stream.reaobject()
+        lastmodify = os.path.getmtime(filename)
+        logging.debug('localcommit:', filename)
+        logging.debug('writing to repo')
+        self.commit(time, name, lastmodify, filename)
+        logging.debug('write ok')
+        stream.writeobject('ok')
+        logging.debug('all ok')
+    
+    def commit(self, datetime, name, lastmodify, filename):
+        repo = self._repo
+        datafile = repo.open('data', 'wb')
+        start = datafile.tell()
+        with open(filename, 'rb') as f:
+            copy(f, datafile)
+        end = datafile.tell()
+        summary = generatesummary(name, filename, depthlimit = 2)
+        index = (('datetime', datetime),
+                 ('name', name),
+                 ('last-modify', lastmodify),
+                 ('range', (start, end)),
+                 ('summary', summary))
+        indexfile = repo.open('index', 'wb')
+        objectstream(indexfile).writeobject(index)
+        datafile.close()
+        indexfile.close()
+        self._index.append(index)
 
 class search:
     def __init__(self, index):
