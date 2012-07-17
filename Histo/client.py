@@ -47,7 +47,12 @@ def main():
     print('ok')
 
 def showsearchresult(a):
-    print(a)
+    for e in a:
+        time = e['datetime']
+        time = time[:3]
+        time = '{:04}-{:02d}{:02d}'.format(*time)
+        name = e['name']
+        print(time, name)
 
 class client:
     def __init__(self, address):
@@ -124,17 +129,6 @@ def _resolvefilename(filename):
     if name.startswith('_'): name = name[1:]
     #Return
     return datetime, name
-
-from netserver import netserver
-class test(netserver):
-    def __init__(self):
-        netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
-    
-    def handle(self, stream):
-        while True:
-            x = stream.read(128*1024)
-            if not x: break
-            print('server',len(x))
 
 if __name__ == '__main__':
     main()
