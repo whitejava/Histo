@@ -71,7 +71,7 @@ class client:
         stream.writeobject(os.path.basename(path))
         stream.writeobject(filesize)
         with open(path, 'rb') as f:
-            assert copy(f, stream, filesize) == filesize
+            assert copy(f, stream, filesize, chunksize = 4*1024*1024) == filesize
         print('client send finish')
         assert stream.readobject() == 'ok'
     
