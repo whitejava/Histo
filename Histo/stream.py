@@ -109,7 +109,7 @@ class tcpstream:
     
     def read(self, limit = None):
         if limit == None:
-            limit = 1024
+            limit = 1024*1024
         return self._sock.recv(limit)
 
     def close(self):
