@@ -109,10 +109,14 @@ class client:
         stream.writeobject('get')
         stream.writeobject(range)
         length = range[1] - range[0]
-        assert stream.readobject() == 'data'
-        assert not os.path.exists(path)
-        with open(path, 'wb') as f:
-            assert copy(stream, f, length) == length
+        result = stream.readobject()
+        if result == 'data':
+            assert not os.path.exists(path)
+            with open(path, 'wb') as f:
+                assert copy(stream, f, length) == length
+        elif result == 'missing':
+            missing = stream.readobject()
+            print('missing', ' '.join([str(e) for e in missing]))
     
     def browser(self, extractpath):
         print('Input to search:');

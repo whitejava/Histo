@@ -120,7 +120,6 @@ def _extractarchive(type, filename, target):
                'tar': tarmessage,
                'zip': zipmessage}
     proc = Popen(command, stdin = None, stderr = STDOUT, stdout = PIPE)
-    #proc.stdin.close()
     while True:
         try:
             proc.communicate()
@@ -138,9 +137,3 @@ def _extractarchive(type, filename, target):
 class _extracterror(OSError):
     def __repr__(self):
         return 'extracterror({})'.format(repr(self.args[0]))
-
-if __name__ == '__main__':
-    with open('D:\\charstat.txt','rb') as f:
-        x = f.read()
-        encoding = guessencoding(x)
-        print(encoding, str(x, encoding, 'ignore'))
