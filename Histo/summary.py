@@ -86,9 +86,17 @@ def _archivesummary(archivetype, filename, depthlimit):
 
 def _extractarchive(type, filename, target):
     p7zcommand = ['7z', 'x', filename, '-o', target]
-    command = {'rar': ['rar', 'x', filename, '-p-', target+'/'],
-               'tar': ['tar', '-xf', filename, '-C', target],
-               'zip': ['unzip', '-P', '123456', filename, '-d', target]}
+    rarcommand = ['rar', 'x', filename, '-p-', target+'/']
+    tarcommand = ['tar', '-xf', filename, '-C', target]
+    zipcommand = ['unzip', '-P', '123456', filename, '-d', target]
+    winrarcommand = ['winrar', '-ibck', '-p-', 'x', filename, target+'/']
+    linuxcommand = {'rar': rarcommand,
+                   'tar': tarcommand,
+                   'zip': zipcommand}
+    wincommand = {'rar': winrarcommand,
+                  'tar': winrarcommand,
+                  'zip': winrarcommand}
+    command = wincommand
     command = command[type]
     rarmessage = {1: 'warning',
                   2: 'fatal error',
@@ -116,9 +124,13 @@ def _extractarchive(type, filename, target):
                   80: 'aborted',
                   81: 'unsupport compression method',
                   82: 'bad password'}
-    message = {'rar': rarmessage,
-               'tar': tarmessage,
-               'zip': zipmessage}
+    linuxmessage = {'rar': rarmessage,
+                   'tar': tarmessage,
+                   'zip': zipmessage}
+    winmessage = {'rar': rarmessage,
+                  'tar': rarmessage,
+                  'zip': rarmessage}
+    message = winmessage
     proc = Popen(command, stdin = None, stderr = STDOUT, stdout = PIPE)
     while True:
         try:
