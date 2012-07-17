@@ -105,7 +105,7 @@ def loadindex(repo):
         return []
     missing = f.getmissingparts()
     if missing:
-        raise Exception('Missing parts: ' + ' '.join(missing))
+        raise Exception('Missing parts: ' + ' '.join([str(e) for e in missing]))
     stream = f.read()
     f.close()
     stream = objectstream(io.BytesIO(stream))
