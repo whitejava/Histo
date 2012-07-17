@@ -47,12 +47,12 @@ def main():
     print('ok')
 
 def showsearchresult(a):
-    for e in enumerate(a):
+    for i,e in enumerate(a):
         time = e['datetime']
         time = time[:3]
         time = '{:04}-{:02d}{:02d}'.format(*time)
         name = e['name']
-        print(time, name)
+        print(i, time, name)
 
 class client:
     def __init__(self, address):
@@ -125,7 +125,9 @@ class client:
         range = selection['range']
         name = selection['name']
         path = os.path.join(extractpath, name)
+        print('Downloading', path)
         self.get(range, path)
+        print(path)
 
 def _cut(string, pieces):
     #Stream
