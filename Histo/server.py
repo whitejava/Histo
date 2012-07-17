@@ -57,6 +57,7 @@ class sendthread(Thread):
             name = os.path.basename(path)
             with filelock(path):
                 lastmodify = os.path.getmtime(path)
+                filesize = os.path.getsize(path)
                 with open(path, 'rb') as f:
                     data = f.read()
             lastmodify = datetime.fromtimestamp(lastmodify)
@@ -66,7 +67,7 @@ class sendthread(Thread):
             sender = 'histo@caipeichao.com'
             receiver = each[1]
             subject = name
-            content = '%s-%s' % (lastmodify, hash)
+            content = '%s-%s-%s' % (filesize, lastmodify, hash)
             attachmentname = name
             attachmentdata = data
             logging.debug('sending {} to {}'.format(name, receiver))
