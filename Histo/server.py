@@ -203,8 +203,14 @@ class get:
     def run(self, stream):
         range = stream.readobject()
         f = self._repo.open('data', 'rb')
-        f.seek(range[0])
-        copy(f, stream, range[1] - range[0])
+        missing = f.getmissingparts()
+        if missing:
+            stream.writeobject('missing')
+            stream.writeobject(missing)
+        else:
+            stream.writeobject('data')
+            f.seek(range[0])
+            copy(f, stream, range[1] - range[0])
         f.close()
 
 class upload:

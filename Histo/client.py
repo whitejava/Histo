@@ -109,6 +109,7 @@ class client:
         stream.writeobject('get')
         stream.writeobject(range)
         length = range[1] - range[0]
+        assert stream.readobject() == 'data'
         assert not os.path.exists(path)
         with open(path, 'wb') as f:
             assert copy(stream, f, length) == length
