@@ -61,7 +61,7 @@ class datastream:
         while limit > 0:
             read = self.read(limit)
             if not read:
-                assert EOFError()
+                raise EOFError()
             result.extend(read)
             limit -= len(read)
         return bytes(result)
