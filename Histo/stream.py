@@ -1,6 +1,7 @@
 import struct
 import pickle
 import socket
+import time
 
 __all__ = ['copy','datastream','objectstream']
 
@@ -17,24 +18,48 @@ def _unpacklong(a):
     return struct.unpack('!q', a)[0]
 
 def copy(input, output, limit = None, chunksize = 128*1024):
-    if limit == None:
-        result = 0
+    result = 0
+    while True:
+        for e in chunkreader(input, limit=limit, chunksize=chunksize):
+            output.write(e)
+            result += len(e)
+    return result
+
+def chunkreader(input, limit, chunksize):
+    if limit is None:
         while True:
             read = input.read(chunksize)
-            if not read: break
-            output.write(read)
-            result += len(read)
-        return result
+            if not read:
+                break
+            yield read
     else:
-        result = 0
-        while limit:
+        while limit > 0:
             readsize = min(chunksize, limit)
             read = input.read(readsize)
-            if not read: break
-            output.write(read)
-            result += len(read)
+            if not read:
+                break
+            yield read
             limit -= len(read)
-        return result
+
+def bufferedreader(reader, buffercount = 5):
+    buffer = []
+    reading = True
+    threadrunning = True
+    def readthread():
+        for e in reader:
+            if len(buffer) < buffercount:
+                buffer.append(e)
+            else:
+                while threadrunning and len(buffer) >= buffercount:
+                    time.sleep(0.1)
+        reading = False
+    while reading:
+        if buffer:
+            yield buffer[0]
+            del buffer[0]
+        else:
+            while reading and not buffer:
+                time.sleep(0.1)
 
 class datastream:
     def __init__(self, stream):
@@ -109,7 +134,7 @@ class tcpstream:
     
     def read(self, limit = None):
         if limit == None:
-            limit = 1024*1024
+            limit = 1024
         return self._sock.recv(limit)
 
     def close(self):
