@@ -167,7 +167,7 @@ class commit:
             with open(temp, 'rb') as f:
                 copy(f, datafile, filesize)
             end = datafile.tell()
-            summary = generatesummary(name, temp, depthlimit = 1)
+            summary = generatesummary(name, temp, depthlimit = 2)
             index = (('datetime', datetime),
                      ('name', name),
                      ('last-modify', lastmodify),
