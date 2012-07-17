@@ -141,7 +141,6 @@ class client:
             stream.writeobject(type)
             stream.writeobject(e)
             stream.writeobject(data)
-            
 
 def _cut(string, pieces):
     #Stream
