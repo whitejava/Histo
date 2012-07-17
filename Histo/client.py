@@ -116,7 +116,7 @@ class client:
         print('Input to search:');
         keyword = os.sys.stdin.readline()
         keyword = keyword[:-1]
-        result = self._search(keyword)
+        result = self.search(keyword)
         showsearchresult(result)
         selection = os.sys.stdin.readline()
         selection = selection[:-1]
