@@ -116,7 +116,7 @@ class client:
                 assert copy(stream, f, length) == length
         elif result == 'missing':
             missing = stream.readobject()
-            print('missing', ' '.join([str(e) for e in missing]))
+            raise Exception('missing: ' + ' '.join([str(e) for e in missing]))
     
     def browser(self, extractpath):
         print('Input to search:');
