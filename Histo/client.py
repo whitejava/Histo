@@ -113,6 +113,7 @@ class client:
             assert copy(stream, f, length) == length
     
     def browser(self, extractpath):
+        print('Input to search:');
         keyword = os.sys.stdin.readline()
         keyword = keyword[:-1]
         result = self._search(keyword)
