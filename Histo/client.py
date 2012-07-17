@@ -95,7 +95,6 @@ class client:
         name = name[20:]
         self.commitfile(name, path, time = time)
         
-    
     def search(self, keyword):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
@@ -129,6 +128,20 @@ class client:
         print('Downloading', path)
         self.get(range, path)
         print(path)
+    
+    def upload(self, root):
+        for e in os.listdir(root):
+            type = {'i':'index','d':'data','u':'usage'}[e[0]]
+            path = os.path.join(root, e)
+            with open(path, 'rb') as f:
+                data = f.read()
+            stream = tcpstream(self._address)
+            stream = objectstream(stream)
+            stream.writeobject('update')
+            stream.writeobject(type)
+            stream.writeobject(e)
+            stream.writeobject(data)
+            
 
 def _cut(string, pieces):
     #Stream
