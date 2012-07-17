@@ -203,7 +203,7 @@ class get:
     def run(self, stream):
         range = stream.readobject()
         f = self._repo.open('data', 'rb')
-        missing = f.getmissingparts()
+        missing = f.getmissingparts(range[0], range[1])
         if missing:
             stream.writeobject('missing')
             stream.writeobject(missing)
