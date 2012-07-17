@@ -61,7 +61,7 @@ def _textsummary(path):
 def guessencoding(text):
     maxcommon = 0
     result = 'utf8'
-    for encoding in 'utf8','gbk','utf16':
+    for encoding in 'utf8','gbk','utf16','utf32','big5':
         a = str(text, encoding, 'ignore')
         commoncount = 0
         for e in a:
