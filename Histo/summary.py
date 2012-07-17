@@ -48,7 +48,6 @@ def _textsummary(path):
         a = str(r, encoding, 'ignore')
         if len(a) > len(result):
             result = a
-    print('textsummary', result)
     return (result,)
 
 def _archivesummary(archivetype, filename):
