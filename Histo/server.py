@@ -1,7 +1,7 @@
 from stream import copy, objectstream
 from summary import generatesummary
 from netserver import netserver
-from timetuple import nowtuple
+from timetuple import nowtuple, totuple
 from autotemp import tempdir
 from repo import repo
 from datetime import datetime
@@ -60,7 +60,8 @@ class sendthread(Thread):
                 with open(path, 'rb') as f:
                     data = f.read()
             lastmodify = datetime.fromtimestamp(lastmodify)
-            lastmodify = '{:06d}-{:02d}{:02d}{:02d}-{:02d}{:02d}-{:04d}'.format(*reversed(list(lastmodify.timetuple())))
+            lastmodify = totuple(lastmodify)
+            lastmodify = '{:06d}{:02d}{:02d}{:02d}{:02d}{:02d}{:04d}'.format(*reversed(lastmodify))
             hash = pchex.encode(hashlib.new('md5', data).digest())
             sender = 'histo@caipeichao.com'
             receiver = each[1]
