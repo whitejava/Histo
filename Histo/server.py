@@ -127,6 +127,7 @@ class mainserver(netserver):
         self._commit = commit(repo, self._index)
         self._search = search(self._index)
         self._get = get(repo)
+        self._upload = upload(repo)
         self._lock = threading.Lock()
     
     def handle(self, stream):
@@ -134,7 +135,8 @@ class mainserver(netserver):
         logging.debug('request: ' + method)
         t = {'commit': self._commit.run,
              'search': self._search.run,
-             'get': self._get.run}
+             'get': self._get.run,
+             'upload': self._upload.run}
         with self._lock: #WARNING: Careful remove the lock. Thinking about multithread situation
             t[method](stream)
 

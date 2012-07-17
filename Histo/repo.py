@@ -1,7 +1,6 @@
 from bundle import local,crypto,monitor
-import aes, hash
-import dfile
-import os
+from filelock import filelock
+import aes, hash, dfile, os
 
 def _securedfile(root, mode, idformat, partsize, key, listener):
     '''
@@ -48,3 +47,9 @@ class repo:
         format = typemarks[type] + '{}'
         partsize = partsizes[type]
         return _securedfile(path, mode, format, partsize, self._key, onfileupdate)
+    
+    def add_raw(self, type, filename, data):
+        path = os.path.join(self._root, type, filename)
+        with filelock(path):
+            with open(path, 'wb') as f:
+                f.write(data)
