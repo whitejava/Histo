@@ -96,7 +96,7 @@ def _extractarchive(type, filename, target):
     wincommand = {'rar': winrarcommand,
                   'tar': winrarcommand,
                   'zip': winrarcommand}
-    command = wincommand
+    command = linuxcommand
     command = command[type]
     rarmessage = {1: 'warning',
                   2: 'fatal error',
@@ -130,7 +130,7 @@ def _extractarchive(type, filename, target):
     winmessage = {'rar': rarmessage,
                   'tar': rarmessage,
                   'zip': rarmessage}
-    message = winmessage
+    message = linuxmessage
     proc = Popen(command, stdin = None, stderr = STDOUT, stdout = PIPE)
     while True:
         try:
