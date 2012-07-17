@@ -1,10 +1,9 @@
 __all__ = ['commitfile', 'commitprevious']
 
-import os, io, sys
+import os, io, sys, pickle
 from stream import objectstream, copy, tcpstream
 from timetuple import totuple
 from datetime import datetime
-
 usage = '''\
 histo.client ip[:port] command[ parameter1[ parameter2[...]]]
 command can be one of following values:
@@ -41,6 +40,7 @@ def main():
          'commitv1': c.commitv1,
          'commitv2': c.commitv2,
          'search': lambda *k:showsearchresult(c.search(*k)),
+         'browser': c.browser,
          'get': c.get}
     command = sys.argv[2]
     t[command](*sys.argv[3:])
@@ -92,7 +92,7 @@ class client:
         time = time.split()
         time = [int(e) for e in time]
         time += [0]
-        name = name[20:-4]
+        name = name[20:]
         self.commitfile(name, path, time = time)
         
     
@@ -110,7 +110,20 @@ class client:
         stream.writeobject(range)
         length = range[1] - range[0]
         with open(path, 'wb') as f:
-            copy(stream, f, length)
+            assert copy(stream, f, length) == length
+    
+    def browser(self, extractpath):
+        keyword = os.sys.stdin.readline()
+        keyword = keyword[:-1]
+        result = self._search(keyword)
+        showsearchresult(result)
+        selection = os.sys.stdin.readline()
+        selection = selection[:-1]
+        selection = int(selection)
+        selection = result[selection]
+        range = selection['range']
+        name = selection['name']
+        self.get(range, os.path.join())
 
 def _cut(string, pieces):
     #Stream
@@ -122,7 +135,7 @@ def _resolvefilename(filename):
     #Base name
     filename = os.path.basename(filename)
     #Extract datetime, name
-    datetime, name = filename[:12], filename[12:-4]
+    datetime, name = filename[:12], filename[12:]
     #Tuple datetime
     datetime = tuple([int(e) for e in _cut(datetime,[4,2,2,2,2])] + [0,0])
     #Strip underline in name
