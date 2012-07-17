@@ -74,6 +74,7 @@ class sendthread(Thread):
             try:
                 smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
             except Exception as e:
+                logging.debug('fail send %s' % name)
                 self._queue.feedback(taskid, False)
                 logging.exception(e)
             else:
