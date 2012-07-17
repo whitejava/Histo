@@ -57,10 +57,13 @@ class datastream:
         return self._stream.read(limit)
     
     def readfully(self, limit):
-        result = self.read(limit)
-        if len(result) != limit:
-            raise EOFError()
-        return result
+        result = bytearray()
+        while limit > 0:
+            read = self.read(limit)
+            if not read:
+                assert EOFError()
+            result.extend(read)
+        return bytes(result)
     
     def readint(self):
         return _unpackint(self.readfully(4))
