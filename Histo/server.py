@@ -9,7 +9,7 @@ from taskqueue import diskqueue,taskqueue, NoTask
 from filelock import filelock
 from threading import Thread
 import hashlib, pchex, threading, summary
-import pickle, time, smtp, os, io, sys, logging
+import time, smtp, os, io, sys, logging
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(message)s',
