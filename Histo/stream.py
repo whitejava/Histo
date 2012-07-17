@@ -63,13 +63,14 @@ class datastream:
             if not read:
                 assert EOFError()
             result.extend(read)
+            limit -= len(read)
         return bytes(result)
     
     def readint(self):
         return _unpackint(self.readfully(4))
     
     def readlong(self):
-        return _unpacklong(self.read(8))
+        return _unpacklong(self.readfully(8))
     
     def readbytes(self):
         length = self.readint()
@@ -94,7 +95,7 @@ class objectstream:
     
     def readobject(self):
         length = self._stream.readint()
-        dump = self._stream.read(length)
+        dump = self._stream.readfully(length)
         assert len(dump) == length
         return pickle.loads(dump)
 
