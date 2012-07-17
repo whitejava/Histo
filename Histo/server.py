@@ -96,7 +96,10 @@ class smtpserver:
             e.start()
 
 def loadindex(repo):
-    f = repo.open('index', 'rb')
+    try:
+        f = repo.open('index', 'rb')
+    except IOError:
+        return []
     missing = f.getmissingparts()
     if missing:
         raise Exception('Missing parts: ' + ' '.join(missing))

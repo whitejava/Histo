@@ -47,7 +47,7 @@ def main():
     print('ok')
 
 def showsearchresult(a):
-    for e in a:
+    for e in enumerate(a):
         time = e['datetime']
         time = time[:3]
         time = '{:04}-{:02d}{:02d}'.format(*time)
