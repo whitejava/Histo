@@ -1,25 +1,29 @@
 import os
 from autotemp import tempdir
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 __all__ = ['generatesummary', 'walk']
 
-def generatesummary(name, filename):
+def generatesummary(name, filename, depthlimit = 9999):
     if os.path.isdir(filename):
-        return (name, _foldersummary(filename))
+        return (name, _foldersummary(filename, depthlimit))
     else:
+        return (name,) + _filesummary(filename, depthlimit)
+
+def _filesummary(filename, depthlimit):
+    if depthlimit > 0:
         table = {
-            '.rar': lambda x:_archivesummary('rar',x),
-            '.tar': lambda x:_archivesummary('tar',x),
-            '.tar.gz': lambda x:_archivesummary('tar',x),
-            '.tar.bz2': lambda x:_archivesummary('tar',x),
-            '.zip': lambda x:_archivesummary('zip',x),
+            '.rar': lambda x:_archivesummary('rar',x,depthlimit),
+            '.tar': lambda x:_archivesummary('tar',x,depthlimit),
+            '.tar.gz': lambda x:_archivesummary('tar',x,depthlimit),
+            '.tar.bz2': lambda x:_archivesummary('tar',x,depthlimit),
+            '.zip': lambda x:_archivesummary('zip',x,depthlimit),
             '.txt': _textsummary,
         }
         for k in table:
             if filename.endswith(k):
-                return (name,) + table[k](filename)
-        return (name, None)
+                return table[k](filename)
+    return (None, )
 
 def walk(summary):
     if type(summary) is tuple:
@@ -34,11 +38,13 @@ def walk(summary):
     elif type(summary) is str:
         yield summary
 
-def _foldersummary(folder):
-    #List files.
-    files = os.listdir(folder)
-    #Generate each summary of each file.
-    return tuple([generatesummary(file, os.path.join(folder, file)) for file in files])
+def _foldersummary(folder, depthlimit):
+    if depthlimit > 0:
+        #List files.
+        files = os.listdir(folder)
+        #Generate each summary of each file.
+        return tuple([generatesummary(file, os.path.join(folder, file), depthlimit-1) for file in files])
+    return None
 
 def _textsummary(path):
     result = ''
@@ -50,14 +56,17 @@ def _textsummary(path):
             result = a
     return (result,)
 
-def _archivesummary(archivetype, filename):
-    with tempdir('histo-') as temp:
-        error = None
-        try:
-            _extractarchive(archivetype, filename, temp)
-        except _extracterror as e:
-            error = repr(e)
-        return _foldersummary(temp), (archivetype, error)
+def _archivesummary(archivetype, filename, depthlimit):
+    if depthlimit > 0:
+        with tempdir('histo-') as temp:
+            error = None
+            try:
+                _extractarchive(archivetype, filename, temp)
+            except _extracterror as e:
+                error = repr(e)
+                print('warning:', repr(e))
+            return _foldersummary(temp,depthlimit), (archivetype, error)
+    return (None,)
 
 def _extractarchive(type, filename, target):
     p7zcommand = ['7z', 'x', filename, '-o', target]
@@ -94,8 +103,13 @@ def _extractarchive(type, filename, target):
     message = {'rar': rarmessage,
                'tar': tarmessage,
                'zip': zipmessage}
-    proc = Popen(command, stdin = PIPE)
-    proc.stdin.close()
+    proc = Popen(command, stdin = None, stderr = STDOUT, stdout = PIPE)
+    #proc.stdin.close()
+    while True:
+        try:
+            proc.communicate()
+        except ValueError:
+            break
     exitcode = proc.wait()
     if exitcode:
         message = message[type]
@@ -108,3 +122,7 @@ def _extractarchive(type, filename, target):
 class _extracterror(OSError):
     def __repr__(self):
         return 'extracterror({})'.format(repr(self.args[0]))
+
+if __name__ == '__main__':
+    for i in range(0,10):
+        print(generatesummary('test', 'D:\\depthtest.rar', i))
