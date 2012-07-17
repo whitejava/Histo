@@ -41,7 +41,8 @@ def main():
          'commitv2': c.commitv2,
          'search': lambda *k:showsearchresult(c.search(*k)),
          'browser': c.browser,
-         'get': c.get}
+         'get': c.get,
+         'upload': c.upload}
     command = sys.argv[2]
     t[command](*sys.argv[3:])
     print('ok')
@@ -137,10 +138,11 @@ class client:
                 data = f.read()
             stream = tcpstream(self._address)
             stream = objectstream(stream)
-            stream.writeobject('update')
+            stream.writeobject('upload')
             stream.writeobject(type)
             stream.writeobject(e)
             stream.writeobject(data)
+            assert stream.readobject() == 'ok'
 
 def _cut(string, pieces):
     #Stream
