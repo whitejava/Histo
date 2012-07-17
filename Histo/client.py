@@ -123,7 +123,8 @@ class client:
         selection = result[selection]
         range = selection['range']
         name = selection['name']
-        self.get(range, os.path.join())
+        path = os.path.join(extractpath, name)
+        self.get(range, path)
 
 def _cut(string, pieces):
     #Stream
