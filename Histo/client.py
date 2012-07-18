@@ -178,11 +178,12 @@ def _cut(string, pieces):
     return [string.read(e) for e in pieces]
 
 def resolvev2(filename):
-    name = os.path.dirname(filename)
+    name = os.path.basename(filename)
     time = name[:19]
-    time = time.split()
+    time = time.split('-')
     time = [int(e) for e in time]
     time += [0]
+    time = tuple(time)
     name = name[20:]
     return time, name
 
