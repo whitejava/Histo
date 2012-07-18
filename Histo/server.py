@@ -111,7 +111,7 @@ class smtpserver:
             e.shutdown()
     
     def start(self):
-        threadcount = 5
+        threadcount = 10
         self._threads = [sendthread(self._queue) for i in range(threadcount)]
         for e in self._threads:
             e.start()
