@@ -19,8 +19,10 @@ def _unpacklong(a):
 
 def copy(input, output, limit = None, chunksize = 128*1024):
     result = 0
+    print('copy')
     while True:
         for e in chunkreader(input, limit=limit, chunksize=chunksize):
+            print(len(e))
             output.write(e)
             result += len(e)
     return result
