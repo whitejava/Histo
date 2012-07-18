@@ -31,3 +31,17 @@ class cipher:
         iv, data = data[:AES.block_size], data[AES.block_size:]
         #Decode
         return pkcs7padding.decode(_decode(self._key, iv, data))
+
+def test():
+    key = b'a'*16
+    iv = b'a'*16
+    data = b'abc'*16
+    from timer import timer
+    with timer():
+        for i in range(100):
+            a=b'a'*1024*1024
+            cipher = AES.new(key, AES.MODE_CBC, iv)
+            x1 = cipher.encrypt(b'a'*1024*1024)
+    x2 = cipher.encrypt(data)
+    cipher2 = AES.new(key, AES.MODE_CBC, iv)
+    print(cipher2.decrypt(x2))
