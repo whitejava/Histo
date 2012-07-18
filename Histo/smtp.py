@@ -31,6 +31,7 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata,
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     def recv(code):
+        assert not stopper[0]
         data = sock.recv(1024)
         data = data[:-2]
         data = str(data, 'utf8')
@@ -39,6 +40,7 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata,
         data = int(data)
         assert data == code
     def send(data):
+        assert not stopper[0]
         sock.sendall(bytes(data + '\r\n','utf8'))
     try:
         recv(220)
@@ -50,7 +52,6 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata,
         recv(250)
         send('DATA')
         for line in message.splitlines():
-            assert not stopper[0]
             send(line)
         send('.')
         recv(354)
