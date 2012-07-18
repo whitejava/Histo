@@ -71,6 +71,8 @@ class sendthread(Thread):
     
     def shutdown(self):
         self._stopper[0] = True
+    
+    def wait(self):
         self._exitlock.acquire()
         self._exitlock.release()
     
@@ -120,6 +122,8 @@ class smtpserver:
     def shutdown(self):
         for e in self._threads:
             e.shutdown()
+        for e in self._threads:
+            e.wait()
     
     def start(self):
         threadcount = 10
