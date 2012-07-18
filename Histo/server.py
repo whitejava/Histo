@@ -292,4 +292,4 @@ class upload:
             stream.writeobject('ok')
 
 if __name__ == '__main__':
-    main(sys.argv[1], pchex.decode(sys.argv[2]))
+    main(*sys.argv)
