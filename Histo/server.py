@@ -22,17 +22,23 @@ def run(root, key):
     logging.debug('Loading smtp server')
     smtp = smtpserver(root)
     queue = smtp.getqueue()
+    
     logging.debug('Loading main server')
     main = mainserver(repo(root, key, queue))
+    
     logging.debug('Starting main server')
     main.start()
+    
     logging.debug('Starting smtp service')
     smtp.start()
+    
     logging.debug('Service running')
     wait_for_keyboard_interrupt()
+    
     logging.debug('Service shutting down')
     smtp.shutdown()
     main.shutdown()
+    
     logging.debug('Now exit')
 
 def wait_for_keyboard_interrupt():
@@ -81,10 +87,9 @@ class sendthread(Thread):
             except Exception as e:
                 logging.debug('fail send %s' % name)
                 self._queue.feedback(taskid, False)
-                logging.exception(e)
             else:
                 self._queue.feedback(taskid, True)
-            logging.debug('finish send {}'.format(name))
+                logging.debug('finish send {}'.format(name))
 
 class smtpserver:
     def __init__(self, root):

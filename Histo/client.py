@@ -150,6 +150,7 @@ class client:
         selection = selection[:-1]
         selection = int(selection)
         selection = result[selection]
+        print(selection)
         range = selection['range']
         name = selection['name']
         path = os.path.join(extractpath, name)
