@@ -122,7 +122,7 @@ def indexitem(x):
 
 class mainserver(netserver):
     def __init__(self, repo):
-        netserver.__init__(self, ('0.0.0.0', 13750), self.handle)
+        netserver.__init__(self, ('127.0.0.1', 13750), self.handle)
         self._index = loadindex(repo)
         self._commit = commit(repo, self._index)
         self._localcommit = localcommit(repo, self._index)
