@@ -101,7 +101,7 @@ class sendthread(Thread):
             attachmentdata = data
             logging.debug('sending {} to {}'.format(name, receiver))
             try:
-                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = self._exit)
+                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = self._stopper)
             except Exception as e:
                 logging.warning('fail send %s' % name)
                 self._queue.feedback(taskid, False)
