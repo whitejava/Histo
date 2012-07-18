@@ -42,6 +42,7 @@ def main():
          'localcommit': c.localcommit,
          'localcommitallv1': c.localcommitallv1,
          'localcommitallv2': c.localcommitallv2,
+         'localcommitmix':c.localcommitmix,
          'search': lambda *k:showsearchresult(c.search(*k)),
          'browser': c.browser,
          'get': c.get,
@@ -79,11 +80,11 @@ class client:
         assert stream.readobject() == 'ok'
     
     def commitallv1(self, path):
-        for e in os.listdir(path):
+        for e in sorted(os.listdir(path)):
             self.commitv1(os.path.join(path, e))
     
     def commitallv2(self, path):
-        for e in os.listdir(path):
+        for e in sorted(os.listdir(path)):
             self.commitv2(os.path.join(path, e))
     
     def commitv1(self, filename):
@@ -103,11 +104,11 @@ class client:
         assert stream.readobject() == 'ok'
     
     def localcommitallv1(self, root):
-        for e in os.listdir(root):
+        for e in sorted(os.listdir(root)):
             self.localcommitv1(os.path.join(root, e))
     
     def localcommitallv2(self, root):
-        for e in os.listdir(root):
+        for e in sorted(os.listdir(root)):
             self.localcommitv2(os.path.join(root, e))
     
     def localcommitv1(self, path):
@@ -119,8 +120,8 @@ class client:
         self.localcommit(name, path, time)
     
     def localcommitmix(self, path):
-        self.localcommitv1(os.path.join(path, 'v1'))
-        self.localcommitv2(os.path.join(path, 'v2'))
+        self.localcommitallv1(os.path.join(path, 'v1'))
+        self.localcommitallv2(os.path.join(path, 'v2'))
     
     def search(self, keyword):
         stream = tcpstream(self._address)
