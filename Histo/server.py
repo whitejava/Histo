@@ -179,7 +179,7 @@ class localcommit:
         name = stream.readobject()
         filename = stream.readobject()
         lastmodify = os.path.getmtime(filename)
-        logging.debug('localcommit:', filename)
+        logging.debug('localcommit: ' + filename)
         logging.debug('writing to repo')
         self.commit(time, name, lastmodify, filename)
         logging.debug('write ok')
