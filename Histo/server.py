@@ -177,7 +177,7 @@ class localcommit:
         if time == None:
             time = nowtuple()
         name = stream.readobject()
-        filename = stream.reaobject()
+        filename = stream.readobject()
         lastmodify = os.path.getmtime(filename)
         logging.debug('localcommit:', filename)
         logging.debug('writing to repo')
