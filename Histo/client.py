@@ -96,6 +96,7 @@ class client:
     
     def localcommit(self, name, path, time = None):
         stream = objectstream(tcpstream(self._address))
+        stream.writeobject('localcommit')
         stream.writeobject(time)
         stream.writeobject(name)
         stream.writeobject(path)
