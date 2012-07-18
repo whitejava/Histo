@@ -11,9 +11,17 @@ from threading import Thread
 import hashlib, pchex, threading, summary
 import time, smtp, os, io, sys, logging
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(message)s',
+logging.basicConfig(filename='E:\\histo-log\\0.log',
+                    level=logging.DEBUG,
+                    format='%(levelname)s - %(asctime)s %(message)s',
                     datefmt='[%Y-%m%d %H:%M:%S]')
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s %(message)s')
+formatter.datefmt = '[%Y-%m%d %H:%M:%S]'
+ch.setFormatter(formatter)
+logging.getLogger().addHandler(ch)
 
 # Usage:
 # server root key
@@ -150,7 +158,10 @@ class mainserver(netserver):
              'get': self._get.run,
              'upload': self._upload.run}
         with self._lock: #WARNING: Careful remove the lock. Thinking about multithread situation
-            t[method](stream)
+            try:
+                t[method](stream)
+            except Exception as e:
+                logging.exception(e)
 
 class commit:
     def __init__(self, repo, index):

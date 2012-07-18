@@ -118,6 +118,10 @@ class client:
         time, name = resolvev2(path)
         self.localcommit(name, path, time)
     
+    def localcommitmix(self, path):
+        self.localcommitv1(os.path.join(path, 'v1'))
+        self.localcommitv2(os.path.join(path, 'v2'))
+    
     def search(self, keyword):
         stream = tcpstream(self._address)
         stream = objectstream(stream)
