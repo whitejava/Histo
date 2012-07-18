@@ -15,27 +15,32 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(message)s',
                     datefmt='[%Y-%m%d %H:%M:%S]')
 
-usage = """\
-server root key
-"""
+# Usage:
+# server root key
 
 def run(root, key):
-    print(usage)
+    logging.debug('Loading smtp server')
     smtp = smtpserver(root)
     queue = smtp.getqueue()
-    logging.debug('Starting main server')
+    logging.debug('Loading main server')
     main = mainserver(repo(root, key, queue))
+    logging.debug('Starting main server')
     main.start()
     logging.debug('Starting smtp service')
     smtp.start()
     logging.debug('Service running')
+    wait_for_keyboard_interrupt()
+    logging.debug('Service shutting down')
+    smtp.shutdown()
+    main.shutdown()
+    logging.debug('Now exit')
+
+def wait_for_keyboard_interrupt():
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        pass
-    smtp.shutdown()
-    main.shutdown()
+        return
 
 class sendthread(Thread):
     def __init__(self, queue):
