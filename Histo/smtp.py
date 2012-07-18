@@ -5,7 +5,7 @@ from email import encoders
 import dns.resolver
 import socket
 
-def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata):
+def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = [False]):
     message = MIMEMultipart()
     message['From'] = '<{}>'.format(sender)
     message['To'] = '<{}>'.format(receiver)
@@ -50,6 +50,7 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
         recv(250)
         send('DATA')
         for line in message.splitlines():
+            assert not stopper[0]
             send(line)
         send('.')
         recv(354)

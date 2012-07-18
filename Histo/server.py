@@ -11,17 +11,22 @@ from threading import Thread
 import hashlib, pchex, threading, summary
 import time, smtp, os, io, sys, logging
 
-logging.basicConfig(filename='E:\\histo-log\\0.log',
+logpath = 'E:\\histo-log\\0.log'
+logdateformat = '[%Y-%m%d %H:%M:%S]'
+
+#Log to file
+logging.basicConfig(filename=logpath,
                     level=logging.DEBUG,
                     format='%(levelname)s - %(asctime)s %(message)s',
-                    datefmt='[%Y-%m%d %H:%M:%S]')
+                    datefmt=logdateformat)
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+#Display log on console
 formatter = logging.Formatter('%(asctime)s %(message)s')
-formatter.datefmt = '[%Y-%m%d %H:%M:%S]'
-ch.setFormatter(formatter)
-logging.getLogger().addHandler(ch)
+formatter.datefmt = logdateformat
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(formatter)
+logging.getLogger().addHandler(handler)
 
 # Usage:
 # server root key
@@ -60,44 +65,50 @@ class sendthread(Thread):
     def __init__(self, queue):
         Thread.__init__(self)
         self._queue = queue
-        self._exit = False
+        self._stopper = [False]
+        self._exitlock = threading.Lock()
+        self._exitlock.acquire()
     
     def shutdown(self):
-        self._exit = True
+        self._stopper[0] = True
+        self._exitlock.acquire()
+        self._exitlock.release()
     
     def run(self):
-        while not self._exit:
+        while not self._stopper[0]:
             time.sleep(1)
             try:
                 taskid, each = self._queue.fetchtask()
             except NoTask:
                 continue
             path = each[0]
+            receiver = each[1]
             name = os.path.basename(path)
             with filelock(path):
                 lastmodify = os.path.getmtime(path)
                 filesize = os.path.getsize(path)
                 with open(path, 'rb') as f:
                     data = f.read()
+                assert len(data) == filesize
             lastmodify = datetime.fromtimestamp(lastmodify)
             lastmodify = totuple(lastmodify)
             lastmodify = '{:04d}-{:02d}{:02d}-{:02d}{:02d}{:02d}-{:06d}'.format(*lastmodify)
-            hash = pchex.encode(hashlib.new('md5', data).digest())
+            md5 = pchex.encode(hashlib.new('md5', data).digest())
             sender = 'histo@caipeichao.com'
-            receiver = each[1]
             subject = name
-            content = '%s-%s-%s' % (filesize, lastmodify, hash)
+            content = '%s-%s-%s' % (filesize, lastmodify, md5)
             attachmentname = name
             attachmentdata = data
             logging.debug('sending {} to {}'.format(name, receiver))
             try:
-                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata)
+                smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = self._exit)
             except Exception as e:
                 logging.warning('fail send %s' % name)
                 self._queue.feedback(taskid, False)
             else:
                 self._queue.feedback(taskid, True)
                 logging.debug('finish send {}'.format(name))
+        self._exitlock.release()
 
 class smtpserver:
     def __init__(self, root):
