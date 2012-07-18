@@ -29,11 +29,14 @@ handler.setFormatter(formatter)
 logging.getLogger().addHandler(handler)
 
 # Usage:
-# server root key
+# server root key threadcount
 
-def run(root, key):
+def main(root, key, threadcount = '5'):
+    key = pchex.decode(key)
+    threadcount = int(threadcount)
+    
     logging.debug('Loading smtp server')
-    smtp = smtpserver(root)
+    smtp = smtpserver(root, threadcount)
     queue = smtp.getqueue()
     
     logging.debug('Loading main server')
@@ -113,23 +116,23 @@ class sendthread(Thread):
         self._exitlock.release()
 
 class smtpserver:
-    def __init__(self, root):
+    def __init__(self, root, threadcount = 5):
+        self._threadcount = threadcount
         self._queue = taskqueue(diskqueue(os.path.join(root, 'sendqueue')))
     
     def getqueue(self):
         return self._queue
+    
+    def start(self):
+        self._threads = [sendthread(self._queue) for i in range(self._threadcount)]
+        for e in self._threads:
+            e.start()
     
     def shutdown(self):
         for e in self._threads:
             e.shutdown()
         for e in self._threads:
             e.wait()
-    
-    def start(self):
-        threadcount = 10
-        self._threads = [sendthread(self._queue) for i in range(threadcount)]
-        for e in self._threads:
-            e.start()
 
 def loadindex(repo):
     try:
@@ -289,4 +292,4 @@ class upload:
             stream.writeobject('ok')
 
 if __name__ == '__main__':
-    run(sys.argv[1], pchex.decode(sys.argv[2]))
+    main(sys.argv[1], pchex.decode(sys.argv[2]))
