@@ -1,6 +1,6 @@
 __all__ = ['commitfile', 'commitprevious']
 
-import os, io, sys, pchex
+import os, io, sys, pchex, imaplib
 from stream import objectstream, copy, tcpstream, hashstream
 from timetuple import totuple
 from datetime import datetime
@@ -32,6 +32,7 @@ def main():
     c = client((ip, port))
     t = {'browser': c.browser,
          'md5all': c.md5all,
+         'markduplication': c.markduplication,
          'commitold': c.commitold}
     t[command](*sys.argv[4:])
     print('ok')
@@ -70,6 +71,34 @@ class client:
                 name = '-'.join([str(j) for j in e['datetime']])
                 print(name, md5, file=f)
                 print(name, md5)
+    
+    def markduplication(self, username, password):
+        imap = imaplib.IMAP4_SSL('imap.gmail.com')
+        imap.login(username + '@gmail.com', password)
+        imap.list()
+        imap.select('inbox')
+        mails = imap.search(None, 'ALL')
+        mails = mails[1][0]
+        mails = str(mails, 'utf8').split()
+        mails = ','.join(mails)
+        subjects = imap.fetch(mails, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')
+        subjects = subjects[1]
+        result = []
+        for e in subjects:
+            if type(e) is not tuple:
+                continue
+            uid = str(e[0].split()[0],'utf8')
+            subject = str(e[1].split()[1],'utf8')
+            result.append((subject, uid))
+        
+        result = list(sorted(result))
+        delete = []
+        for i in range(1, len(result)):
+            if result[i][0] == result[i-1][0]:
+                delete.append(result[i])
+        delete = ','.join([e[1] for e in delete])
+        imap.store(delete, '+FLAGS', '\\Seen')
+
     
     def search(self, keyword):
         stream = tcpstream(self._address)
