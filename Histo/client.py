@@ -33,6 +33,7 @@ def main():
     t = {'browser': c.browser,
          'md5all': c.md5all,
          'markduplication': c.markduplication,
+         'commitunpack': c.commitunpack,
          'commitold': c.commitold}
     t[command](*sys.argv[4:])
     print('ok')
@@ -98,7 +99,13 @@ class client:
                 delete.append(result[i])
         delete = ','.join([e[1] for e in delete])
         imap.store(delete, '+FLAGS', '\\Seen')
-
+    
+    def commitunpack(self, path, compress):
+        stream = objectstream(tcpstream(self._address))
+        stream.writeobject('commitunpack')
+        stream.writeobject(path)
+        stream.writeobject(compress)
+        assert stream.readobject() == 'ok'
     
     def search(self, keyword):
         stream = tcpstream(self._address)

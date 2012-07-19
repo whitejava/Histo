@@ -8,8 +8,9 @@ from datetime import datetime
 from taskqueue import diskqueue,taskqueue, NoTask
 from filelock import filelock
 from threading import Thread
-import hashlib, pchex, threading, summary
-import time, smtp, os, io, sys, logging
+import hashlib, pchex, threading, summary, tempfile
+import time, smtp, os, io, sys, logging, shutil
+import autotemp, subprocess
 
 logpath = 'E:\\histo-log\\0.log'
 logdateformat = '[%Y-%m%d %H:%M:%S]'
@@ -165,33 +166,24 @@ class mainserver(netserver):
     def __init__(self, repo):
         netserver.__init__(self, ('127.0.0.1', 13750), self.handle)
         self._index = loadindex(repo)
-        self._commit = commit(repo, self._index)
-        self._localcommit = localcommit(repo, self._index)
-        self._search = search(self._index)
-        self._get = get(repo)
-        self._upload = upload(repo)
         self._lock = threading.Lock()
     
     def handle(self, stream):
         method = stream.readobject()
         logging.debug('request: ' + method)
-        t = {'commit': self._commit.run,
-             'localcommit': self._localcommit.run,
-             'search': self._search.run,
-             'get': self._get.run,
-             'upload': self._upload.run}
+        t = {'remotecommit': self._remotecommit,
+             'localcommit': self._localcommit,
+             'search': self._search,
+             'get': self._get,
+             'commitunpack': self._commitunpack,
+             'upload': self._upload}
         with self._lock: #WARNING: Careful remove the lock. Thinking about multithread situation
             try:
                 t[method](stream)
             except Exception as e:
                 logging.exception(e)
 
-class commit:
-    def __init__(self, repo, index):
-        self._repo = repo
-        self._index = index
-        
-    def run(self, stream):
+    def _remotecommit(self, stream):
         datetime = stream.readobject()
         name = stream.readobject()
         lastmodify = stream.readobject()
@@ -206,17 +198,12 @@ class commit:
                 assert copy(stream, f, filesize) == filesize
             logging.debug('receive data ok')
             logging.debug('writting to repo')
-            localcommit(self._repo, self._index).commit(datetime, name, lastmodify, temp)
+            self._commitpack(datetime, name, lastmodify, temp)
             logging.debug('write ok')
         stream.writeobject('ok')
         logging.debug('all ok')
 
-class localcommit:
-    def __init__(self, repo, index):
-        self._repo = repo
-        self._index = index
-    
-    def run(self, stream):
+    def _localcommit(self, stream):
         time = stream.readobject()
         if time == None:
             time = nowtuple()
@@ -225,12 +212,12 @@ class localcommit:
         lastmodify = os.path.getmtime(filename)
         logging.debug('localcommit: ' + filename)
         logging.debug('writing to repo')
-        self.commit(time, name, lastmodify, filename)
+        self._commitpack(time, name, lastmodify, filename)
         logging.debug('write ok')
         stream.writeobject('ok')
         logging.debug('all ok')
     
-    def commit(self, datetime, name, lastmodify, filename):
+    def _commitpack(self, datetime, name, lastmodify, filename):
         repo = self._repo
         datafile = repo.open('data', 'wb')
         start = datafile.tell()
@@ -251,11 +238,94 @@ class localcommit:
         indexfile.close()
         self._index.append(indexitem(index))
 
-class search:
-    def __init__(self, index):
-        self._index = index
+    def _commitunpack(self, stream):
+        path = stream.readobject()
+        compress = stream.readobject()
+        datetime = nowtuple()
+        name = os.path.basename(path)
+        lastmodify = os.path.getmtime(path)
+        path2 = path + '-committing'
+        shutil.move(path, path2)
+        summary = generatesummary(name, path2, depthlimit = 2)
+        archive = self._pack(compress, path2)
+        datafile = self._repo.open('data', 'wb')
+        start = datafile.tell()
+        with open(archive, 'rb') as f:
+            copy(f, datafile)
+        end = datafile.tell()
+        os.unlink(archive)
+        index = (('datetime', datetime),
+                 ('name', name),
+                 ('last-modify', lastmodify),
+                 ('range', (start, end)),
+                 ('summary', summary))
+        indexfile = repo.open('index', 'wb')
+        objectstream(indexfile).writeobject(index)
+        datafile.close()
+        indexfile.close()
+        self._index.append(indexitem(index))
+        stream.writeobject('ok')
+        
+    def _pack(self, compress, directory):
+        archiveroot = 'G:\\'
+        
+        #Generate current time
+        time = datetime.now()
+        time = time.timetuple()
+        time = time[:6]
+        time = '{:04d}-{:02d}-{:02d}-{:02d}-{:02d}-{:02d}'.format(*time)
     
-    def run(self, stream):
+        #Handle compression paramter
+        t = {False:'-m0', True:'-m5'}
+        compression = t[compress]
+        
+        #Get archive name
+        name = os.path.basename(directory)
+        
+        #Get archive full path
+        archive = '{}-{}.rar'.format(time, name)
+        archive = os.path.join(archiveroot, archive)
+        
+        #Generate file list
+        files = os.listdir(directory)
+        if not files:
+            files = ['Empty']
+            with open(os.path.join(directory, 'Empty'),'wb'): pass
+        files = '\n'.join(files) + '\n'
+        files = bytes(files, 'utf16')
+        
+        #Create listfile
+        listfile = tempfile.NamedTemporaryFile(mode = 'wb', delete = False)
+        listfile.write(files)
+        listfile.close()
+        
+        #Change working directory for rar
+        os.chdir(directory)
+        
+        #Call rar to compress
+        command = ['rar',
+                   'a', #Create archive file
+                   '"{}"'.format(archive), #Archive path
+                   '@"{}"'.format(listfile.name), #List file
+                   '-df', #Delete file after complete
+                   '-scul', #List file is utf16
+                   compression, #compression
+                   '-w"{}"'.format(directory)] #Set working directory
+        command = ' '.join(command)
+        subprocess.call(command)
+        
+        #Restore working directory
+        path = os.path.dirname(__file__)
+        os.chdir(path)
+        
+        #Clean up
+        os.remove(listfile.name)
+        os.rmdir(directory)
+        
+        #Return
+        return archive
+
+    def _search(self, stream):
         keyword = stream.readobject()
         result = []
         for e in self._index:
@@ -265,11 +335,7 @@ class search:
                     break
         stream.writeobject(result)
 
-class get:
-    def __init__(self, repo):
-        self._repo = repo
-    
-    def run(self, stream):
+    def _get(self, stream):
         range = stream.readobject()
         f = self._repo.open('data', 'rb')
         missing = f.getmissingparts(range[0], range[1])
@@ -282,11 +348,7 @@ class get:
             copy(f, stream, range[1] - range[0])
         f.close()
 
-class upload:
-    def __init__(self, repo):
-        self._repo = repo
-    
-    def run(self, stream):
+    def _upload(self, stream):
         type = stream.readobject()
         filename = stream.readobject()
         data = stream.readobject()
