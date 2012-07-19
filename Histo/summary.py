@@ -52,10 +52,12 @@ commonchar = '，的。　了不一是我“”他她这你在有人来着个？
 
 def _textsummary(path):
     result = ''
+    print(path)
     with open(path,'rb') as f:
         r = f.read(100)
     encoding = guessencoding(r)
     result = str(r, encoding, 'ignore')
+    print(result)
     return (result, )
 
 def guessencoding(text):
@@ -63,12 +65,15 @@ def guessencoding(text):
     result = 'utf8'
     for encoding in 'utf8','gbk','utf16','utf32','big5':
         a = str(text, encoding, 'ignore')
+        if len(a) is 0:
+            continue
         commoncount = 0
         for e in a:
             if e in commonchar:
                 commoncount += 1
-        if maxcommon < commoncount:
-            maxcommon = commoncount
+        commonpercent = commoncount / len(a)
+        if maxcommon < commonpercent:
+            maxcommon = commonpercent
             result = encoding
     return result
 
@@ -151,3 +156,8 @@ def _extractarchive(type, filename, target):
 class _extracterror(OSError):
     def __repr__(self):
         return 'extracterror({})'.format(repr(self.args[0]))
+
+def test():
+    print(generatesummary('test', 'G:\\v1\\201207101659提取以前的日记.rar'))
+
+test()
