@@ -249,7 +249,7 @@ class localcommit:
         objectstream(indexfile).writeobject(index)
         datafile.close()
         indexfile.close()
-        self._index.append(index)
+        self._index.append(indexitem(index))
 
 class search:
     def __init__(self, index):
