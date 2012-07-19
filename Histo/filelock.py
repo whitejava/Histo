@@ -26,7 +26,7 @@ class filelock:
         hostinstance.acquire(self._path)
     
     def release(self):
-        hostinstance.acquire(self._path)
+        hostinstance.release(self._path)
     
     def __enter__(self):
         self.acquire()
