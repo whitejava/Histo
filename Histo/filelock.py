@@ -7,8 +7,8 @@ class host:
     
     def acquire(self, path):
         with self._lock:
-            if path not in self._lock:
-                self._lock[path] = threading.Lock()
+            if path not in self._locks:
+                self._locks[path] = threading.Lock()
             self._locks[path].acquire()
     
     def release(self, path):
