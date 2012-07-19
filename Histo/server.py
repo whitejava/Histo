@@ -90,6 +90,7 @@ class sendthread(Thread):
                 path = each[0]
                 receiver = each[1]
                 name = os.path.basename(path)
+                logging.debug('fetch ' + name)
                 with filelock(path):
                     lastmodify = os.path.getmtime(path)
                     filesize = os.path.getsize(path)
