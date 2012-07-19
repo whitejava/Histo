@@ -52,12 +52,10 @@ commonchar = '，的。　了不一是我“”他她这你在有人来着个？
 
 def _textsummary(path):
     result = ''
-    print(path)
     with open(path,'rb') as f:
         r = f.read(100)
     encoding = guessencoding(r)
     result = str(r, encoding, 'ignore')
-    print(result)
     return (result, )
 
 def guessencoding(text):
