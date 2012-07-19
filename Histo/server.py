@@ -237,12 +237,14 @@ class localcommit:
         with open(filename, 'rb') as f:
             copy(f, datafile)
         end = datafile.tell()
+        logging.debug('generating summary')
         summary = generatesummary(name, filename, depthlimit = 2)
         index = (('datetime', datetime),
                  ('name', name),
                  ('last-modify', lastmodify),
                  ('range', (start, end)),
                  ('summary', summary))
+        logging.debug('writing index')
         indexfile = repo.open('index', 'wb')
         objectstream(indexfile).writeobject(index)
         datafile.close()
