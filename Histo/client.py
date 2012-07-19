@@ -67,7 +67,7 @@ class client:
                 s = hashstream('md5')
                 self.get(e['range'], s)
                 md5 = pchex.encode(s.digest())
-                name = '-'.join([str(j) for j in e])
+                name = '-'.join([str(j) for j in e['datetime']])
                 print(name, md5, file=f)
                 print(name, md5)
     
