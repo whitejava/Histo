@@ -31,5 +31,5 @@ class filelock:
     def __enter__(self):
         self.acquire()
     
-    def __exit(self,t,v,trace):
+    def __exit__(self,t,v,trace):
         self.release()
