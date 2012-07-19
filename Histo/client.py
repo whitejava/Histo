@@ -6,51 +6,34 @@ from timetuple import totuple
 from datetime import datetime
 import shutil
 
-usage = '''\
-histo.client ip[:port] command[ parameter1[ parameter2[...]]]
-command can be one of following values:
-commitfile        name
-                  path
-                  
-commitv1          path
-
-commitv2          path
-
-search            keyword
-
-get               start
-                  end
-                  output path
-
-For example:
-histo.client 192.168.1.2:13750 commitfile Test /home/username/test.rar
-'''
+#usage:
+#
+#histo.client ip[:port] command[ parameter1[ parameter2[...]]]
+#command can be one of following values:
+#commitfile        name
+#                  path
+#                  
+#commitv1          path
+#
+#commitv2          path
+#
+#search            keyword
+#
+#get               start
+#                  end
+#                  output path
+#
+#For example:
+#histo.client 192.168.1.2 13750 commitfile Test /home/username/test.rar
 
 def main():
-    print(usage)
-    address = sys.argv[1]
-    address = address.split(':')
-    ip = address[0]
-    port = 13750
-    if len(address) > 1:
-        port = int(address[1])
-    address = (ip, port)
-    c = client(address)
-    t = {'commit': c.commit,
-         'commitallv1': c.commitallv1,
-         'commitallv2': c.commitallv2,
-         'commitv1': c.commitv1,
-         'commitv2': c.commitv2,
-         'localcommit': c.localcommit,
-         'localcommitallv1': c.localcommitallv1,
-         'localcommitallv2': c.localcommitallv2,
-         'localcommitmix':c.localcommitmix,
-         'search': lambda *k:showsearchresult(c.search(*k)),
-         'browser': c.browser,
-         'get': c.get,
-         'upload': c.upload}
-    command = sys.argv[2]
-    t[command](*sys.argv[3:])
+    ip = sys.argv[1]
+    port = sys.argv[2]
+    command = sys.argv[3]
+    c = client((ip, port))
+    t = {'browser': c.browser,
+         'commitold': c.commitold}
+    t[command](*sys.argv[4:])
     print('ok')
 
 def showsearchresult(a):
