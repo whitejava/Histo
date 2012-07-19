@@ -4,6 +4,8 @@ import os, io, sys, pickle
 from stream import objectstream, copy, tcpstream
 from timetuple import totuple
 from datetime import datetime
+import shutil
+
 usage = '''\
 histo.client ip[:port] command[ parameter1[ parameter2[...]]]
 command can be one of following values:
@@ -102,6 +104,11 @@ class client:
         stream.writeobject(name)
         stream.writeobject(path)
         assert stream.readobject() == 'ok'
+        self._fakedelete(path)
+    
+    def _fakedelete(self, path):
+        dest = os.path.join('G:\\delete', os.path.basename(path))
+        os.rename(path, dest)
     
     def localcommitallv1(self, root):
         for e in sorted(os.listdir(root)):
