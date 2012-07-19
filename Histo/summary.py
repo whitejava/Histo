@@ -89,7 +89,7 @@ def _extractarchive(type, filename, target):
     rarcommand = ['rar', 'x', filename, '-p-', target+'/']
     tarcommand = ['tar', '-xf', filename, '-C', target]
     zipcommand = ['unzip', '-P', '123456', filename, '-d', target]
-    winrarcommand = ['winrar', '-ibck', '-inul', '-p-', 'x', filename, target+'/']
+    winrarcommand = ['winrar', '-ibck', '-inul', '-p-', '-y', 'x', filename, target+'/']
     linuxcommand = {'rar': rarcommand,
                    'tar': tarcommand,
                    'zip': zipcommand}
