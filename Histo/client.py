@@ -31,6 +31,7 @@ def main():
     command = sys.argv[3]
     c = client((ip, port))
     t = {'browser': c.browser,
+         'md5all': c.md5all,
          'commitold': c.commitold}
     t[command](*sys.argv[4:])
     print('ok')
