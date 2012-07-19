@@ -156,8 +156,3 @@ def _extractarchive(type, filename, target):
 class _extracterror(OSError):
     def __repr__(self):
         return 'extracterror({})'.format(repr(self.args[0]))
-
-def test():
-    print(generatesummary('test', 'G:\\v1\\201207101659提取以前的日记.rar'))
-
-test()
