@@ -1,7 +1,7 @@
 import struct
 import pickle
 import socket
-import time
+import time, hashlib
 
 __all__ = ['copy','datastream','objectstream']
 
@@ -155,3 +155,13 @@ class iostream:
     
     def read(self, limit = None):
         return self._input.read(limit)
+
+class hashstream:
+    def __init__(self, algorithm):
+        self._hasher = hashlib.new(algorithm)
+    
+    def write(self, data):
+        self._hasher.update(data)
+    
+    def digest(self):
+        return self._hasher.digest()

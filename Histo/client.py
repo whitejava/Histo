@@ -1,10 +1,9 @@
 __all__ = ['commitfile', 'commitprevious']
 
-import os, io, sys, pickle
-from stream import objectstream, copy, tcpstream
+import os, io, sys, pchex
+from stream import objectstream, copy, tcpstream, hashstream
 from timetuple import totuple
 from datetime import datetime
-import shutil
 
 #usage:
 #
@@ -36,17 +35,60 @@ def main():
     t[command](*sys.argv[4:])
     print('ok')
 
-def showsearchresult(a):
-    for i,e in enumerate(a):
-        time = e['datetime']
-        time = time[:3]
-        time = '{:04}-{:02d}{:02d}'.format(*time)
-        name = e['name']
-        print(i, time, name)
-
 class client:
     def __init__(self, address):
         self._address = address
+    
+    def browser(self, extractpath):
+        print('Input to search:');
+        keyword = os.sys.stdin.readline()
+        keyword = keyword[:-1]
+        result = self.search(keyword)
+        showsearchresult(result)
+        selection = os.sys.stdin.readline()
+        selection = selection[:-1]
+        selection = int(selection)
+        selection = result[selection]
+        range = selection['range']
+        name = selection['name']
+        path = os.path.join(extractpath, name)
+        print('Downloading', name)
+        with open(path, 'wb') as f:
+            if os.path.exists(path):
+                print(path, 'is exist!')
+            self.get(range, f)
+        print(path)
+    
+    def md5all(self, outputpath):
+        result = self.search('')
+        with open(outputpath, 'w', encoding='utf8') as f:
+            for e in result:
+                s = hashstream('md5')
+                self.get(e['range'], s)
+                md5 = pchex.encode(s.digest())
+                name = '-'.join([str(j) for j in e])
+                print(name, md5, file=f)
+                print(name, md5)
+    
+    def search(self, keyword):
+        stream = tcpstream(self._address)
+        stream = objectstream(stream)
+        stream.writeobject('search')
+        stream.writeobject(keyword)
+        return stream.readobject()
+    
+    def get(self, range, output):
+        stream = tcpstream(self._address)
+        stream = objectstream(stream)
+        stream.writeobject('get')
+        stream.writeobject(range)
+        length = range[1] - range[0]
+        result = stream.readobject()
+        if result == 'data':
+            assert copy(stream, output, length) == length
+        elif result == 'missing':
+            missing = stream.readobject()
+            raise Exception('missing: ' + ' '.join([str(e) for e in missing]))
     
     def commit(self, name, path, time = None):
         stream = tcpstream(self._address)
@@ -113,45 +155,6 @@ class client:
         self.localcommitallv1(os.path.join(path, 'v1'))
         self.localcommitallv2(os.path.join(path, 'v2'))
     
-    def search(self, keyword):
-        stream = tcpstream(self._address)
-        stream = objectstream(stream)
-        stream.writeobject('search')
-        stream.writeobject(keyword)
-        return stream.readobject()
-    
-    def get(self, range, path):
-        stream = tcpstream(self._address)
-        stream = objectstream(stream)
-        stream.writeobject('get')
-        stream.writeobject(range)
-        length = range[1] - range[0]
-        result = stream.readobject()
-        if result == 'data':
-            assert not os.path.exists(path)
-            with open(path, 'wb') as f:
-                assert copy(stream, f, length) == length
-        elif result == 'missing':
-            missing = stream.readobject()
-            raise Exception('missing: ' + ' '.join([str(e) for e in missing]))
-    
-    def browser(self, extractpath):
-        print('Input to search:');
-        keyword = os.sys.stdin.readline()
-        keyword = keyword[:-1]
-        result = self.search(keyword)
-        showsearchresult(result)
-        selection = os.sys.stdin.readline()
-        selection = selection[:-1]
-        selection = int(selection)
-        selection = result[selection]
-        range = selection['range']
-        name = selection['name']
-        path = os.path.join(extractpath, name)
-        print('Downloading', path)
-        self.get(range, path)
-        print(path)
-    
     def upload(self, root):
         for e in os.listdir(root):
             type = {'i':'index','d':'data','u':'usage'}[e[0]]
@@ -193,6 +196,14 @@ def resolvev1(filename):
     if name.startswith('_'): name = name[1:]
     #Return
     return datetime, name
+
+def showsearchresult(a):
+    for i,e in enumerate(a):
+        time = e['datetime']
+        time = time[:3]
+        time = '{:04}-{:02d}{:02d}'.format(*time)
+        name = e['name']
+        print(i, time, name)
 
 if __name__ == '__main__':
     main()
