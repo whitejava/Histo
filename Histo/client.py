@@ -28,7 +28,7 @@ import shutil
 
 def main():
     ip = sys.argv[1]
-    port = sys.argv[2]
+    port = int(sys.argv[2])
     command = sys.argv[3]
     c = client((ip, port))
     t = {'browser': c.browser,
@@ -109,7 +109,7 @@ class client:
         time, name = resolvev2(path)
         self.localcommit(name, path, time)
     
-    def localcommitmix(self, path):
+    def commitold(self, path):
         self.localcommitallv1(os.path.join(path, 'v1'))
         self.localcommitallv2(os.path.join(path, 'v2'))
     

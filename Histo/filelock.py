@@ -33,14 +33,3 @@ class filelock:
     
     def __exit__(self,t,v,trace):
         self.release()
-
-def test():
-    import os,time
-    while True:
-        path = 'E:\\histo\\data\\test'
-        with open(path,'wb'):
-            pass
-        os.unlink(path)
-        time.sleep(0.1)
-
-test()
