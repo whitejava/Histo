@@ -59,6 +59,7 @@ class client:
         with open(path, 'wb') as f:
             if os.path.exists(path):
                 print(path, 'is exist!')
+                return
             self.get(range, f)
         print(path)
     
