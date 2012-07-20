@@ -165,6 +165,7 @@ def indexitem(x):
 class mainserver(netserver):
     def __init__(self, repo):
         netserver.__init__(self, ('127.0.0.1', 13750), self.handle)
+        self._repo = repo
         self._index = loadindex(repo)
         self._lock = threading.Lock()
     
@@ -314,7 +315,7 @@ class mainserver(netserver):
         subprocess.call(command)
         
         #Release directory
-        os.chdir(os.path.dirname(__file__))
+        os.chdir(archiveroot)
         
         #Clean up
         os.remove(listfile.name)
