@@ -263,7 +263,7 @@ class mainserver(netserver):
                  ('range', (start, end)),
                  ('summary', summary))
         logging.debug('writing index')
-        indexfile = repo.open('index', 'wb')
+        indexfile = self._repo.open('index', 'wb')
         objectstream(indexfile).writeobject(index)
         datafile.close()
         indexfile.close()
