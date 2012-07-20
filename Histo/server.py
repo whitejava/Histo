@@ -244,11 +244,14 @@ class mainserver(netserver):
         compress = stream.readobject()
         datetime = nowtuple()
         name = os.path.basename(path)
+        logging.debug('name: ' + name)
         lastmodify = os.path.getmtime(path)
         path2 = path + '-committing'
         shutil.move(path, path2)
+        logging.debug('generating summary')
         summary = generatesummary(name, path2, depthlimit = 2)
         archive = self._pack(compress, path2)
+        logging.debug('writing data')
         datafile = self._repo.open('data', 'wb')
         start = datafile.tell()
         with open(archive, 'rb') as f:
@@ -259,11 +262,13 @@ class mainserver(netserver):
                  ('last-modify', lastmodify),
                  ('range', (start, end)),
                  ('summary', summary))
+        logging.debug('writing index')
         indexfile = repo.open('index', 'wb')
         objectstream(indexfile).writeobject(index)
         datafile.close()
         indexfile.close()
         self._index.append(indexitem(index))
+        logging.debug('write ok')
         stream.writeobject('ok')
         
     def _pack(self, compress, directory):
