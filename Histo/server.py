@@ -313,6 +313,9 @@ class mainserver(netserver):
         command = ' '.join(command)
         subprocess.call(command)
         
+        #Release directory
+        os.chdir(os.path.dirname(__file__))
+        
         #Clean up
         os.remove(listfile.name)
         os.rmdir(directory)
