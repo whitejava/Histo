@@ -101,6 +101,7 @@ class client:
         imap.store(delete, '+FLAGS', '\\Seen')
     
     def commitunpack(self, path, compress):
+        compress = {'compress': True, 'nocompress': False}[compress]
         stream = objectstream(tcpstream(self._address))
         stream.writeobject('commitunpack')
         stream.writeobject(path)

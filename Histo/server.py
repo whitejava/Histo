@@ -253,7 +253,6 @@ class mainserver(netserver):
         with open(archive, 'rb') as f:
             copy(f, datafile)
         end = datafile.tell()
-        os.unlink(archive)
         index = (('datetime', datetime),
                  ('name', name),
                  ('last-modify', lastmodify),
