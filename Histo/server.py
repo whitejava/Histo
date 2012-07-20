@@ -313,10 +313,6 @@ class mainserver(netserver):
         command = ' '.join(command)
         subprocess.call(command)
         
-        #Restore working directory
-        path = os.path.dirname(__file__)
-        os.chdir(path)
-        
         #Clean up
         os.remove(listfile.name)
         os.rmdir(directory)
