@@ -244,6 +244,7 @@ class mainserver(netserver):
         compress = stream.readobject()
         datetime = nowtuple()
         name = os.path.basename(path)
+        name = name + '.rar'
         logging.debug('name: ' + name)
         lastmodify = os.path.getmtime(path)
         path2 = path + '-committing'
@@ -312,12 +313,11 @@ class mainserver(netserver):
                    'a', #Create archive file
                    '"{}"'.format(archive), #Archive path
                    '@"{}"'.format(listfile.name), #List file
-                   '-df', #Delete file after complete
                    '-scul', #List file is utf16
                    compression, #compression
                    '-w"{}"'.format(directory)] #Set working directory
         command = ' '.join(command)
-        subprocess.call(command)
+        assert subprocess.call(command) == 0
         
         #Release directory
         os.chdir(archiveroot)
