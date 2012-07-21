@@ -268,6 +268,7 @@ class mainserver(netserver):
         objectstream(indexfile).writeobject(index)
         datafile.close()
         indexfile.close()
+        shutil.rmtree(path)
         self._index.append(indexitem(index))
         logging.debug('write ok')
         stream.writeobject('ok')
@@ -324,7 +325,6 @@ class mainserver(netserver):
         
         #Clean up
         os.remove(listfile.name)
-        os.rmdir(directory)
         
         #Return
         return archive
