@@ -2,10 +2,14 @@ import os, sys
 from stream import objectstream, copy, tcpstream
 
 def main():
-    command = sys.argv[1]
-    t = {'browser': browser,
-         'commitunpack': commitunpack}
-    t[command](*sys.argv[2:])
+    try:
+        command = sys.argv[1]
+        t = {'browser': browser,
+             'commitunpack': commitunpack}
+        t[command](*sys.argv[2:])
+    except Exception as e:
+        print(e)
+        input()
 
 def browser(ip, port, extractpath):
     print('Search:')
