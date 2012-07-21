@@ -268,7 +268,7 @@ class mainserver(netserver):
         objectstream(indexfile).writeobject(index)
         datafile.close()
         indexfile.close()
-        shutil.rmtree(path)
+        shutil.rmtree(path2)
         self._index.append(indexitem(index))
         logging.debug('write ok')
         stream.writeobject('ok')
