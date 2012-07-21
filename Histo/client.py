@@ -56,7 +56,7 @@ def download(stream, range, path):
         stream.writeobject(e)
     length = range[1] - range[0]
     with open(path, 'wb') as f:
-        copy(stream, f, length)
+        assert copy(stream, f, length) == length
 
 if __name__ == '__main__':
     main()
