@@ -7,10 +7,10 @@ def main():
          'commitunpack': commitunpack}
     t[command](sys.argv[2:])
 
-def browser(address, extractpath):
+def browser(ip, port, extractpath):
     print('Search:')
     keyword = os.sys.stdin.readline()[:-1]
-    result = search(address, keyword)
+    result = search(ip, port, keyword)
     showresult(result)
     selections = [int(e) for e in os.sys.stdin.readline()[:-1].split()]
     for select in selections:
@@ -22,7 +22,7 @@ def browser(address, extractpath):
             print(name + ' is exist, pass')
         else:
             print('Downloading: ' + name)
-            download(address, item['range'], path)
+            download(ip, port, item['range'], path)
 
 def netclient(x):
     def a(ip, port, *k, **kw):
