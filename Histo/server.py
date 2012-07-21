@@ -251,6 +251,7 @@ class mainserver(netserver):
         shutil.move(path, path2)
         logging.debug('generating summary')
         summary = generatesummary(name, path2, depthlimit = 2)
+        logging.debug('packing')
         archive = self._pack(compress, path2)
         logging.debug('writing data')
         datafile = self._repo.open('data', 'wb')
