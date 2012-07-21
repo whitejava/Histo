@@ -55,11 +55,11 @@ class client:
         range = selection['range']
         name = selection['name']
         path = os.path.join(extractpath, name)
+        if os.path.exists(path):
+            print(path, 'is exist!')
+            return
         print('Downloading', name)
         with open(path, 'wb') as f:
-            if os.path.exists(path):
-                print(path, 'is exist!')
-                return
             self.get(range, f)
         print(path)
     
