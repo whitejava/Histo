@@ -54,7 +54,9 @@ class client:
         selection = result[selection]
         range = selection['range']
         name = selection['name']
-        path = os.path.join(extractpath, name)
+        time = selection['datetime']
+        time = '%04d%02d%02d%02d%02d%02d' % time[:6]
+        path = os.path.join(extractpath, time + name)
         if os.path.exists(path):
             print(path, 'is exist!')
             return
