@@ -57,3 +57,6 @@ def download(stream, range, path):
     length = range[1] - range[0]
     with open(path, 'wb') as f:
         copy(stream, f, length)
+
+if __name__ == '__main__':
+    main()
