@@ -10,7 +10,7 @@ from filelock import filelock
 from threading import Thread
 import hashlib, pchex, threading, summary, tempfile
 import time, smtp, os, io, sys, logging, shutil
-import autotemp, subprocess
+import pclib
 
 logpath = 'E:\\histo-log\\0.log'
 logdateformat = '[%Y-%m%d %H:%M:%S]'
@@ -318,7 +318,7 @@ class mainserver(netserver):
                    compression, #compression
                    '-w"{}"'.format(directory)] #Set working directory
         command = ' '.join(command)
-        assert subprocess.call(command) == 0
+        assert pclib.quietcall(command) == 0
         
         #Release directory
         os.chdir(archiveroot)
