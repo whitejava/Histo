@@ -5,7 +5,7 @@ def main():
     command = sys.argv[1]
     t = {'browser': browser,
          'commitunpack': commitunpack}
-    t[command](sys.argv[2:])
+    t[command](*sys.argv[2:])
 
 def browser(ip, port, extractpath):
     print('Search:')
