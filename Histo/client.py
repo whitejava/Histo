@@ -26,7 +26,7 @@ def browser(ip, port, extractpath):
 
 def netclient(x):
     def a(ip, port, *k, **kw):
-        stream = objectstream(tcpstream((ip, port)))
+        stream = objectstream(tcpstream((ip, int(port))))
         return x(stream, *k, **kw)
     return a
 
