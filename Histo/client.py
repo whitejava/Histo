@@ -54,9 +54,14 @@ def download(stream, range, path):
     assert not os.path.exists(path)
     for e in 'get', range:
         stream.writeobject(e)
-    length = range[1] - range[0]
-    with open(path, 'wb') as f:
-        assert copy(stream, f, length) == length
+    result = stream.readobject()
+    if result == 'data':
+        length = range[1] - range[0]
+        with open(path, 'wb') as f:
+            assert copy(stream, f, length) == length
+    elif result == 'missing':
+        missing = stream.readobject()
+        raise Exception('missing: ' + ' '.join([str(e) for e in missing]))
 
 if __name__ == '__main__':
     main()
