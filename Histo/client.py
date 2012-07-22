@@ -1,11 +1,12 @@
-import os, sys
+import os, sys, imaplib
 from stream import objectstream, copy, tcpstream
 
 def main():
     try:
         command = sys.argv[1]
         t = {'browser': browser,
-             'commitunpack': commitunpack}
+             'commitunpack': commitunpack,
+             'markdup': markdup}
         t[command](*sys.argv[2:])
     except Exception as e:
         print(e)
@@ -40,6 +41,27 @@ def commitunpack(stream, path, compress):
     for e in 'commitunpack', path, compress:
         stream.writeobject(e)
     assert stream.readobject() == 'ok'
+
+def markdup(username, password):
+    imap = imaplib.IMAP4_SSL('imap.gmail.com')
+    imap.login(username + '@gmail.com', password)
+    imap.list()
+    imap.select('inbox')
+    mails = str(imap.search(None, 'ALL')[1][0],'utf8').split()
+    subjects = imap.fetch(','.join(mails), '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')[1]
+    result = []
+    for e in subjects:
+        if type(e) is not tuple:
+            continue
+        uid = str(e[0].split()[0],'utf8')
+        subject = str(e[1].split()[1],'utf8')
+        result.append((subject, uid))
+    result = list(sorted(result))
+    dup = []
+    for i in range(1, len(result)):
+        if result[i][0] == result[i-1][0]:
+            dup.append(result[i][1])
+    imap.store(','.join(dup), '+FLAGS', '\\Seen')
 
 def showresult(result):
     for i,e in enumerate(result):
