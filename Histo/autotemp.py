@@ -12,11 +12,12 @@ class tempfile:
         self._dir = dir
     
     def __enter__(self):
-        self._temp = otemp.mktemp(self._suffix, self._prefix, self._dir)
-        return self._temp
+        self._temp = otemp.NamedTemporaryFile('wb', suffix = self._suffix, prefix=self._prefix, dir=self._dir, delete=False)
+        self._temp.close()
+        return self._temp.name
     
     def __exit__(self, *k):
-        os.remove(self._temp)
+        os.remove(self._temp.name)
 
 def _forceremove(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)

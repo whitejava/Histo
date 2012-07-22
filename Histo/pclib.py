@@ -1,4 +1,5 @@
 from subprocess import Popen, STDOUT, PIPE
+from datetime import datetime
 
 def quietcall(commands):
     proc = Popen(commands, stdin = None, stderr = STDOUT, stdout = PIPE)
@@ -21,3 +22,9 @@ class byteshex:
     def decode(x):
         assert len(x) % 2 == 0
         return bytes([int(x[i:i+2],16) for i in range(0,len(x),2)])
+
+def timetuple(t):
+    return (t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
+
+def nowtuple():
+    return timetuple(datetime.now())
