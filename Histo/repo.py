@@ -14,7 +14,7 @@ class repo:
         receiver = 'cpc.histo.%s%d@gmail.com'
         path = os.path.join(self._root, file)
         b = [local(path, (mark+'{:d}').format)]
-        b.append(listen(b[-1], onwrite = lambda x:self._mailclient.send(b[0].getpath(x), receiver%(mark, x//boxsize))))
+        b.append(listen(b[-1], onwrite = lambda x:self._mailclient.post(b[0].getpath(x), receiver%(mark, x//boxsize))))
         b.append(crypto(b[-1], hash.cipher('md5')))
         b.append(crypto(b[-1], hash.cipher('sha1')))
         b.append(crypto(b[-1], aes.cipher(self._key)))
