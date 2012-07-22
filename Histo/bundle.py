@@ -7,25 +7,25 @@ class local:
         self._root = root
         self._idformat = idformat
     
-    def dump(self, id, data):
-        path = self.getpath(id)
+    def dump(self, n, data):
+        path = self.getpath(n)
         with filelock(path):
             with open(path, 'wb') as f:
                 f.write(data)
     
-    def load(self, id):
-        path = self.getpath(id)
+    def load(self, n):
+        path = self.getpath(n)
         with filelock(path):
             with open(path, 'rb') as f:
                 return f.read()
     
-    def exists(self, id):
-        path = self.getpath(id)
+    def exists(self, n):
+        path = self.getpath(n)
         return os.path.isfile(path)
     
-    def getpath(self, id):
-        id = self._idformat.format(id)
-        path = os.path.join(self._root, id)
+    def getpath(self, n):
+        n = self._idformat.format(n)
+        path = os.path.join(self._root, n)
         return path
 
 class crypto:
@@ -33,29 +33,29 @@ class crypto:
         self._bundle = bundle
         self._cipher = cipher
     
-    def dump(self, id, data):
+    def dump(self, n, data):
         data = self._cipher.encode(data)
-        self._bundle.dump(id, data)
+        self._bundle.dump(n, data)
     
-    def load(self, id):
-        data = self._bundle.load(id)
+    def load(self, n):
+        data = self._bundle.load(n)
         data = self._cipher.decode(data)
         return data
     
-    def exists(self, id):
-        return self._bundle.exists(id)
+    def exists(self, n):
+        return self._bundle.exists(n)
 
 class monitor:
     def __init__(self, bundle, listener):
         self._bundle = bundle
         self._listener = listener
     
-    def dump(self, id, data):
-        self._bundle.dump(id, data)
-        self._listener(id)
+    def dump(self, n, data):
+        self._bundle.dump(n, data)
+        self._listener(n)
     
-    def load(self, id):
-        return self._bundle.load(id)
+    def load(self, n):
+        return self._bundle.load(n)
     
-    def exists(self, id):
-        return self._bundle.exists(id)
+    def exists(self, n):
+        return self._bundle.exists(n)
