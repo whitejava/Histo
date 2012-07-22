@@ -1,5 +1,6 @@
 from bundle import local,crypto,listen
-import aes, hash, dfile, os
+from crypto import hub, pkcs7padding, aes, verify
+import dfile, os
 
 class repo:
     def __init__(self, root, key, mailclient):
@@ -15,9 +16,6 @@ class repo:
         path = os.path.join(self._root, file)
         b = [local(path, (mark+'{:d}').format)]
         b.append(listen(b[-1], onwrite = lambda x:self._mailclient.post(b[0].getpath(x), receiver%(mark, x//boxsize))))
-        b.append(crypto(b[-1], hash.cipher('md5')))
-        b.append(crypto(b[-1], hash.cipher('sha1')))
-        b.append(crypto(b[-1], aes.cipher(self._key)))
-        b.append(crypto(b[-1], hash.cipher('md5')))
-        b.append(crypto(b[-1], hash.cipher('sha1')))
+        b.append(crypto(b[-1], hub(verify('sha1'), verify('md5'), pkcs7padding(16), aes(self._key), verify('sha1'), verify('md5'))))
         return dfile.open(b[-1], partsize, mode)
+
