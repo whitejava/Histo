@@ -18,4 +18,3 @@ class repo:
         b.append(listen(b[-1], onwrite = lambda x:self._mailclient.post(b[0].getpath(x), receiver%(mark, x//boxsize))))
         b.append(crypto(b[-1], hub(verify('sha1'), verify('md5'), pkcs7padding(16), aes(self._key), verify('sha1'), verify('md5'))))
         return dfile.open(b[-1], partsize, mode)
-

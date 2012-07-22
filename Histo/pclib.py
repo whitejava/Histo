@@ -274,3 +274,10 @@ class tempdir:
     
     def __exit__(self, *k):
         shutil.rmtree(self._temp, onerror = _forceremove)
+
+def wait_for_keyboard_interrupt():
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        return

@@ -11,6 +11,8 @@ from threading import Thread
 import hashlib, pchex, threading, summary, tempfile
 import time, smtp, os, io, sys, logging, shutil
 import pclib
+from smtp import smtpserver
+from pclib import copystream, objectstream
 
 logpath = 'E:\\histo-log\\0.log'
 logdateformat = '[%Y-%m%d %H:%M:%S]'
@@ -38,10 +40,9 @@ def main(root, key, threadcount = '5'):
     
     logging.debug('Loading smtp server')
     smtp = smtpserver(root, threadcount)
-    queue = smtp.getqueue()
     
     logging.debug('Loading main server')
-    main = mainserver(repo(root, key, queue))
+    main = mainserver(repo(root, key, smtp.getclient()))
     
     logging.debug('Starting main server')
     main.start()
@@ -50,95 +51,101 @@ def main(root, key, threadcount = '5'):
     smtp.start()
     
     logging.debug('Service running')
-    wait_for_keyboard_interrupt()
+    pclib.wait_for_keyboard_interrupt()
     
     logging.debug('Service shutting down')
     smtp.shutdown()
     main.shutdown()
     
     logging.debug('Now exit')
+    
+class mainserver(netserver):
+    def __init__(self, repo):
+        netserver.__init__(('127.0.0.1', 13750), self.handle)
+        self._repo = repo
+        self._index = loadindex()
+        self._lock = threading.Lock()
+    
+    def handle(self, stream):
+        method = stream.readobject()
+        t = {'commitunpack': self.commitunpack,
+             'search': self.search,
+             'get': self.get}
+        logging.debug('request: ' + method)
+        with self._lock:
+            try:
+                t[method](stream)
+            except Exception as e:
+                logging.exception(e)
+            else:
+                logging.debug('ok')
+    
+    def commitunpack(self, stream):
+        path = stream.readobject()
+        compress = stream.readobject()
+        logging.debug('path: ' + path)
+        logging.debug('compress: ' + compress)
+        
+        name = os.path.basename(path) + '.rar'
+        time = nowtuple()
+        
+        logging.debug('renaming')
+        postfix = '-committing'
+        shutil.move(path, path + postfix)
+        path = path + postfix
+        
+        logging.debug('generating summary')
+        summary = generatesummary(name, path, depthlimit = 2)
+        
+        logging.debug('packing')
+        package = self.pack(name, path, compress)
+        
+        logging.debug('writing data')
+        data = self._repo.open('data', 'wb')
+        start = data.tell()
+        with open(path, 'rb') as f:
+            copystream(f, data)
+        end = data.tell()
+        
+        logging.debug('writing index')
+        item = (('datetime', time),
+                ('name', name),
+                ('last-modify', os.path.getmtime(path)),
+                ('range', (start, end)),
+                ('summary', summary))
+        index = self._repo.open('data', 'wb')
+        objectstream(index).writeobject(item)
+        
+        logging.debug('finishing')
+        data.close()
+        index.close()
+        shutil.rmtree(path)
+        self._index.append(loaditem(item))
+        stream.writeobject('ok')
+    
+    def search(self, stream):
+        keyword = stream.readobject()
+        result = []
+        for item in self._index:
+            for text in summary.walk(item['summary']):
+                if text.find(keyword) >= 0:
+                    result.append(responseitem(item))
+        return result
+    
+    def get(self, stream):
+        pass
+    
+def pack(self, name, path, compress):
+    root = 'G:\\'
+    raise Exception()
 
-def wait_for_keyboard_interrupt():
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        return
+def loaditem(x):
+    return dict(x)
 
-class sendthread(Thread):
-    def __init__(self, queue):
-        Thread.__init__(self)
-        self._queue = queue
-        self._stopper = [False]
-        self._exitlock = threading.Lock()
-        self._exitlock.acquire()
-    
-    def shutdown(self):
-        self._stopper[0] = True
-    
-    def wait(self):
-        self._exitlock.acquire()
-        self._exitlock.release()
-    
-    def run(self):
-        try:
-            while not self._stopper[0]:
-                time.sleep(1)
-                try:
-                    taskid, each = self._queue.fetchtask()
-                except NoTask:
-                    continue
-                path = each[0]
-                receiver = each[1]
-                name = os.path.basename(path)
-                logging.debug('fetch ' + name)
-                with filelock(path):
-                    lastmodify = os.path.getmtime(path)
-                    filesize = os.path.getsize(path)
-                    with open(path, 'rb') as f:
-                        data = f.read()
-                    assert len(data) == filesize
-                lastmodify = datetime.fromtimestamp(lastmodify)
-                lastmodify = totuple(lastmodify)
-                lastmodify = '{:04d}-{:02d}{:02d}-{:02d}{:02d}{:02d}-{:06d}'.format(*lastmodify)
-                md5 = pchex.encode(hashlib.new('md5', data).digest())
-                sender = 'histo@caipeichao.com'
-                subject = name
-                content = '%s-%s-%s' % (filesize, lastmodify, md5)
-                attachmentname = name
-                attachmentdata = data
-                logging.debug('sending {} to {}'.format(name, receiver))
-                try:
-                    smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = self._stopper)
-                except Exception as e:
-                    logging.warning('fail send %s' % name)
-                    self._queue.feedback(taskid, False)
-                else:
-                    self._queue.feedback(taskid, True)
-                    logging.debug('finish send {}'.format(name))
-        except Exception as e:
-            logging.exception(e)
-        finally:
-            self._exitlock.release()
-
-class smtpserver:
-    def __init__(self, root, threadcount = 5):
-        self._threadcount = threadcount
-        self._queue = taskqueue(diskqueue(os.path.join(root, 'sendqueue')))
-    
-    def getqueue(self):
-        return self._queue
-    
-    def start(self):
-        self._threads = [sendthread(self._queue) for i in range(self._threadcount)]
-        for e in self._threads:
-            e.start()
-    
-    def shutdown(self):
-        for e in self._threads:
-            e.shutdown()
-        for e in self._threads:
-            e.wait()
+def responseitem(x):
+    x = x.copy()
+    del x['summary']
+    return x
 
 def loadindex(repo):
     try:

@@ -59,3 +59,79 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata,
         recv(250)
     finally:
         sock.close()
+        
+
+class sendthread(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self._queue = queue
+        self._stopper = [False]
+        self._exitlock = threading.Lock()
+        self._exitlock.acquire()
+    
+    def shutdown(self):
+        self._stopper[0] = True
+    
+    def wait(self):
+        self._exitlock.acquire()
+        self._exitlock.release()
+    
+    def run(self):
+        try:
+            while not self._stopper[0]:
+                time.sleep(1)
+                try:
+                    taskid, each = self._queue.fetchtask()
+                except NoTask:
+                    continue
+                path = each[0]
+                receiver = each[1]
+                name = os.path.basename(path)
+                logging.debug('fetch ' + name)
+                with filelock(path):
+                    lastmodify = os.path.getmtime(path)
+                    filesize = os.path.getsize(path)
+                    with open(path, 'rb') as f:
+                        data = f.read()
+                    assert len(data) == filesize
+                lastmodify = datetime.fromtimestamp(lastmodify)
+                lastmodify = totuple(lastmodify)
+                lastmodify = '{:04d}-{:02d}{:02d}-{:02d}{:02d}{:02d}-{:06d}'.format(*lastmodify)
+                md5 = pchex.encode(hashlib.new('md5', data).digest())
+                sender = 'histo@caipeichao.com'
+                subject = name
+                content = '%s-%s-%s' % (filesize, lastmodify, md5)
+                attachmentname = name
+                attachmentdata = data
+                logging.debug('sending {} to {}'.format(name, receiver))
+                try:
+                    smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = self._stopper)
+                except Exception as e:
+                    logging.warning('fail send %s' % name)
+                    self._queue.feedback(taskid, False)
+                else:
+                    self._queue.feedback(taskid, True)
+                    logging.debug('finish send {}'.format(name))
+        except Exception as e:
+            logging.exception(e)
+        finally:
+            self._exitlock.release()
+
+class smtpserver:
+    def __init__(self, root, threadcount = 5):
+        self._threadcount = threadcount
+        self._queue = taskqueue(diskqueue(os.path.join(root, 'sendqueue')))
+    
+    def getqueue(self):
+        return self._queue
+    
+    def start(self):
+        self._threads = [sendthread(self._queue) for i in range(self._threadcount)]
+        for e in self._threads:
+            e.start()
+    
+    def shutdown(self):
+        for e in self._threads:
+            e.shutdown()
+        for e in self._threads:
+            e.wait()
