@@ -5,6 +5,29 @@ from email import encoders
 import dns.resolver
 import socket
 
+class smtpserver:
+    def __init__(self, root, threadcount = 5):
+        self._threadcount = threadcount
+        self._queue = sendqueue(root)
+    
+    def start(self):
+        self._threads = [sendthread() for _ in range(self._threadcount)]
+        for e in self._threads:
+            e.start()
+    
+    def shutdown(self):
+        for e in self._threads:
+            e.shutdownsignal()
+        for e in self._threads:
+            e.wait()
+    
+    def getclient(self):
+        return smtpclient(self._queue)
+
+    
+
+
+
 def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = [False]):
     message = MIMEMultipart()
     message['From'] = '<{}>'.format(sender)
@@ -59,7 +82,6 @@ def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata,
         recv(250)
     finally:
         sock.close()
-        
 
 class sendthread(Thread):
     def __init__(self, queue):

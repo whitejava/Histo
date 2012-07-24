@@ -1,7 +1,7 @@
 #- -encoding: utf8
 
 import os
-from autotemp import tempdir
+from pclib import tempdir
 from subprocess import Popen, PIPE, STDOUT
 
 __all__ = ['generatesummary', 'walk']

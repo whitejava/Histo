@@ -1,6 +1,5 @@
-import os, smtp
-from filelock import filelock
-from pclib import nowtuple
+import os
+from pclib import filelock
 
 class local:
     def __init__(self, root, idformat):
