@@ -24,10 +24,6 @@ class smtpserver:
     def getclient(self):
         return smtpclient(self._queue)
 
-    
-
-
-
 def sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = [False]):
     message = MIMEMultipart()
     message['From'] = '<{}>'.format(sender)

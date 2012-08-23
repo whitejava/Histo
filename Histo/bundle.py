@@ -1,4 +1,4 @@
-import os
+import os, smtp
 from pclib import filelock
 
 class local:
@@ -59,3 +59,24 @@ class listen:
     
     def exists(self, n):
         return self._bundle.exists(n)
+
+class mail:
+    def __init__(self, sender, mail, password):
+        self._sender = sender
+        self._mail = mail
+        self._password = password
+    
+    def dump(self, n, data, stopper = [False]):
+        sender = self._sender
+        receiver = self._mail
+        subject = str(n)
+        content = ''
+        attachmentname = str(n)
+        attachmentdata = data
+        smtp.sendmail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper)
+    
+    def load(self, n):
+        raise Exception('not impl')
+    
+    def delete(self, n):
+        raise Exception('not impl')
