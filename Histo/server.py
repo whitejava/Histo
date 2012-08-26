@@ -65,6 +65,7 @@ class histoserver(netserver):
         self.statebundle = statebundle
         self.databundle = databundle
         self.state = self.loadorcreatestate()
+        self.index = self.loadorcreateindex()
         self.lock = threading.Lock()
     
     def loadorcreatestate(self):
@@ -73,6 +74,9 @@ class histoserver(netserver):
             return self.createstate()
         else:
             return self.loadstate(statefile)
+
+    def loadorcreateindex(self):
+        ?
 
     def getlateststatefile(self):
         stateprefix = 'state-'
@@ -191,12 +195,42 @@ class histoserver(netserver):
     
     def search(self, stream):
         keyword = stream.readobject()
+        keywords = keyword.split()
         result = []
-        for item in self._index:
-            for text in summary.walk(item['summary']):
-                if text.find(keyword) >= 0:
-                    result.append(responseitem(item))
-        return result
+        for e in self.index:
+            e = dict(zip(keysets[e[0]], e[1]))
+            for text in summary.walk(e['Summary']):
+                containcount = 0
+                for e2 in keywords:
+                    if text.find(e2) >= 0:
+                        containcount += 1
+                item = dict()
+                item['Name'] = e['Name']
+                item['Time'] = e['Time']
+                item['ContainCount'] = containcount
+                result.append(item)
+        def cmp(x,y):
+            containcount1 = x['ContainCount']
+            containcount2 = y['ContainCount']
+            time1 = x['Time']
+            time2 = y['Time']
+            name1 = x['Name']
+            name2 = y['Name']
+            if x['ContainCount'] < y['ContainCount']:
+                return 1
+            elif x['ContainCount'] > y['ContainCount']:
+                return -1
+            elif x['Time'] < y['Time']:
+                return 1
+            elif x['Time'] > y['Time']:
+                return -1
+            elif x['Name'] < y['Name']:
+                return -1
+            elif x['Name'] > y['Name']:
+                return 1
+            else:
+                return 0
+        return list(sorted(result, cmp=cmp))
     
     def get(self, stream):
         start, end = stream.readobject()
