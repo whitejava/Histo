@@ -346,5 +346,5 @@ def pack(self, name, path, compress):
     return package
 
 if __name__ == '__main__':
-    print('state-%04d-%02d%02d-%02d%02d%02d-%06d'%pclib.nowtuple())
-    #main(*sys.argv[1:])
+    #print('state-%04d-%02d%02d-%02d%02d%02d-%06d'%pclib.nowtuple())
+    main(*sys.argv[1:])

@@ -1,12 +1,11 @@
-import os, sys, imaplib
-from stream import objectstream, copy, tcpstream
+import os, sys
+from pclib import objectstream, tcpstream
 
 def main():
     try:
         command = sys.argv[1]
         t = {'browser': browser,
-             'commitunpack': commitunpack,
-             'markdup': markdup}
+             'commitunpack': commitunpack}
         t[command](*sys.argv[2:])
     except Exception as e:
         print(e)
@@ -19,15 +18,16 @@ def browser(ip, port, extractpath):
     showresult(result)
     selections = [int(e) for e in os.sys.stdin.readline()[:-1].split()]
     for select in selections:
+        commitid = result['CommitID']
         item = result[select]
-        name = item['name']
-        time = '%04d%02d%02d%02d%02d%02d' % item['datetime'][:6]
+        name = item['Name']
+        time = '%04d%02d%02d%02d%02d%02d' % item['Time'][:6]
         path = os.path.join(extractpath, time + name)
         if os.path.exists(path):
             print(name + ' is exist, pass')
         else:
-            print('Downloading: ' + name)
-            download(ip, port, item['range'], path)
+            print('Downloading: %d' % commitid)
+            download(ip, port, commitid, path)
 
 def netclient(x):
     def a(ip, port, *k, **kw):
@@ -42,23 +42,6 @@ def commitunpack(stream, path, compress):
         stream.writeobject(e)
     assert stream.readobject() == 'ok'
 
-def markdup(username, password):
-    imap = imaplib.IMAP4_SSL('imap.gmail.com')
-    imap.login(username + '@gmail.com', password)
-    imap.list()
-    imap.select('inbox')
-    mails = str(imap.search(None, 'ALL')[1][0],'utf8').split()
-    subjects = imap.fetch(','.join(mails), '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')[1]
-    subjects = [subjects[i] for i in range(0,len(subjects),2)]
-    result = []
-    for e in subjects:
-        uid = str(e[0].split()[0],'utf8')
-        subject = str(e[1].split()[1],'utf8')
-        result.append((subject, uid))
-    result = list(sorted(result))
-    dup = [result[i][1] for i in range(1, len(result)) if result[i][0] == result[i-1][0]]
-    imap.store(','.join(dup), '+FLAGS', '\\Seen')
-
 def showresult(result):
     for i,e in enumerate(result):
         time = '%04d-%02d%02d' % (e['datetime'][:3])
@@ -72,18 +55,10 @@ def search(stream, keyword):
     return stream.readobject()
 
 @netclient
-def download(stream, range, path):
+def download(stream, commitid, path):
     assert not os.path.exists(path)
-    for e in 'get', range:
-        stream.writeobject(e)
-    result = stream.readobject()
-    if result == 'data':
-        length = range[1] - range[0]
-        with open(path, 'wb') as f:
-            assert copy(stream, f, length) == length
-    elif result == 'missing':
-        missing = stream.readobject()
-        raise Exception('missing: ' + ' '.join([str(e) for e in missing]))
+    stream.writeobject(commitid)
+    assert stream.readobject() == 'ok'
 
 if __name__ == '__main__':
     main()

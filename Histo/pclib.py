@@ -1,3 +1,5 @@
+#- - encoding: utf8
+
 from subprocess import Popen, STDOUT, PIPE
 from datetime import datetime
 import time, struct, pickle, hashlib
@@ -35,11 +37,31 @@ def timetuple(t):
 def nowtuple():
     return timetuple(datetime.now())
 
+class limitedcounter:
+    def __init__(self, maxcount):
+        self.maxcount = maxcount
+        self.count = 0
+        self.lock = threading.Lock()
+    
+    def increase(self):
+        with self.lock:
+            if self.count < self.maxcount:
+                self.count += 1
+                self.decreaselock.release()
+            else:
+                self.increaselock.acquire()
+        with self.increaselock:
+            pass
+    
+    def decrease(self):
+        pass
+
 class buffer:
     def __init__(self, size):
         self.size = size
         self.queue = []
         self.lock = threading.Lock()
+        self.lock2 = threading.Lock()
         self.pushlock = threading.Lock()
         self.poplock = threading.Lock()
     
@@ -47,28 +69,34 @@ class buffer:
         while True:
             with self.lock:
                 if len(self.queue) < self.size:
-                    if self.poplock.locked():
-                        self.poplock.release()
+                    with self.lock2:
+                        if self.poplock.locked():
+                            self.poplock.release()
                     self.queue.append(x)
                     return
                 else:
                     self.pushlock.acquire()
-            with self.pushlock:
-                pass
+            self.pushlock.acquire()
+            with self.lock2:
+                if self.pushlock.locked():
+                    self.pushlock.release()
     
     def pop(self):
         while True:
             with self.lock:
                 if len(self.queue) > 0:
-                    if self.pushlock.locked():
-                        self.pushlock.release()
+                    with self.lock2:
+                        if self.pushlock.locked():
+                            self.pushlock.release()
                     result = self.queue[0]
                     del self.queue[0]
                     return result
                 else:
                     self.poplock.acquire()
-            with self.poplock:
-                pass
+            self.poplock.acquire()
+            with self.lock2:
+                if self.poplock.locked():
+                    self.poplock.release()
 
 class timer:
     def __enter__(self):
@@ -77,29 +105,31 @@ class timer:
     def __exit__(self,*k):
         print(time.clock() - self._time)
 
-def copystream(input, output, limit = None, chunksize = 128*1024, ):
-    b = buffer(5)
+def copystream2(input, output):
+    for e in chunkreader(input, limit=None, chunksize=128*1024):
+        output.write(e)
+
+def copystream(input, output, limit = None, chunksize = 128*1024, buffercount = 4):
+    b = buffer(buffercount)
     class readthread(Thread):
+        def __init__(self, buffer):
+            Thread.__init__(self)
+            self.buffer = buffer
         def run(self):
-            try:
-                for e in chunkreader(input, limit=limit, chunksize=chunksize):
-                    b.push(e)
-                b.push(None)
-            except BaseException:
-                del b
-    rthread = readthread()
+            b = self.buffer
+            for e in chunkreader(input, limit=limit, chunksize=chunksize):
+                b.push(e)
+            b.push(None)
+    rthread = readthread(b)
     rthread.start()
-    try:
-        result = 0
-        while True:
-            e = b.pop()
-            if e is None:
-                break
-            output.write(e)
-            result += len(e)
-        return result
-    finally:
-        del b
+    result = 0
+    while True:
+        e = b.pop()
+        if e is None:
+            break
+        output.write(e)
+        result += len(e)
+    return result
     
 def chunkreader(input, limit, chunksize):
     if limit is None:
@@ -360,3 +390,6 @@ def unzip(d,k):
         del d[e]
     assert not d
     return r
+
+def encodebytes(x):
+    return ''.join(['%02x'%e for e in x])
