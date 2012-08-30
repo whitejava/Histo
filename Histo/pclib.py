@@ -35,6 +35,41 @@ def timetuple(t):
 def nowtuple():
     return timetuple(datetime.now())
 
+class buffer:
+    def __init__(self, size):
+        self.size = size
+        self.queue = []
+        self.lock = threading.Lock()
+        self.pushlock = threading.Lock()
+        self.poplock = threading.Lock()
+    
+    def push(self,x):
+        while True:
+            with self.lock:
+                if len(self.queue) < self.size:
+                    if self.poplock.locked():
+                        self.poplock.release()
+                    self.queue.append(x)
+                    return
+                else:
+                    self.pushlock.acquire()
+            with self.pushlock:
+                pass
+    
+    def pop(self):
+        while True:
+            with self.lock:
+                if len(self.queue) > 0:
+                    if self.pushlock.locked():
+                        self.pushlock.release()
+                    result = self.queue[0]
+                    del self.queue[0]
+                    return result
+                else:
+                    self.poplock.acquire()
+            with self.poplock:
+                pass
+
 class timer:
     def __enter__(self):
         self._time = time.clock()
@@ -42,13 +77,29 @@ class timer:
     def __exit__(self,*k):
         print(time.clock() - self._time)
 
-
-def copystream(input, output, limit = None, chunksize = 128*1024):
-    result = 0
-    for e in chunkreader(input, limit=limit, chunksize=chunksize):
-        output.write(e)
-        result += len(e)
-    return result
+def copystream(input, output, limit = None, chunksize = 128*1024, ):
+    b = buffer(5)
+    class readthread(Thread):
+        def run(self):
+            try:
+                for e in chunkreader(input, limit=limit, chunksize=chunksize):
+                    b.push(e)
+                b.push(None)
+            except BaseException:
+                del b
+    rthread = readthread()
+    rthread.start()
+    try:
+        result = 0
+        while True:
+            e = b.pop()
+            if e is None:
+                break
+            output.write(e)
+            result += len(e)
+        return result
+    finally:
+        del b
     
 def chunkreader(input, limit, chunksize):
     if limit is None:
@@ -192,6 +243,19 @@ class hashstream:
     def digest(self):
         return self._hasher.digest()
 
+class streamhub:
+    def __init__(self, *streams):
+        self.streams = streams
+    
+    def write(self, data):
+        threads = []
+        for e in self.streams:
+            threads.append(Thread(target=lambda:e.write(data)))
+        for e in threads:
+            e.start()
+        for e in threads:
+            e.join()
+
 class netserver:
     def __init__(self, address, handler):
         class a(StreamRequestHandler):
@@ -281,3 +345,18 @@ def wait_for_keyboard_interrupt():
             time.sleep(1)
     except KeyboardInterrupt:
         return
+
+def ceildiv(a,b):
+    if a%b is 0:
+        return a//b
+    else:
+        return a//b+1
+
+def unzip(d,k):
+    d = dict(d)
+    r = []
+    for e in k:
+        r.append(d[e])
+        del d[e]
+    assert not d
+    return r

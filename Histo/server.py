@@ -14,6 +14,45 @@ keysets = [
 
 # Usage:
 # server root key threadcount
+'''
+Server:
+    commit:
+        Commits a directory
+        Parameters:
+            p['Path']:
+                The path to the target directory
+            p['Compress']:
+                Compress ratio.
+                True:
+                    High compress.
+                False:
+                    No compress.
+            p['Time']:
+                [Optional]
+                Last modify time.
+                None:
+                    Current time on server.
+        Return value:
+            'ok':
+                Successful.
+    search:
+        Search the whole histo-library.
+        Parameters:
+            keyword:
+                The keyword you want to be searched.
+                You can specify mutiple keywords by joining keywords by a space character.
+        Return value:
+            The search result, containing Name and Time,
+            sorted by relevence.
+    get:
+        Get specified package.
+        Parameters:
+            commitid:
+                The CommitID of the package you want to get.
+        Return value:
+            'ok':
+                Successful
+'''
 
 def main(root, key, threadcount = '5'):
     key = byteshex.decode(key)
@@ -57,6 +96,23 @@ class histotime:
         t = [e.split(',') for e in '0,4 5,7 7,9 10,12 12,14 14,16 17,23'.split()]
         return tuple([x[a,b] for a,b in t])
 
+class codesshorthand:
+    @staticmethod
+    def encode(start,end):
+        if start == end:
+            return [start]
+        else:
+            return [(start, end)]
+    
+    @staticmethod
+    def walk(x):
+        for e in x:
+            if type(x) is tuple:
+                for i in range(x[0], x[1]+1):
+                    yield i
+            else:
+                yield e
+
 class histoserver(netserver):
     def __init__(self, config, statebundle, databundle, ):
         listenaddress = config['ListenAddress']
@@ -65,7 +121,7 @@ class histoserver(netserver):
         self.statebundle = statebundle
         self.databundle = databundle
         self.state = self.loadorcreatestate()
-        self.index = self.loadorcreateindex()
+        self.index = self.loadindex()
         self.lock = threading.Lock()
     
     def loadorcreatestate(self):
@@ -75,8 +131,16 @@ class histoserver(netserver):
         else:
             return self.loadstate(statefile)
 
-    def loadorcreateindex(self):
-        ?
+    def loadindex(self):
+        codes = self.state['IndexCodes']
+        for e in codesshorthand.walk(codes):
+            with self.databundle.open('data-%08d'%e, 'rb') as f:
+                stream = objectstream(f)
+                while True:
+                    try:
+                        self.index.append(stream.readobject())
+                    except EOFError:
+                        break
 
     def getlateststatefile(self):
         stateprefix = 'state-'
@@ -99,8 +163,8 @@ class histoserver(netserver):
     
     def handle(self, stream):
         method = stream.readobject()
-        t1 = 'commitunpack search get'.split()
-        t2 = [self.commitunpack, self.search, self.get]
+        t1 = 'commit search get'.split()
+        t2 = [self.commit, self.search, self.get]
         t = dict(zip(t1, t2))
         logging.debug('request: ' + method)
         with self.lock:
@@ -111,7 +175,7 @@ class histoserver(netserver):
             else:
                 logging.debug('ok')
 
-    def commitunpack(self, client):
+    def commit(self, client):
         p = client.readobject()
         path = p['Path']
         compress = p['Compress']
@@ -166,7 +230,7 @@ class histoserver(netserver):
         index['Time'] = newstate['Time']
         packagecodestart = oldstate['CodeCount'] + indexcodecount
         packagecodeend = packagecodestart + packagecodecount - 1
-        index['Codes'] = [(packagecodestart, packagecodeend)]
+        index['Codes'] = codesshorthand.encode(packagecodestart, packagecodeend)
         index['Size'] = packagesize
         index['MD5'] = md5
         index['Summary'] = summary
@@ -195,6 +259,7 @@ class histoserver(netserver):
     
     def search(self, stream):
         keyword = stream.readobject()
+        assert type(keyword) is str
         keywords = keyword.split()
         result = []
         for e in self.index:
@@ -210,12 +275,6 @@ class histoserver(netserver):
                 item['ContainCount'] = containcount
                 result.append(item)
         def cmp(x,y):
-            containcount1 = x['ContainCount']
-            containcount2 = y['ContainCount']
-            time1 = x['Time']
-            time2 = y['Time']
-            name1 = x['Name']
-            name2 = y['Name']
             if x['ContainCount'] < y['ContainCount']:
                 return 1
             elif x['ContainCount'] > y['ContainCount']:
@@ -230,19 +289,35 @@ class histoserver(netserver):
                 return 1
             else:
                 return 0
-        return list(sorted(result, cmp=cmp))
+        result = [e for e in sorted(result, cmp=cmp)]
     
     def get(self, stream):
-        start, end = stream.readobject()
-        f = self._repo.open('data', 'rb')
-        missing = f.getmissingpart(start, end)
-        if missing:
-            stream.writeobject('missing')
-            stream.writeobject(missing)
-        else:
-            stream.writeobject('data')
-            copystream(f, stream, end-start)
-        f.close()
+        commitid = stream.readobject()
+        outputroot = 'D:'
+        keysetid, values = self.index[commitid]
+        item = zip(keysets[keysetid], values)
+        assert item['CommitID'] is commitid
+        codes = item['Codes']
+        name = item['Name']
+        time = item['Time']
+        md5 = item['MD5']
+        logging.debug('Name: ' + name)
+        outputpath = os.path.join(outputroot, '%s-%s'%(histotime.encode(time),name))
+        if os.path.exists(outputpath):
+            stream.write('fail')
+            logging.debug('Output exists')
+            return
+        outputstream1 = pclib.hashstream('md5')
+        with open(outputpath, 'wb') as outputstream2:
+            outputstream = pclib.streamhub(outputstream1, outputstream2)
+            for e in codesshorthand.walk(codes):
+                bundlename = 'data-%08d'%e
+                logging.debug('Reading: ' + bundlename)
+                with self.databundle.open(bundlename) as inputstream:
+                    copystream(inputstream, outputstream)
+        assert outputstream1.digest() == md5
+        stream.write('ok')
+        logging.debug('OK')
     
 def pack(self, name, path, compress):
     root = 'G:\\'
@@ -269,33 +344,6 @@ def pack(self, name, path, compress):
     os.unlink(listfile.name)
     
     return package
-
-def loaditem(x):
-    return dict(x)
-
-def responseitem(x):
-    x = x.copy()
-    del x['summary']
-    return x
-
-def loadindex(repo):
-    try:
-        f = repo.open('index', 'rb')
-    except IOError:
-        return []
-    missing = f.getmissingparts()
-    if missing:
-        raise Exception('Missing: ' + ' '.join([str(e) for e in missing]))
-    else:
-        stream = objectstream(io.BytesIO(f.read()))
-        f.close()
-        result = []
-        while True:
-            try:
-                result.append(loaditem(stream.readobject()))
-            except EOFError:
-                break
-        return result
 
 if __name__ == '__main__':
     print('state-%04d-%02d%02d-%02d%02d%02d-%06d'%pclib.nowtuple())
