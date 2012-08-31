@@ -1,11 +1,10 @@
 import threading, summary, tempfile
 import functools
-import os, io, sys, logging, shutil
+import os, sys, logging, shutil
 import pclib
 from pclib import copystream, objectstream, byteshex, netserver, nowtuple
 import bundle
 from summary import generatesummary
-import subprocess
 
 default_logpath = 'E:\\histo-log\\0.log'
 default_logformat = '%(levelname)s - %(asctime)s %(message)s'
@@ -57,15 +56,9 @@ Server:
                 Successful
 '''
 
-def main(root, key, threadcount = '5'):
-    key = byteshex.decode(key)
-    threadcount = int(threadcount)
-    config = dict()
-    config['ListenAddress'] = '127.0.0.1'
-    config['ListenPort'] = 13750
-    config['MaxCodeSize'] = 1024*1024
-    config['PackRoot'] = 'G:'
-    config['ExtractRoot'] = 'D:\\HistoExtract'
+def main(configfile):
+    config = pclib.loadconfig(configfile)
+    root = config['DataRoot']
     statebundle = bundle.local2(os.path.join(root, 'State'))
     databundle = bundle.local2(os.path.join(root, 'Data'))
     initlogger(default_logpath, default_logformat, default_logdateformat)

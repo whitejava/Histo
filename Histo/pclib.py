@@ -391,5 +391,15 @@ def unzip(d,k):
     assert not d
     return r
 
-def encodebytes(x):
-    return ''.join(['%02x'%e for e in x])
+def loadconfig(configfile):
+    result = dict()
+    with open(configfile ,'rb', encode='utf8') as f:
+        for e in f:
+            e = e.strip()
+            if e.startswith('#'):
+                continue
+            e = e.split('=', limit=1)
+            e = [e2.strip() for e2 in e]
+            e[1] = eval(e[1])
+            result[e[0]] = e[1]
+    return result
