@@ -1,5 +1,6 @@
 import os, sys
 from pclib import objectstream, tcpstream
+import subprocess
 
 def main():
     try:
@@ -7,7 +8,7 @@ def main():
         t = {'browser': browser,
              'commit': commit}
         t[command](*sys.argv[2:])
-    except Exception as e:
+    except Exception:
         raise
 
 def browser(ip, port):
@@ -17,6 +18,9 @@ def browser(ip, port):
     showresult(result)
     print('Input selection(s):')
     selections = [int(e) for e in os.sys.stdin.readline()[:-1].split()]
+    extractroot = getextractroot(ip, port)
+    print('Opening explorer')
+    subprocess.call(['explorer', 'root,%s'%extractroot])
     for select in selections:
         select = result[select]
         commitid = select['CommitID']
@@ -55,6 +59,13 @@ def search(stream, keyword):
     for e in 'search', keyword:
         stream.writeobject(e)
     return stream.readobject()
+
+@netclient
+def getextractroot(stream):
+    stream.writeobject('getextractroot')
+    result = stream.readobject()
+    assert type(result) == str
+    return result
 
 @netclient
 def download(stream, commitid):

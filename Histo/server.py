@@ -5,6 +5,7 @@ import pclib
 from pclib import copystream, objectstream, byteshex, netserver, nowtuple
 import bundle
 from summary import generatesummary
+import subprocess
 
 default_logpath = 'E:\\histo-log\\0.log'
 default_logformat = '%(levelname)s - %(asctime)s %(message)s'
@@ -63,6 +64,8 @@ def main(root, key, threadcount = '5'):
     config['ListenAddress'] = '127.0.0.1'
     config['ListenPort'] = 13750
     config['MaxCodeSize'] = 1024*1024
+    config['PackRoot'] = 'G:'
+    config['ExtractRoot'] = 'D:\\HistoExtract'
     statebundle = bundle.local2(os.path.join(root, 'State'))
     databundle = bundle.local2(os.path.join(root, 'Data'))
     initlogger(default_logpath, default_logformat, default_logdateformat)
@@ -98,6 +101,7 @@ class histotime:
     @staticmethod
     def encode(timetuple):
         return '%04d-%02d%02d-%02d%02d%02d-%06d' % timetuple
+    
     @staticmethod
     def decode(x):
         t = [e.split(',') for e in '0,4 5,7 7,9 10,12 12,14 14,16 17,23'.split()]
@@ -125,12 +129,12 @@ class histoserver(netserver):
         listenaddress = config['ListenAddress']
         listenport = config['ListenPort']
         netserver.__init__(self, (listenaddress, listenport), self.handle)
+        self.config = config
         self.statebundle = statebundle
         self.databundle = databundle
         self.state = self.loadorcreatestate()
         self.index = self.loadindex()
         self.lock = threading.Lock()
-        self.config = config
     
     def loadorcreatestate(self):
         statefile = self.getlateststatefile()
@@ -173,8 +177,8 @@ class histoserver(netserver):
     
     def handle(self, stream):
         method = stream.readobject()
-        t1 = 'commit search get'.split()
-        t2 = [self.commit, self.search, self.get]
+        t1 = 'commit search get getextractroot'.split()
+        t2 = [self.commit, self.search, self.get, self.getextractroot]
         t = dict(zip(t1, t2))
         logging.debug('request: ' + method)
         with self.lock:
@@ -206,7 +210,7 @@ class histoserver(netserver):
         summary = generatesummary(name, path, depthlimit = 2)
         
         logging.debug('packing')
-        package = pack(name, path2, compress)
+        package = pack(self.config['PackRoot'], name, path2, compress)
         packagesize = os.path.getsize(package)
         
         logging.debug('generating md5')
@@ -308,7 +312,9 @@ class histoserver(netserver):
     
     def get(self, stream):
         commitid = stream.readobject()
-        outputroot = 'D:'
+        extractroot = self.config['ExtractRoot']
+        if not os.path.exists(extractroot):
+            os.makedirs(extractroot)
         keysetid, values = self.index[commitid]
         item = dict(zip(keysets[keysetid], values))
         assert item['CommitID'] is commitid
@@ -317,7 +323,7 @@ class histoserver(netserver):
         time = item['Time']
         md5 = item['MD5']
         logging.debug('Name: ' + name)
-        outputpath = os.path.join(outputroot, '%s-%s'%(histotime.encode(time),name))
+        outputpath = os.path.join(extractroot, '%s-%s'%(histotime.encode(time),name))
         if os.path.exists(outputpath):
             stream.writeobject('fail')
             logging.debug('Output exists')
@@ -336,8 +342,10 @@ class histoserver(netserver):
         stream.writeobject('ok')
         logging.debug('Get OK')
     
-def pack(name, path, compress):
-    root = 'G:\\'
+    def getextractroot(self, stream):
+        stream.writeobject(self.config['ExtractRoot'])
+    
+def pack(root, name, path, compress):
     time = '%04d-%02d-%02d-%02d-%02d-%02d' % nowtuple()[:6]
     compress = {True: '-m5', False:'-m0'}[compress]
     package = os.path.join(root, '%s-%s' % (time, name))
@@ -363,5 +371,4 @@ def pack(name, path, compress):
     return package
 
 if __name__ == '__main__':
-    #print('state-%04d-%02d%02d-%02d%02d%02d-%06d'%pclib.nowtuple())
     main(*sys.argv[1:])
