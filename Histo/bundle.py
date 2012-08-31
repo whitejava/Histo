@@ -28,6 +28,18 @@ class local:
         path = os.path.join(self._root, n)
         return path
 
+class local2:
+    def __init__(self, root):
+        if not os.path.exists(root):
+            os.makedirs(root)
+        self.root = root
+    
+    def open(self, name, mode):
+        return open(os.path.join(self.root, name), mode)
+    
+    def list(self):
+        return os.listdir(self.root)
+
 class crypto:
     def __init__(self, bundle, cipher):
         self._bundle = bundle

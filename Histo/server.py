@@ -1,7 +1,9 @@
-import threading, summary, tempfile, pickle
+import threading, summary, tempfile
+import functools
 import os, io, sys, logging, shutil
 import pclib
 from pclib import copystream, objectstream, byteshex, netserver, nowtuple
+import bundle
 from summary import generatesummary
 
 default_logpath = 'E:\\histo-log\\0.log'
@@ -57,11 +59,16 @@ Server:
 def main(root, key, threadcount = '5'):
     key = byteshex.decode(key)
     threadcount = int(threadcount)
-    
+    config = dict()
+    config['ListenAddress'] = '127.0.0.1'
+    config['ListenPort'] = 13750
+    config['MaxCodeSize'] = 1024*1024
+    statebundle = bundle.local2(os.path.join(root, 'State'))
+    databundle = bundle.local2(os.path.join(root, 'Data'))
     initlogger(default_logpath, default_logformat, default_logdateformat)
     
     logging.debug('Loading histo server')
-    histo = histoserver()
+    histo = histoserver(config, statebundle, databundle)
     histo.start()
     
     logging.debug('Services are running')
@@ -114,15 +121,16 @@ class codesshorthand:
                 yield e
 
 class histoserver(netserver):
-    def __init__(self, config, statebundle, databundle, ):
+    def __init__(self, config, statebundle, databundle):
         listenaddress = config['ListenAddress']
         listenport = config['ListenPort']
-        netserver.__init__((listenaddress, listenport), self.handle)
+        netserver.__init__(self, (listenaddress, listenport), self.handle)
         self.statebundle = statebundle
         self.databundle = databundle
         self.state = self.loadorcreatestate()
         self.index = self.loadindex()
         self.lock = threading.Lock()
+        self.config = config
     
     def loadorcreatestate(self):
         statefile = self.getlateststatefile()
@@ -133,14 +141,16 @@ class histoserver(netserver):
 
     def loadindex(self):
         codes = self.state['IndexCodes']
+        result = []
         for e in codesshorthand.walk(codes):
             with self.databundle.open('data-%08d'%e, 'rb') as f:
                 stream = objectstream(f)
                 while True:
                     try:
-                        self.index.append(stream.readobject())
+                        result.append(stream.readobject())
                     except EOFError:
                         break
+        return result
 
     def getlateststatefile(self):
         stateprefix = 'state-'
@@ -216,7 +226,7 @@ class histoserver(netserver):
         newstate['IndexCodes'] = oldstate['IndexCodes'] + [oldstate['CodeCount']]
         
         logging.debug('writing state')
-        with self.statebundle.open('state-%s'%(histotime.encode(newstate['Time']))) as f:
+        with self.statebundle.open('state-%s'%(histotime.encode(newstate['Time'])), 'wb') as f:
             stream = objectstream(f)
             keysetid = 0
             stream.writeobject(keysetid)
@@ -236,20 +246,20 @@ class histoserver(netserver):
         index['Summary'] = summary
         
         logging.debug('writing index')
-        with self.databundle.open('data-%08d' % oldstate['CodeCount'], 'rb') as f:
+        with self.databundle.open('data-%08d' % oldstate['CodeCount'], 'wb') as f:
             stream = pclib.objectstream(f)
             keysetid = 1
             indexvalues = pclib.unzip(index, keysets[keysetid])
-            stream.writeobject(keysetid)
-            stream.writeobject(indexvalues)
-        self.index.append([keysetid, indexvalues])
+            indexitem = [keysetid, indexvalues]
+            stream.writeobject(indexitem)
+        self.index.append(indexitem)
         
         logging.debug('writing data')
         with open(package, 'rb') as inputstream:
             for i in range(packagecodestart, packagecodeend + 1):
                 bundlename = 'data-%08d' % i
                 logging.debug('writing %s' % bundlename)
-                with self.databundle.open(bundlename) as outputstream:
+                with self.databundle.open(bundlename, 'wb') as outputstream:
                     copystream(inputstream, outputstream, limit = self.config['MaxCodeSize'])
         
         logging.debug('cleaning up')
@@ -260,6 +270,7 @@ class histoserver(netserver):
     def search(self, stream):
         keyword = stream.readobject()
         assert type(keyword) is str
+        logging.debug('Keyword: ' + keyword)
         keywords = keyword.split()
         result = []
         for e in self.index:
@@ -272,6 +283,7 @@ class histoserver(netserver):
                 item = dict()
                 item['Name'] = e['Name']
                 item['Time'] = e['Time']
+                item['CommitID'] = e['CommitID']
                 item['ContainCount'] = containcount
                 result.append(item)
         def cmp(x,y):
@@ -289,13 +301,16 @@ class histoserver(netserver):
                 return 1
             else:
                 return 0
-        result = [e for e in sorted(result, cmp=cmp)]
+        result = [e for e in sorted(result, key=functools.cmp_to_key(cmp))]
+        for e in result:
+            del e['ContainCount']
+        stream.writeobject(result)
     
     def get(self, stream):
         commitid = stream.readobject()
         outputroot = 'D:'
         keysetid, values = self.index[commitid]
-        item = zip(keysets[keysetid], values)
+        item = dict(zip(keysets[keysetid], values))
         assert item['CommitID'] is commitid
         codes = item['Codes']
         name = item['Name']
@@ -304,22 +319,24 @@ class histoserver(netserver):
         logging.debug('Name: ' + name)
         outputpath = os.path.join(outputroot, '%s-%s'%(histotime.encode(time),name))
         if os.path.exists(outputpath):
-            stream.write('fail')
+            stream.writeobject('fail')
             logging.debug('Output exists')
             return
-        outputstream1 = pclib.hashstream('md5')
-        with open(outputpath, 'wb') as outputstream2:
-            outputstream = pclib.streamhub(outputstream1, outputstream2)
+        with open(outputpath, 'wb') as f:
             for e in codesshorthand.walk(codes):
                 bundlename = 'data-%08d'%e
                 logging.debug('Reading: ' + bundlename)
-                with self.databundle.open(bundlename) as inputstream:
-                    copystream(inputstream, outputstream)
-        assert outputstream1.digest() == md5
-        stream.write('ok')
-        logging.debug('OK')
+                with self.databundle.open(bundlename, 'rb') as inputstream:
+                    copystream(inputstream, f)
+        logging.debug('Verifying MD5')
+        md = pclib.hashstream('md5')
+        with open(outputpath, 'rb') as f:
+            copystream(f, md)
+        assert md.digest() == md5
+        stream.writeobject('ok')
+        logging.debug('Get OK')
     
-def pack(self, name, path, compress):
+def pack(name, path, compress):
     root = 'G:\\'
     time = '%04d-%02d-%02d-%02d-%02d-%02d' % nowtuple()[:6]
     compress = {True: '-m5', False:'-m0'}[compress]

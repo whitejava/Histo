@@ -372,7 +372,7 @@ class tempdir:
 def wait_for_keyboard_interrupt():
     try:
         while True:
-            time.sleep(1)
+            time.sleep(1000)
     except KeyboardInterrupt:
         return
 

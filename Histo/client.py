@@ -5,29 +5,26 @@ def main():
     try:
         command = sys.argv[1]
         t = {'browser': browser,
-             'commitunpack': commitunpack}
+             'commit': commit}
         t[command](*sys.argv[2:])
     except Exception as e:
-        print(e)
-        input()
+        raise
 
-def browser(ip, port, extractpath):
+def browser(ip, port):
     print('Search:')
     keyword = os.sys.stdin.readline()[:-1]
     result = search(ip, port, keyword)
     showresult(result)
+    print('Input selection(s):')
     selections = [int(e) for e in os.sys.stdin.readline()[:-1].split()]
     for select in selections:
-        commitid = result['CommitID']
-        item = result[select]
-        name = item['Name']
-        time = '%04d%02d%02d%02d%02d%02d' % item['Time'][:6]
-        path = os.path.join(extractpath, time + name)
-        if os.path.exists(path):
-            print(name + ' is exist, pass')
-        else:
-            print('Downloading: %d' % commitid)
-            download(ip, port, commitid, path)
+        select = result[select]
+        commitid = select['CommitID']
+        print('Downloading: %d' % commitid)
+        try:
+            download(ip, port, commitid)
+        except Exception:
+            print('Fail: %d' % commitid)
 
 def netclient(x):
     def a(ip, port, *k, **kw):
@@ -36,17 +33,22 @@ def netclient(x):
     return a
 
 @netclient
-def commitunpack(stream, path, compress):
+def commit(stream, path, compress):
+    stream.writeobject('commit')
     compress = {'compress':True, 'nocompress':False}[compress]
-    for e in 'commitunpack', path, compress:
-        stream.writeobject(e)
+    p = dict()
+    p['Path'] = path
+    p['Compress'] = compress
+    p['Time'] = None
+    stream.writeobject(p)
     assert stream.readobject() == 'ok'
 
 def showresult(result):
-    for i,e in enumerate(result):
-        time = '%04d-%02d%02d' % (e['datetime'][:3])
-        name = e['name']
-        print('%d %s %s' % (i, time, name))
+    for i,e in reversed(list(enumerate(result))):
+        time = '%04d-%02d%02d' % (e['Time'][:3])
+        commitid = e['CommitID']
+        name = e['Name']
+        print('%d %d %s %s' % (i, commitid, time, name))
 
 @netclient
 def search(stream, keyword):
@@ -55,8 +57,8 @@ def search(stream, keyword):
     return stream.readobject()
 
 @netclient
-def download(stream, commitid, path):
-    assert not os.path.exists(path)
+def download(stream, commitid):
+    stream.writeobject('get')
     stream.writeobject(commitid)
     assert stream.readobject() == 'ok'
 
