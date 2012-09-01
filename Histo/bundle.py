@@ -1,4 +1,4 @@
-import os, smtp
+import os, smtp, time, io
 from pclib import filelock
 
 class local:
@@ -39,6 +39,60 @@ class local2:
     
     def list(self):
         return os.listdir(self.root)
+
+class limit:
+    def __init__(self, bundle, writespeed, readspeed):
+        self.bundle = bundle
+        self.writespeed = writespeed
+        self.readspeed = readspeed
+    
+    def open(self, name, mode):
+        f = self.bundle.open(name, mode)
+        if mode == 'rb':
+            return limitreader(f, self.readspeed)
+        elif mode == 'wb':
+            return limitwriter(f, self.writespeed)
+        else:
+            raise Exception('Mode error.')
+
+def speedlimit(speed, bytes):
+    maxsleep = 0.1
+    while bytes:
+        sleep = bytes / speed
+        if sleep > maxsleep:
+            sleep = maxsleep
+        readbytes = sleep * speed
+        if readbytes > bytes:
+            readbytes = bytes
+        time.sleep(sleep)
+        yield readbytes
+        bytes -= readbytes
+
+class limitreader:
+    def __init__(self, file, speed):
+        self.file = file
+        self.speed = speed
+        
+    def read(self, limit):
+        result = bytearray()        
+        for e in speedlimit(self.speed, limit):
+            read = self.file.read(limit)
+            if not read:
+                break
+            result.extend(read)
+        return result
+
+class limitwriter:
+    def __init__(self, file, speed):
+        self.file = file
+        self.speed = speed
+    
+    def write(self, data):
+        io = io.BytesIO(data)
+        for e in speedlimit(self.speed, len(data)):
+            x = io.read(e)
+            assert len(x) is e
+            self.file.write(x)
 
 class crypto:
     def __init__(self, bundle, cipher):
