@@ -56,11 +56,14 @@ Server:
                 Successful
 '''
 
+def histobundle(root):
+    return bundle.local2(root)
+
 def main(configfile):
     config = pclib.loadconfig(configfile)
     root = config['DataRoot']
-    statebundle = bundle.local2(os.path.join(root, 'State'))
-    databundle = bundle.local2(os.path.join(root, 'Data'))
+    statebundle = histobundle(os.path.join(root, 'State'))
+    databundle = histobundle(os.path.join(root, 'Data'))
     initlogger(default_logpath, default_logformat, default_logdateformat)
     
     logging.debug('Loading histo server')

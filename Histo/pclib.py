@@ -8,6 +8,7 @@ from socketserver import TCPServer, StreamRequestHandler
 from threading import Thread
 import threading, os, stat, shutil
 import tempfile as otemp
+import random
 
 def quietcall(commands):
     proc = Popen(commands, stdin = None, stderr = STDOUT, stdout = PIPE)
@@ -37,66 +38,153 @@ def timetuple(t):
 def nowtuple():
     return timetuple(datetime.now())
 
+class waiterlock:
+    def __init__(self):
+        self.lock = threading.Lock()
+    
+    def acquire(self):
+        self.lock.acquire()
+    
+    def release(self):
+        a = self.lock
+        self.lock = None
+        a.release()
+    
+    def waitforrelease(self):
+        try:
+            self.lock.acquire()
+        except AttributeError:
+            pass
+
+class waiterhost:
+    def __init__(self):
+        self.queue = []
+
+    class waiter:
+        def __init__(self):
+            self.lock = waiterlock()
+            self.lock.acquire()
+        
+        def terminate(self):
+            self.lock.release()
+        
+        def join(self):
+            self.lock.waitforrelease()
+    
+    def create(self):
+        result = self.waiter()
+        self.queue.append(result)
+        return result
+    
+    def terminatefront(self):
+        if self.queue:
+            self.queue[0].terminate()
+            del self.queue[0]
+
 class limitedcounter:
     def __init__(self, maxcount):
         self.maxcount = maxcount
         self.count = 0
         self.lock = threading.Lock()
+        self.decreasewaiter = waiterhost()
+        self.increasewaiter = waiterhost()
     
     def increase(self):
-        with self.lock:
-            if self.count < self.maxcount:
-                self.count += 1
-                self.decreaselock.release()
-            else:
-                self.increaselock.acquire()
-        with self.increaselock:
-            pass
-    
+        while True:
+            with self.lock:
+                if self.count < self.maxcount:
+                    self.count += 1
+                    self.increasewaiter.terminatefront()
+                    return
+                else:
+                    waiter = self.decreasewaiter.create()
+            waiter.join()
+        
     def decrease(self):
-        pass
+        while True:
+            with self.lock:
+                if self.count > 0:
+                    self.count -= 1
+                    self.decreasewaiter.terminatefront()
+                    return
+                else:
+                    waiter = self.increasewaiter.create()
+            waiter.join()
+
+def test_limitedcounter():
+    a = limitedcounter(1)
+    debug = True
+    f = open('D:\\%04d%02d%02d%02d%02d%02d%06d-test-limitcounter.txt' % nowtuple(), 'w')
+    def sleep():
+        sleep = random.gauss(0.1, 0.1)
+        if sleep < 0:
+            sleep = 0
+        time.sleep(sleep)
+    class increasethread(Thread):
+        def run(self):
+            for _ in range(1000):
+                if debug: print('[ +',file=f)
+                a.increase()
+                if debug: print(' ]+',file=f)
+    class decreasethread(Thread):
+        def run(self):
+            for _ in range(1000):
+                if debug: print('[  -',file=f)
+                a.decrease()
+                if debug: print(' ] -',file=f)
+    with f:
+        threads = [decreasethread() for _ in range(100)]
+        threads.extend([increasethread() for _ in range(100)])
+        for e in threads:
+            e.start()
+        for e in threads:
+            e.join()
+    
 
 class buffer:
     def __init__(self, size):
-        self.size = size
+        self.counter = limitedcounter(size)
         self.queue = []
         self.lock = threading.Lock()
-        self.lock2 = threading.Lock()
-        self.pushlock = threading.Lock()
-        self.poplock = threading.Lock()
     
     def push(self,x):
-        while True:
-            with self.lock:
-                if len(self.queue) < self.size:
-                    with self.lock2:
-                        if self.poplock.locked():
-                            self.poplock.release()
-                    self.queue.append(x)
-                    return
-                else:
-                    self.pushlock.acquire()
-            self.pushlock.acquire()
-            with self.lock2:
-                if self.pushlock.locked():
-                    self.pushlock.release()
+        with self.lock:
+            self.queue.append(x)
+        self.counter.increase()
     
     def pop(self):
-        while True:
-            with self.lock:
-                if len(self.queue) > 0:
-                    with self.lock2:
-                        if self.pushlock.locked():
-                            self.pushlock.release()
-                    result = self.queue[0]
-                    del self.queue[0]
-                    return result
-                else:
-                    self.poplock.acquire()
-            self.poplock.acquire()
-            with self.lock2:
-                if self.poplock.locked():
-                    self.poplock.release()
+        self.counter.decrease()
+        with self.lock:
+            result = self.queue[0]
+            del self.queue[0]
+            return result
+
+def test_buffer():
+    b = buffer(5)
+    debug = False
+    def sleep():
+        sleep = random.gauss(0.1, 0.1)
+        if sleep < 0:
+            sleep = 0
+        time.sleep(sleep)
+    class pushthread(Thread):
+        def run(self):
+            for _ in range(1000):
+                data = random.randrange(10)
+                if debug:print('[ + %d'%data)
+                b.push(data)
+                if debug:print(' ]+ %d'%data)
+                sleep()
+    class popthread(Thread):
+        def run(self):
+            for _ in range(1000):
+                if debug:print('[ - ')
+                d = b.pop()
+                if debug:print(" ]- %d"%d)
+                sleep()
+    for _ in range(100):
+        pushthread().start()
+        popthread().start()
 
 class timer:
     def __enter__(self):
@@ -403,3 +491,12 @@ def loadconfig(configfile):
             e[1] = eval(e[1])
             result[e[0]] = e[1]
     return result
+
+def hook(func, target):
+    def a(*k, **kw):
+        return target(func, *k, **kw)
+    return a
+
+if __name__ == '__main__':
+    test_buffer()
+    #test_limitedcounter()

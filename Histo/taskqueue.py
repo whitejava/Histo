@@ -2,6 +2,70 @@ import threading
 import pickle
 import os
 
+class notasksignal(Exception):
+    pass
+
+class taskqueue:
+    def __init__(self, base):
+        self.base = base
+        self.fetchedtask = dict()
+        self.lock = threading.Lock()
+        self.tasklock = threading.Lock()
+    
+    def append(self, x):
+        with self.lock:
+            self.base.append(x)
+            self.onavailabletask()
+    
+    def fetchtask(self):
+        self.waitforavailabletask()
+        with self.lock:
+            fetchid = self.allocatefetchid()
+            taskid, task = self.allocatetaskid()
+            self.fetchedtask[fetchid] = taskid
+            return fetchid, task
+    
+    def feedback(self, fetchid, result):
+        with self.lock:
+            assert type(result) is bool
+            if result:
+                self.finishtask(fetchid)
+            else:
+                self.restarttask(fetchid)
+    
+    def allocatefetchid(self):
+        i = 0
+        while True:
+            if i not in self.fetchedtask:
+                return i
+            i += 1
+    
+    def allocatetaskid(self):
+        allocatedtasks = self.fetchedtask.values()
+        for i in range(len(self.base)):
+            if i not in allocatedtasks:
+                return i
+        raise notasksignal()
+    
+    def finishtask(self,fetchid):
+        taskid = self.fetchedtask[fetchid]
+        for e in self.fetchedtask:
+            assert self.fetchedtask[e] != taskid
+            if self.fetchedtask[e] > taskid:
+                self.fetchedtask[e] -= 1
+        del self.fetchedtask[fetchid]
+    
+    def restarttask(self, fetchid):
+        del self.fetchedtask[fetchid]
+        self.onavailabletask()
+    
+    def waitforavailabletask(self):
+        self.tasklock.acquire()
+    
+    def onavailabletask(self):
+        pass
+    
+
 class NoTask(Exception):
     pass
 

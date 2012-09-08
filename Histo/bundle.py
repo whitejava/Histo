@@ -1,5 +1,7 @@
-import os, smtp, time, io
+import os, smtp, time, io, pclib, threading
 from pclib import filelock
+from pclib import copystream
+from taskqueue import taskqueue, diskqueue
 
 class local:
     def __init__(self, root, idformat):
@@ -146,3 +148,115 @@ class mail:
     
     def delete(self, n):
         raise Exception('not impl')
+
+class bufferedbundle:
+    def __init__(self, quick, slow, queuefile, usagelogfile, buffersize, threadcount):
+        self.usagelogfile = usagelogfile
+        self.buffersize = buffersize
+        self.quick = quick
+        self.slow = slow
+        self.queuefile = queuefile
+        self.usage = dict()
+        self.queue = taskqueue(diskqueue(queuefile))
+        self.queuelock = threading.Lock()
+        self.threads = []
+        for _ in threadcount:
+            self.threads.append(self.transferthread(self))
+        if os.path.exists(queuefile):
+            with open(queuefile, encode='utf8') as f:
+                for e in f:
+                    self.queue.append(eval(e[:-1]))
+        else:
+            d = os.path.dirname(queuefile)
+            if not os.path.exists(d):
+                os.makedirs(d)
+        if os.path.exists(usagelogfile):
+            with open(usagelogfile, encode='utf8') as f:
+                for e in f:
+                    e = eval(e[:-1])
+                    self.addusage(e)
+        else:
+            d = os.path.dirname(usagelogfile)
+            if not os.path.exists(d):
+                os.makedirs(d)
+    
+    def open(self, name, mode):
+        if mode == 'rb':
+            return self.readfile(name)
+        elif mode == 'wb':
+            return self.writefile(name)
+        else:
+            raise Exception('No such mode')
+        
+    def readfile(self, name):
+        if self.quick.exists(name):
+            return self.quick.open(name, 'rb')
+        elif self.slow.exists(name):
+            self.transferslowfileintoquickbundle(name)
+            return self.quick.open(name, 'rb')
+        else:
+            raise Exception('File not found')
+    
+    def transferslowfileintoquickbundle(self, name):
+        size = self.slow.getsize(name)
+        self.requestspace(size)
+        with self.slow.open(name, 'rb') as f1:
+            with self.quick.open(name, 'wb') as f2:
+                copiedsize = copystream(f1, f2)
+                assert copiedsize is size
+    
+    def writefile(self, name):
+        def onclose(close0, *k, **kw):
+            close0(*k, **kw)
+            self.requestspace(self.quick.getsize(name))
+            self.addtransfertask(name)
+        result = self.quick.open(name, 'wb')
+        result.close = pclib.hook(result.close, onclose)
+        return result
+    
+    def requestspace(self, space):
+        targetsize = self.buffersize - space
+        if targetsize < 0:
+            targetsize = 0
+        files = self.quick.list()
+        totalsize = 0
+        for e in files:
+            totalsize += self.quick.getsize(e)
+        useless = self.getmostuseless()
+        while totalsize > targetsize:
+            if len(useless) is 0:
+                return False
+            deleting = useless[0]
+            if not self.inuse(deleting):
+                totalsize -= self.quick.getsize(deleting)
+                self.quick.delete(deleting)
+            del useless[0]
+        return True
+    
+    def addtransfertask(self, name):
+        self.queue.append(name)
+    
+    def addusage(self, name):
+        if name in self.usage:
+            self.usage[name] += 1
+        else:
+            self.usage[name] = 1
+    
+    class transferthread(threading.Thread):
+        def __init__(self, quick, slow, queue):
+            threading.Thread.__init__(self)
+            self.quick = quick
+            self.slow = slow
+            self.queue = queue
+            
+        def run(self):
+            while True:
+                fetchid, task = self.queue.fetchtask()
+                try:
+                    with self.quick.open(task, 'rb') as f:
+                        with self.slow.open(task, 'wb') as f2:
+                            copystream(f, f2)
+                except BaseException:
+                    self.queue.feedback(fetchid, False)
+                else:
+                    self.queue.feedback(fetchid, True)
