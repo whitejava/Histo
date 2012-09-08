@@ -57,18 +57,30 @@ class limit:
         else:
             raise Exception('Mode error.')
 
-def speedlimit(speed, bytes):
-    maxsleep = 0.1
-    while bytes:
-        sleep = bytes / speed
+def speedlimit(speed, totalbytes, minsleep = 0.01, maxsleep = 0.1):
+    starttime = time.clock()
+    yieldbytes = 0
+    while yieldbytes < totalbytes:
+        remainbytes = totalbytes - yieldbytes
+        sleep = remainbytes / speed
         if sleep > maxsleep:
             sleep = maxsleep
-        readbytes = sleep * speed
-        if readbytes > bytes:
-            readbytes = bytes
+        if sleep < minsleep:
+            sleep = minsleep
         time.sleep(sleep)
-        yield readbytes
-        bytes -= readbytes
+        steptime = time.clock()
+        elapsedtime = steptime - starttime
+        expectyieldbytes = int(elapsedtime * speed)
+        stepbytes = expectyieldbytes - yieldbytes
+        if stepbytes > remainbytes:
+            stepbytes = remainbytes
+        if stepbytes > 0:
+            yield stepbytes
+        yieldbytes += stepbytes
+
+def test_speedlimit():
+    for e in speedlimit(10*1024, 1024*1024):
+        print(e)
 
 class limitreader:
     def __init__(self, file, speed):
@@ -260,3 +272,6 @@ class bufferedbundle:
                     self.queue.feedback(fetchid, False)
                 else:
                     self.queue.feedback(fetchid, True)
+
+if __name__ == '__main__':
+    test_speedlimit()
