@@ -81,8 +81,13 @@ class waiterhost:
             self.queue[0].terminate()
             del self.queue[0]
 
+class infinite:
+    def __gt__(self, x):
+        assert type(x) is int
+        return True
+
 class limitedcounter:
-    def __init__(self, maxcount):
+    def __init__(self, maxcount = infinite):
         self.maxcount = maxcount
         self.count = 0
         self.lock = threading.Lock()
@@ -92,7 +97,7 @@ class limitedcounter:
     def increase(self):
         while True:
             with self.lock:
-                if self.count < self.maxcount:
+                if self.maxcount > self.count:
                     self.count += 1
                     self.increasewaiter.terminatefront()
                     return
@@ -169,7 +174,7 @@ def test_buffer():
         time.sleep(sleep)
     class pushthread(Thread):
         def run(self):
-            for _ in range(1000):
+            for _ in range(100000):
                 data = random.randrange(10)
                 if debug:print('[ + %d'%data)
                 b.push(data)
@@ -177,7 +182,7 @@ def test_buffer():
                 sleep()
     class popthread(Thread):
         def run(self):
-            for _ in range(1000):
+            for _ in range(100000):
                 if debug:print('[ - ')
                 d = b.pop()
                 if debug:print(" ]- %d"%d)
