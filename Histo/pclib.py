@@ -38,119 +38,25 @@ def timetuple(t):
 def nowtuple():
     return timetuple(datetime.now())
 
-class waiterlock:
-    def __init__(self):
-        self.lock = threading.Lock()
-    
-    def acquire(self):
-        self.lock.acquire()
-    
-    def release(self):
-        a = self.lock
-        self.lock = None
-        a.release()
-    
-    def waitforrelease(self):
-        try:
-            self.lock.acquire()
-        except AttributeError:
-            pass
-
-class waiterhost:
-    def __init__(self):
-        self.queue = []
-
-    class waiter:
-        def __init__(self):
-            self.lock = waiterlock()
-            self.lock.acquire()
-        
-        def terminate(self):
-            self.lock.release()
-        
-        def join(self):
-            self.lock.waitforrelease()
-    
-    def create(self):
-        result = self.waiter()
-        self.queue.append(result)
-        return result
-    
-    def terminatefront(self):
-        if self.queue:
-            self.queue[0].terminate()
-            del self.queue[0]
-
-class infinite:
-    def __gt__(self, x):
-        assert type(x) is int
-        return True
-
 class limitedcounter:
-    def __init__(self, maxcount = infinite):
+    def __init__(self, maxcount):
         self.maxcount = maxcount
-        self.count = 0
-        self.lock = threading.Lock()
-        self.decreasewaiter = waiterhost()
-        self.increasewaiter = waiterhost()
+        self.semaphore1 = threading.Semaphore(maxcount)
+        self.semaphore2 = threading.Semaphore(0)
     
     def increase(self):
-        while True:
-            with self.lock:
-                if self.maxcount > self.count:
-                    self.count += 1
-                    self.increasewaiter.terminatefront()
-                    return
-                else:
-                    waiter = self.decreasewaiter.create()
-            waiter.join()
-        
-    def decrease(self):
-        while True:
-            with self.lock:
-                if self.count > 0:
-                    self.count -= 1
-                    self.decreasewaiter.terminatefront()
-                    return
-                else:
-                    waiter = self.increasewaiter.create()
-            waiter.join()
-
-def test_limitedcounter():
-    a = limitedcounter(1)
-    debug = True
-    f = open('D:\\%04d%02d%02d%02d%02d%02d%06d-test-limitcounter.txt' % nowtuple(), 'w')
-    def sleep():
-        sleep = random.gauss(0.1, 0.1)
-        if sleep < 0:
-            sleep = 0
-        time.sleep(sleep)
-    class increasethread(Thread):
-        def run(self):
-            for _ in range(1000):
-                if debug: print('[ +',file=f)
-                a.increase()
-                if debug: print(' ]+',file=f)
-    class decreasethread(Thread):
-        def run(self):
-            for _ in range(1000):
-                if debug: print('[  -',file=f)
-                a.decrease()
-                if debug: print(' ] -',file=f)
-    with f:
-        threads = [decreasethread() for _ in range(100)]
-        threads.extend([increasethread() for _ in range(100)])
-        for e in threads:
-            e.start()
-        for e in threads:
-            e.join()
+        self.semaphore1.acquire()
+        self.semaphore2.release()
     
+    def decrease(self):
+        self.semaphore2.acquire()
+        self.semaphore1.release()
 
 class buffer:
     def __init__(self, size):
-        self.counter = limitedcounter(size)
         self.queue = []
         self.lock = threading.Lock()
+        self.counter = limitedcounter(size)
     
     def push(self,x):
         with self.lock:
@@ -165,7 +71,7 @@ class buffer:
             return result
 
 def test_buffer():
-    b = buffer(5)
+    b = buffer(3)
     debug = False
     def sleep():
         sleep = random.gauss(0.1, 0.1)
@@ -174,29 +80,33 @@ def test_buffer():
         time.sleep(sleep)
     class pushthread(Thread):
         def run(self):
-            for _ in range(100000):
+            for _ in range(100):
                 data = random.randrange(10)
-                if debug:print('[ + %d'%data)
+                if debug:print('[ +  %d'%data)
                 b.push(data)
-                if debug:print(' ]+ %d'%data)
+                if debug:print(' ]+  %d'%data)
                 sleep()
     class popthread(Thread):
         def run(self):
-            for _ in range(100000):
-                if debug:print('[ - ')
+            for _ in range(100):
+                if debug:print('[  - ')
                 d = b.pop()
-                if debug:print(" ]- %d"%d)
+                if debug:print(" ] - %d"%d)
                 sleep()
     for _ in range(100):
         pushthread().start()
+    for _ in range(100):
         popthread().start()
 
 class timer:
+    def __init__(self, handle = print):
+        self.handle = handle
+    
     def __enter__(self):
         self._time = time.clock()
     
     def __exit__(self,*k):
-        print(time.clock() - self._time)
+        self.handle(time.clock() - self._time)
 
 def copystream2(input, output):
     for e in chunkreader(input, limit=None, chunksize=128*1024):
@@ -501,6 +411,20 @@ def hook(func, target):
     def a(*k, **kw):
         return target(func, *k, **kw)
     return a
+
+def timetext(time = None, format = '%04d%02d%02d%02d%02d%02d%06d'):
+    return format % nowtuple()
+
+def limitrange(x, min, max):
+    if x < min: x = min
+    if x > max: x = max
+    return x
+
+def ignoreexception(callable):
+    try:
+        callable()
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     test_buffer()
