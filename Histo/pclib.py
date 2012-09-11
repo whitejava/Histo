@@ -427,5 +427,5 @@ def ignoreexception(callable):
         pass
 
 if __name__ == '__main__':
-    test_buffer()
-    #test_limitedcounter()
+    #test_buffer()
+    test_limitedcounter()

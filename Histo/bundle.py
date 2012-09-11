@@ -280,8 +280,8 @@ class transferthread(threading.Thread):
             with self.fast.open(task, 'rb') as f2:
                 assert pclib.copystream(f2, f1) == self.fast.getsize(task)
 
-def test_bufferedbundle():
-    pass
+def test_buffer():
+    
 
 if __name__ == '__main__':
     #test_speedlimit()
