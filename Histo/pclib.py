@@ -8,7 +8,6 @@ from socketserver import TCPServer, StreamRequestHandler
 from threading import Thread
 import threading, os, stat, shutil
 import tempfile as otemp
-import random
 
 def quietcall(commands):
     proc = Popen(commands, stdin = None, stderr = STDOUT, stdout = PIPE)
@@ -38,66 +37,6 @@ def timetuple(t):
 def nowtuple():
     return timetuple(datetime.now())
 
-class limitedcounter:
-    def __init__(self, maxcount):
-        self.maxcount = maxcount
-        self.semaphore1 = threading.Semaphore(maxcount)
-        self.semaphore2 = threading.Semaphore(0)
-    
-    def increase(self):
-        self.semaphore1.acquire()
-        self.semaphore2.release()
-    
-    def decrease(self):
-        self.semaphore2.acquire()
-        self.semaphore1.release()
-
-class buffer:
-    def __init__(self, size):
-        self.queue = []
-        self.lock = threading.Lock()
-        self.counter = limitedcounter(size)
-    
-    def push(self,x):
-        with self.lock:
-            self.queue.append(x)
-        self.counter.increase()
-    
-    def pop(self):
-        self.counter.decrease()
-        with self.lock:
-            result = self.queue[0]
-            del self.queue[0]
-            return result
-
-def test_buffer():
-    b = buffer(3)
-    debug = False
-    def sleep():
-        sleep = random.gauss(0.1, 0.1)
-        if sleep < 0:
-            sleep = 0
-        time.sleep(sleep)
-    class pushthread(Thread):
-        def run(self):
-            for _ in range(100):
-                data = random.randrange(10)
-                if debug:print('[ +  %d'%data)
-                b.push(data)
-                if debug:print(' ]+  %d'%data)
-                sleep()
-    class popthread(Thread):
-        def run(self):
-            for _ in range(100):
-                if debug:print('[  - ')
-                d = b.pop()
-                if debug:print(" ] - %d"%d)
-                sleep()
-    for _ in range(100):
-        pushthread().start()
-    for _ in range(100):
-        popthread().start()
-
 class timer:
     def __init__(self, handle = print):
         self.handle = handle
@@ -113,7 +52,8 @@ def copystream2(input, output):
         output.write(e)
 
 def copystream(input, output, limit = None, chunksize = 128*1024, buffercount = 4):
-    b = buffer(buffercount)
+    from queue import Queue
+    b = Queue(buffercount)
     class readthread(Thread):
         def __init__(self, buffer):
             Thread.__init__(self)
@@ -427,5 +367,4 @@ def ignoreexception(callable):
         pass
 
 if __name__ == '__main__':
-    #test_buffer()
-    test_limitedcounter()
+    pass
