@@ -30,11 +30,11 @@ def runServer(config):
 
 def getStateBundle(config):
     logger.debug('Loading state bundle')
-    return FinalBundle(config['Histo.Server.State'])
+    return FinalBundle(config['State'])
 
 def getDataBundle(config):
     logger.debug('Loading data bundle')
-    return FinalBundle(config['Histo.Server.Data'])
+    return FinalBundle(config['Data'])
 
 def FinalBundle(config):
     localRoot = config['LocalRoot']

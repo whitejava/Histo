@@ -49,6 +49,9 @@ class local:
     
     def list(self):
         return os.listdir(self.root)
+    
+    def delete(self, name):
+        os.unlink(name)
 
 class speedlimit:
     def __init__(self, speed, minsleep = 0.01, maxsleep = 0.1):
@@ -98,6 +101,9 @@ class limit:
             return limitwriter(f, self.writespeed)
         else:
             raise Exception('Mode error.')
+        
+    def delete(self, name):
+        self.bundle.delete(name)
 
 def test_limit():
     a = local('D:\\%s-test-limit' % pclib.timetext())
