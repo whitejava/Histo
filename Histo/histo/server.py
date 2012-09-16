@@ -1,3 +1,55 @@
+def main(config):
+    logAddFileHandler(config)
+    initLogger()
+    runServer(config)
+
+def logAddFileHandler(config):
+    config = config['Histo.Server.Log']
+    import logging
+    from logging.handlers import RotatingFileHandler
+    handler = RotatingFileHandler(config['Path'], maxBytes=int(config['MaxBytes']), backupCount=int(config['BackupCount']))
+    logging.getLogger().addHandler(handler)
+
+def initLogger():
+    import logging
+    global logger
+    logger = logging.getLogger()
+
+def runServer(config):
+    logger.debug('Loading server')
+    stateBundle = getStateBundle(config)
+    dataBundle = getDataBundle(config)
+    server = histoserver(config['Histo.Server'], stateBundle, dataBundle)
+    server.start()
+    logger.debug('Server is running')
+    pclib.wait_for_keyboard_interrupt()
+    logger.debug('Shutting down')
+    server.shutdown()
+
+def getStateBundle(config):
+    logger.debug('Loading state bundle')
+    return FinalBundle(config['Histo.Server.State'])
+
+def getDataBundle(config):
+    logger.debug('Loading data bundle')
+    return FinalBundle(config['Histo.Server.Data'])
+
+def FinalBundle(config):
+    localRoot = config['LocalRoot']
+    remoteRoot = config['RemoteRoot']
+    uploadSpeed = int(config['UploadSpeed'])
+    downloadSpeed = int(config['DownloadSpeed'])
+    queueFile = config['QueueFile']
+    usageLogFile = config['UsageLogFile']
+    bufferSize = int(config['BufferSize'])
+    threadCount = int(config['ThreadCount'])
+    from bundle import buffer
+    from bundle import local
+    from bundle import limit
+    fast = local(localRoot)
+    slow = limit(local(remoteRoot), uploadSpeed, downloadSpeed)
+    return buffer(fast, slow, queueFile, usageLogFile, bufferSize, threadCount)
+
 import threading, summary, tempfile
 import functools
 import os, sys, logging, shutil
@@ -6,9 +58,6 @@ from pclib import copystream, objectstream, byteshex, netserver, nowtuple
 import bundle
 from summary import generatesummary
 
-default_logpath = 'E:\\histo-log\\0.log'
-default_logformat = '%(levelname)s - %(asctime)s %(message)s'
-default_logdateformat = '[%Y-%m%d %H:%M:%S]'
 keysets = [
     ['Time', 'CommitCount', 'CodeCount', 'IndexCodes'],
     ['CommitID', 'Name', 'Time', 'Codes', 'Size', 'MD5', 'Summary'],
@@ -55,28 +104,6 @@ Server:
             'ok':
                 Successful
 '''
-
-def histobundle(root):
-    return bundle.local2(root)
-
-def main(configfile):
-    config = pclib.loadconfig(configfile)
-    root = config['DataRoot']
-    statebundle = histobundle(os.path.join(root, 'State'))
-    databundle = histobundle(os.path.join(root, 'Data'))
-    initlogger(default_logpath, default_logformat, default_logdateformat)
-    
-    logging.debug('Loading histo server')
-    histo = histoserver(config, statebundle, databundle)
-    histo.start()
-    
-    logging.debug('Services are running')
-    pclib.wait_for_keyboard_interrupt()
-    
-    logging.debug('Services shutting down')
-    histo.shutdown()
-    
-    logging.debug('Now exit')
 
 def initlogger(logpath, logformat, logdateformat):
     #Log to file

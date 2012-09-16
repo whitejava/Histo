@@ -281,7 +281,7 @@ class transferthread(threading.Thread):
                 assert pclib.copystream(f2, f1) == self.fast.getsize(task)
 
 def test_buffer():
-    
+    pass
 
 if __name__ == '__main__':
     #test_speedlimit()
