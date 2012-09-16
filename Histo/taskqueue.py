@@ -11,15 +11,16 @@ class taskqueue:
         self.base = base
         self.fetchedtask = dict()
         self.lock = threading.Lock()
-        self.availablecounter = pclib.limitedcounter()
+        from threading import Semaphore
+        self.semaphore = Semaphore(0)
     
     def append(self, x):
         with self.lock:
             self.base.append(x)
-        self.availablecounter.increase()
+        self.semaphore.release()
     
     def fetchtask(self):
-        self.availablecounter.decrease()
+        self.semaphore.acquire()
         with self.lock:
             fetchid = self.allocatefetchid()
             taskid, task = self.allocatetaskid()

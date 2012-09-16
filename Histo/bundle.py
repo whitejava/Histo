@@ -161,7 +161,7 @@ class usagelog:
         if os.path.exists(file):
             self.usage = self.loadlog(file)
         else:
-            os.makedirs(os.path.dirname(file))
+            os.makedirs(os.path.dirname(file), exist_ok=True)
             self.usage = dict()
         
     def log(self, name):
