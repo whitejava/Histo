@@ -9,7 +9,10 @@ def main2(config):
 def logAddFileHandler(config):
     import logging
     from logging.handlers import RotatingFileHandler
+    from logging import Formatter
     handler = RotatingFileHandler(config['Path'], maxBytes=int(config['MaxBytes']), backupCount=int(config['BackupCount']))
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(Formatter(config['Format'], config['DateFormat'], '$'))
     logging.getLogger().addHandler(handler)
 
 def initLogger():

@@ -294,8 +294,30 @@ class transferthread(threading.Thread):
                 assert pclib.copystream(f2, f1) == self.fast.getsize(task)
 
 def test_buffer():
-    pass
+    initLogger()
+    testBuffer()
+
+def initLogger():
+    import logging
+    logging.basicConfig('$asctime $thread $message', style='$')
+    global logger
+    logger = logging.getLogger()
+
+def testBuffer():
+    return testBuffer(loadBuffer())
+
+def loadBuffer():
+    buffer()
+
+def testBuffer(buffer):
+    root = 'D:\\%s-test-bufferbundle' % pclib.timetext()
+    fast = local(os.path.join('Local'))
+    slow = error(delay(limit(local(os.path.join('Remote')), 200000000, 200000000), 0.5), 0.1)
+    
+    import os
+    return buffer(fast, slow, os.path.join(root, 'queue.txt'), os.path.join(root, 'usagelog.txt'), 1024*1024*1024, 5)
 
 if __name__ == '__main__':
     #test_speedlimit()
-    test_limit()
+    #test_limit()
+    test_buffer()
