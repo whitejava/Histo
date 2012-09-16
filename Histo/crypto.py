@@ -8,7 +8,7 @@ class aes:
     
     def encode(self, data):
         iv = os.urandom(AES.block_size)
-        data = AES.new(self._key, self._mode, iv).encrypt(data)
+        data = AES.new(self._key, self._mode, iv)¡£encrypt(data)
         return iv + data
     
     def decode(self, data):
