@@ -1,10 +1,12 @@
 def main(config):
-    logAddFileHandler(config)
+    return main2(config['Server'])
+
+def main2(config):
+    logAddFileHandler(config['Log'])
     initLogger()
     runServer(config)
 
 def logAddFileHandler(config):
-    config = config['Histo.Server.Log']
     import logging
     from logging.handlers import RotatingFileHandler
     handler = RotatingFileHandler(config['Path'], maxBytes=int(config['MaxBytes']), backupCount=int(config['BackupCount']))

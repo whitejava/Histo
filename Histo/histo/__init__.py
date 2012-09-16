@@ -2,24 +2,24 @@
 
 def main():
     import sys
-    return main2(sys.argv[1:])
+    return main2(*sys.argv[1:])
 
 def main2(action, configFilePath):
     config = loadConfig(configFilePath)
-    return main3(action, config)
+    return main3(action, config['Histo'])
 
 def loadConfig(configFilePath):
-    from configparser import ConfigParser
-    return ConfigParser().read(configFilePath, 'utf8')
+    import json
+    with open(configFilePath, 'r', encoding='utf8') as f:
+        return json.load(f)
 
 def main3(action, config):
-    initLogging(config)
+    initLogging(config['Log'])
     main4(action, config)
 
 def initLogging(config):
-    config = config['Histo.Log']
     import logging
-    logging.basicConfig(format=config['Format'], datefmt=config['DateFormat'], level=logging.DEBUG)
+    logging.basicConfig(format=config['Format'], datefmt=config['DateFormat'], level=logging.DEBUG, style='$')
 
 def main4(action, config):
     try:
@@ -42,6 +42,3 @@ def runBrowser(config):
 
 def commit(config):
     pass
-
-if __name__ == '__main__':
-    main()
