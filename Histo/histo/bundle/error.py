@@ -91,3 +91,5 @@ class PointError:
     def increasePointer2(self, size):
         if self.pointer + size >= self.errorPoint:
             self.simulator.simulateError2()
+        else:
+            self.pointer += size
