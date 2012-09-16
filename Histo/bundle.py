@@ -1,6 +1,5 @@
 import os, smtp, time, io, pclib, threading
 from taskqueue import taskqueue, diskqueue
-import random
 
 class fileisinuse(Exception):
     pass
@@ -86,7 +85,6 @@ def test_speedlimit():
         for e in s.fetch(i):
             print(e)
 
-@safedelete
 class limit:
     def __init__(self, bundle, writespeed, readspeed):
         self.bundle = bundle
@@ -103,7 +101,10 @@ class limit:
             raise Exception('Mode error.')
         
     def delete(self, name):
-        self.bundle.delete(name)
+        return self.bundle.delete(name)
+    
+    def list(self):
+        return self.bundle.list()
 
 def test_limit():
     a = local('D:\\%s-test-limit' % pclib.timetext())
@@ -200,6 +201,7 @@ class buffer:
         self.usagelog = usagelog(usagelogfile)
         self.buffersize = buffersize
         queue = taskqueue(diskqueue(queuefile))
+        self.queue = queue
         self.threads = [transferthread(fast, slow, queue) for _ in range(threadcount)]
         for e in self.threads:
             e.start()
@@ -240,13 +242,14 @@ class buffer:
         for e in mostuseless:
             if currentbuffersize <= self.buffersize:
                 break
-            size = self.fast.getsize(e)
-            try:
-                self.fast.delete(e)
-            except Exception:
-                continue
-            else:
-                self.currentbuffersize -= size
+            if e not in self.queue:
+                size = self.fast.getsize(e)
+                try:
+                    self.fast.delete(e)
+                except Exception:
+                    continue
+                else:
+                    self.currentbuffersize -= size
     
     def getcurrentbuffersize(self):
         result = 0
@@ -260,6 +263,9 @@ class buffer:
         files = sorted(files)
         files = [e[1] for e in files]
         return files
+    
+    def list(self):
+        return self.slow.list()
 
 class transferthread(threading.Thread):
     def __init__(self, fast, slow, queue):
