@@ -263,6 +263,7 @@ class buffer:
 
 class transferthread(threading.Thread):
     def __init__(self, fast, slow, queue):
+        threading.Thread.__init__(self)
         self.fast = fast
         self.slow = slow
         self.queue = queue

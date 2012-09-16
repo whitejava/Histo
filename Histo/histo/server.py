@@ -21,7 +21,7 @@ def runServer(config):
     logger.debug('Loading server')
     stateBundle = getStateBundle(config)
     dataBundle = getDataBundle(config)
-    server = histoserver(config['Histo.Server'], stateBundle, dataBundle)
+    server = histoserver(config, stateBundle, dataBundle)
     server.start()
     logger.debug('Server is running')
     pclib.wait_for_keyboard_interrupt()
