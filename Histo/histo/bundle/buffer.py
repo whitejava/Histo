@@ -1,3 +1,5 @@
+__all__ = ['Buffer']
+
 class Buffer:
     def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount):
         self.fastBundle = fastBundle

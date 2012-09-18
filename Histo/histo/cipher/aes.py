@@ -1,3 +1,5 @@
+__all__ = ['AES']
+
 class AES:
     def __init__(self, key):
         pass

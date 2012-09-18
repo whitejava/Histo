@@ -24,7 +24,7 @@ def runServer(config):
     logger.debug('Loading server')
     stateBundle = getStateBundle(config)
     dataBundle = getDataBundle(config)
-    server = histoserver(config, stateBundle, dataBundle)
+    server = HistoServer(config, stateBundle, dataBundle)
     server.start()
     logger.debug('Server is running')
     pclib.wait_for_keyboard_interrupt()
@@ -48,12 +48,145 @@ def FinalBundle(config):
     usageLogFile = config['UsageLogFile']
     bufferSize = int(config['BufferSize'])
     threadCount = int(config['ThreadCount'])
-    from bundle import buffer
-    from bundle import local
-    from bundle import limit
-    fast = local(localRoot)
-    slow = limit(local(remoteRoot), uploadSpeed, downloadSpeed)
-    return buffer(fast, slow, queueFile, usageLogFile, bufferSize, threadCount)
+    from histo.bundle import Local, Limit, Buffer, Crypto
+    fast = Local(localRoot)
+    slow = Limit(Local(remoteRoot), uploadSpeed, downloadSpeed)
+    backup = Buffer(fast, slow, queueFile, usageLogFile, bufferSize, threadCount)
+    cipher = FinalCipher(config['Ciphers'])
+    return Crypto(backup, cipher)
+
+def FinalCipher(config):
+    ciphers = []
+    for e in config:
+        ciphers.append(Cipher(e))
+    from histo.cipher.hub import Hub
+    return Hub(ciphers)
+
+def Cipher(config):
+    class2 = config['Class']
+    t = {'AES': AESCipher,
+         'Verify': VerifyCipher}
+    return t[class2](config)
+
+def AESCipher(config):
+    from base64 import b16decode
+    key = b16decode(config['Key'])
+    from histo.cipher import AES
+    return AES(key)
+
+def VerifyCipher(config):
+    from histo.cipher import Verify
+    return Verify(config['Algorithm'])
+
+from pclib import ObjectServer
+class HistoServer(ObjectServer):
+    def __init__(self, config, stateBundle, dataBundle):
+        self.config = config
+        self.stateBundle = stateBundle
+        self.dataBundle = dataBundle
+        self.createIfNotExists()
+        self.index = Index(self.readIndexCodes())
+    
+    def handle(self, stream):
+        method = stream.readobject()
+        t = {'Commit': self.commit,
+             'Search': self.search,
+             'Get': self.get}
+        return t[method](stream)
+    
+    def commit(self, stream):
+        parameters = stream.readobject()
+        result = self.commit2(**parameters)
+        stream.write(result)
+    
+    def search(self, stream):
+        parameters = stream.readobject()
+        result = self.search2(**parameters)
+        stream.write(result)
+    
+    def get(self, stream):
+        parameters = stream.readobject()
+        self.get2(stream, **parameters)
+    
+    def loadOrCreateState(self):
+        if self.getLatestState() is None:
+            self.createState()
+    
+    def readIndexCodes(self):
+        return state['IndexCodes']
+    
+    def commit2(self, folder, name = None, compression = True, time = None):
+        time = self.translateTime(time)
+        name = self.translateName(name, folder)
+        folder = self.renameCommittingFolder(folder)
+        archivePath = self.packFolder(folder, compression, time, name)
+        indexItem = self.generateIndexItem(time, name, archivePath)
+        self.addIndexItem(indexItem)
+        self.deleteFolder(folder)
+        return True
+    
+    def search2(self, keyWords):
+        return self.index.search(keyWords)
+    
+    def get2(self, stream, commitId):
+        item = self.index.getItemByCommitId(commitId)
+        stream.writeobject(item['Size'])
+        self.copyCodes(item['Codes'], stream)
+    
+    def translateTime(self, time):
+        if time is None:
+            from pclib import nowtuple
+            return nowtuple()
+        return time
+    
+    def translateName(self, name, folder):
+        if name is None:
+            import os.path
+            return os.path.basename(folder)
+        return name
+    
+    def renameCommittingFolder(self, folder):
+        folder2 = folder + '-committing'
+        import os
+        os.rename(folder, folder2)
+        return folder2
+    
+    def generateIndexItem(self, time, name, archivePath):
+        index = dict()
+        index['CommitID'] = oldstate['CommitCount']
+        index['Name'] = name
+        index['Time'] = newstate['Time']
+        packagecodestart = oldstate['CodeCount'] + indexcodecount
+        packagecodeend = packagecodestart + packagecodecount - 1
+        index['Codes'] = codesshorthand.encode(packagecodestart, packagecodeend)
+        index['Size'] = packagesize
+        index['MD5'] = md5
+        index['Summary'] = summary
+    
+    def addIndexItem(self, indexItem):
+        self.index.add(indexItem)
+    
+    def packFolder(self, folder, compression, time, name):
+        pass
+    
+    def deleteFolder(self, folder):
+        pass
+    
+    def createState(self):
+        pass
+    
+    def copyCodes(self, codeIds, stream):
+        pass
+
+class Index:
+    def __init__(self, data):
+        pass
+    
+    def search(self, keyWords):
+        pass
+    
+    def add(self, indexItem):
+        pass
 
 import threading, summary, tempfile
 import functools
