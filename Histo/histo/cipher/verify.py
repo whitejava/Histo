@@ -1,9 +1,12 @@
 class Verify:
     def __init__(self, algorithm):
-        pass
+        self.bundle = bundle
+        self.algorithm = algorithm
     
     def encrypt(self):
-        pass
+        return VerifyWriter(self.algorithm)
     
     def decrypt(self):
-        pass
+        return VerifyReader(self.algorithm)
+    
+class

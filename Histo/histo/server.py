@@ -113,7 +113,7 @@ class HistoServer(ObjectServer):
             self.createState()
     
     def readIndexCodes(self):
-        return state['IndexCodes']
+        return self.state['IndexCodes']
     
     def commit2(self, folder, name = None, compression = True, time = None):
         time = self.translateTime(time)
