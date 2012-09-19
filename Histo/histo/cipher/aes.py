@@ -17,7 +17,7 @@ def Encrypter(key):
     cipher = Encrypter2(key, iv)
     padding = Padding()
     blocking = Blocking()
-    return CipherHub(padding, blocking, cipher, header)
+    return CipherHub(Meter(0), padding, Meter(1), blocking, Meter(2), cipher, Meter(3), header, Meter(4))
 
 def Decrypter(key):
     from .hub import CipherHub
@@ -150,7 +150,7 @@ class PKCS5:
     
     def final(self):
         minPadding = 1
-        paddingSize = (self.dataLength-minPadding) % self.blockSize + minPadding
+        paddingSize = ((self.blockSize-self.dataLength)-minPadding) % self.blockSize + minPadding
         return bytes([paddingSize]*paddingSize)
 
 class Blocking2:
@@ -167,6 +167,19 @@ class Blocking2:
     
     def final(self):
         assert not self.buffer, 'Data is not blocked.'
+
+class Meter:
+    def __init__(self, name):
+        self.name = name
+    
+    def update(self, data):
+        from base64 import b16encode
+        print(self.name, 'update', str(b16encode(data)))
+        return data
+    
+    def final(self):
+        print(self.name, 'final')
+        return b''
 
 def test():
     key = b'1'*32
