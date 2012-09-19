@@ -10,49 +10,58 @@ class AES:
     def decrypt(self):
         return Decrypter(self.key)
 
-class Encrypter:
-    def __init__(self, key):
-        self.iv = randomIv()
-        self.wrapper = OutputAtFirstTime(self.iv)
-        self.cipher = createCipher(key, self.iv)
-        self.padding = createPadding()
+def Encrypter(key):
+    from histo.cipher.hub import CipherHub
+    iv = randomIv()
+    header = OutputHeader(iv)
+    cipher = Encrypter2(key, iv)
+    padding = Padding()
+    blocking = Blocking()
+    return CipherHub(padding, blocking, cipher, header)
 
-    def update(self, data):
-        data = self.padding.update(data)
-        cipherData = self.cipher.encrypt(data)
-        return self.wrapper.update(cipherData)
-    
-    def final(self):
-        data = self.padding.final()
-        return self.wrapper.final(self.update(data))
-
-class Decrypter:
-    def __init__(self, key):
-        self.key = key
-        
-    def update(self, data):
-        pass
-    
-    def final(self):
-        pass
+def Decrypter(key):
+    from .hub import CipherHub
+    cipher = CipherAgent()
+    def onIv(iv):
+        cipher.setCipher(Decrypter2(key, iv))
+    header = InputHeader(getBlockSize(), onIv)
+    unpadding = Unpadding()
+    blocking = Blocking()
+    return CipherHub(header, blocking, cipher, unpadding)
 
 def randomIv():
     import random
     return bytes([random.randrange(256) for _ in range(getBlockSize())])
 
-def createCipher(key, iv):
+class Encrypter2:
+    def __init__(self, key, iv):
+        self.cipher = Cipher(key, iv)
+    
+    def update(self, data):
+        return self.cipher.encrypt(data)
+    
+    def final(self):
+        return b''
+
+class Decrypter2:
+    def __init__(self, key, iv):
+        self.cipher = Cipher(key, iv)
+    
+    def update(self, data):
+        return self.cipher.decrypt(data)
+    
+    def final(self):
+        return b''
+
+def Cipher(key, iv):
     import Crypto.Cipher.AES as AES2
     return AES2.new(key, AES2.MODE_CBC, iv)
-
-def createPadding():
-    from .padding import PKCS5
-    return PKCS5(getBlockSize())
 
 def getBlockSize():
     import Crypto.Cipher.AES as AES2
     return AES2.block_size
 
-class OutputAtFirstTime:
+class OutputHeader:
     def __init__(self, data):
         self.data = data
     
@@ -69,3 +78,115 @@ class OutputAtFirstTime:
         result = self.data
         self.data = None
         return result
+
+def Padding():
+    return PKCS5(getBlockSize())
+
+def Blocking():
+    return Blocking2(getBlockSize())
+
+class CipherAgent:
+    def __init__(self, cipher = None):
+        self.cipher = cipher
+    
+    def update(self, data):
+        return self.cipher.update(data)
+    
+    def final(self):
+        return self.cipher.final()
+    
+    def setCipher(self, cipher):
+        self.cipher = cipher
+
+class InputHeader:
+    def __init__(self, headerSize, onHeader):
+        self.headerSize = headerSize
+        self.onHeader = onHeader
+        self.header = b''
+    
+    def update(self, data):
+        if self.header is not None:
+            self.header += data
+            self.header = self.header[:self.headerSize]
+            result = self.header[self.headerSize:]
+            if len(self.header) == self.headerSize:
+                self.onHeader(self.header)
+                self.header = None
+            return result
+        else:
+            return data
+    
+    def final(self):
+        assert self.header is None, 'Header not enough'
+        return b''
+
+class Unpadding:
+    def __init__(self, blockSize):
+        self.blockSize = blockSize
+        self.lastBytes = b''
+    
+    def update(self, data):
+        self.lastBytes += data
+        result = self.lastBytes[:-self.blockSize]
+        self.lastBytes = self.lastBytes[-self.blockSize:]
+        return result
+    
+    def final(self):
+        paddingSize = self.lastBytes[-1]
+        assert len(self.lastBytes) >= paddingSize, 'Bad padding size'
+        result = self.lastBytes[:-paddingSize]
+        padding = self.lastBytes[-paddingSize:]
+        assert padding == bytes([paddingSize]*paddingSize), 'Bad padding'
+        return result
+
+class PKCS5:
+    def __init__(self, blockSize):
+        self.blockSize = blockSize
+        self.dataLength = 0
+        
+    def update(self, data):
+        self.dataLength += len(data)
+        return data
+    
+    def final(self):
+        minPadding = 1
+        paddingSize = (self.dataLength-minPadding) % self.blockSize + minPadding
+        return bytes([paddingSize]*paddingSize)
+
+class Blocking2:
+    def __init__(self, blockSize):
+        self.blockSize = blockSize
+        self.buffer = b''
+        
+    def update(self, data):
+        self.buffer += data
+        remain = len(self.buffer) % self.blockSize
+        result = self.buffer[:-remain]
+        self.buffer = self.buffer[-remain:]
+        return result
+    
+    def final(self):
+        assert not self.buffer, 'Data is not blocked.'
+
+def test():
+    key = b'1'*32
+    cipher = AES(key)
+    import io
+    from base64 import b16encode
+    buffer = io.BytesIO()
+    a = cipher.encrypt()
+    for i in range(2):
+        x = a.update(bytes([i]*i))
+        buffer.write(x)
+        print(b16encode(x))
+    x = a.final()
+    buffer.write(x)
+    print(b16encode(x))
+    print('Decode')
+    a = cipher.decrypt()
+    for e in buffer.getvalue():
+        print(b16encode(a.update(bytes([e]))))
+    print(b16encode(a.final()))
+
+if __name__ == '__main__':
+    test()

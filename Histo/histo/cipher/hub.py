@@ -1,5 +1,5 @@
 class Hub:
-    def __init__(self, ciphers):
+    def __init__(self, *ciphers):
         self.ciphers = ciphers
     
     def encrypt(self):
@@ -9,7 +9,7 @@ class Hub:
         return CipherHub(reversed([e.decrypt() for e in self.ciphers]))
 
 class CipherHub:
-    def __init__(self, ciphers):
+    def __init__(self, *ciphers):
         self.ciphers = ciphers
     
     def update(self, data):
