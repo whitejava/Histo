@@ -3,10 +3,10 @@ class Hub:
         self.ciphers = ciphers
     
     def encrypt(self):
-        return CipherHub([e.encrypt() for e in self.ciphers])
+        return CipherHub(*[e.encrypt() for e in self.ciphers])
     
     def decrypt(self):
-        return CipherHub(reversed([e.decrypt() for e in self.ciphers]))
+        return CipherHub(*reversed([e.decrypt() for e in self.ciphers]))
 
 class CipherHub:
     def __init__(self, *ciphers):
