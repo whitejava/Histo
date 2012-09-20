@@ -17,7 +17,7 @@ def Encrypter(key):
     cipher = Encrypter2(key, iv)
     padding = Padding()
     blocking = Blocking()
-    return CipherHub(Meter(0), padding, Meter(1), blocking, Meter(2), cipher, Meter(3), header, Meter(4))
+    return CipherHub(padding, blocking, cipher, header)
 
 def Decrypter(key):
     from histo.cipher.hub import CipherHub
@@ -27,7 +27,7 @@ def Decrypter(key):
     header = InputHeader(getBlockSize(), onIv)
     unpadding = Unpadding()
     blocking = Blocking()
-    return CipherHub(Meter(0), header, Meter(1), blocking, Meter(2), FilterEmpty(cipher), Meter(3), unpadding, Meter(4))
+    return CipherHub(header, blocking, FilterEmpty(cipher), unpadding)
 
 def randomIv():
     import random
@@ -107,12 +107,14 @@ class InputHeader:
     def update(self, data):
         if self.header is not None:
             self.header += data
-            self.header = self.header[:self.headerSize]
-            result = self.header[self.headerSize:]
-            if len(self.header) == self.headerSize:
-                self.onHeader(self.header)
+            if len(self.header) < self.headerSize:
+                return b''
+            else:
+                header = self.header[:self.headerSize]
+                result = self.header[self.headerSize:]
+                self.onHeader(header)
                 self.header = None
-            return result
+                return result
         else:
             return data
     
@@ -191,33 +193,13 @@ class Meter:
         self.name = name
     
     def update(self, data):
-        from base64 import b16encode
-        print(self.name, 'update', str(b16encode(data)))
+        print(self.name, 'update', reprBytes(data))
         return data
     
     def final(self):
         print(self.name, 'final')
         return b''
-
-def test():
-    key = b'1'*32
-    cipher = AES(key)
-    import io
-    from base64 import b16encode
-    buffer = io.BytesIO()
-    a = cipher.encrypt()
-    for i in range(2):
-        x = a.update(bytes([i]*i))
-        buffer.write(x)
-        print(b16encode(x))
-    x = a.final()
-    buffer.write(x)
-    print(b16encode(x))
-    print('Decode')
-    a = cipher.decrypt()
-    for e in buffer.getvalue():
-        print(b16encode(a.update(bytes([e]))))
-    print(b16encode(a.final()))
-
-if __name__ == '__main__':
-    test()
+    
+def reprBytes(x):
+    import base64
+    return '%s %s'% (len(x), str(base64.b16encode(x), 'utf8'))
