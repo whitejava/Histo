@@ -20,14 +20,14 @@ def Encrypter(key):
     return CipherHub(Meter(0), padding, Meter(1), blocking, Meter(2), cipher, Meter(3), header, Meter(4))
 
 def Decrypter(key):
-    from .hub import CipherHub
+    from histo.cipher.hub import CipherHub
     cipher = CipherAgent()
     def onIv(iv):
         cipher.setCipher(Decrypter2(key, iv))
     header = InputHeader(getBlockSize(), onIv)
     unpadding = Unpadding()
     blocking = Blocking()
-    return CipherHub(header, blocking, cipher, unpadding)
+    return CipherHub(Meter(0), header, Meter(1), blocking, Meter(2), FilterEmpty(cipher), Meter(3), unpadding, Meter(4))
 
 def randomIv():
     import random
@@ -121,7 +121,7 @@ class InputHeader:
         return b''
 
 class Unpadding:
-    def __init__(self, blockSize):
+    def __init__(self, blockSize = getBlockSize()):
         self.blockSize = blockSize
         self.lastBytes = b''
     
@@ -161,12 +161,30 @@ class Blocking2:
     def update(self, data):
         self.buffer += data
         remain = len(self.buffer) % self.blockSize
-        result = self.buffer[:-remain]
-        self.buffer = self.buffer[-remain:]
-        return result
+        if remain == 0:
+            result = self.buffer
+            self.buffer = b''
+            return result
+        else:
+            result = self.buffer[:-remain]
+            self.buffer = self.buffer[-remain:]
+            return result
     
     def final(self):
         assert not self.buffer, 'Data is not blocked.'
+        return b''
+
+class FilterEmpty:
+    def __init__(self, cipher):
+        self.cipher = cipher
+    
+    def update(self, data):
+        if data:
+            return self.cipher.update(data)
+        return b''
+    
+    def final(self):
+        return self.cipher.final()
 
 class Meter:
     def __init__(self, name):
