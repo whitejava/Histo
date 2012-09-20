@@ -38,19 +38,3 @@ class Decrypter:
     def final(self):
         assert self.hasher.digest() == self.end, 'Verify failed.'
         return b''
-
-def test():
-    import io
-    b = io.BytesIO()
-    c = Verify('md5')
-    a = c.encrypt()
-    b.write(a.update(b'123456'))
-    b.write(a.final())
-    print(b.getvalue())
-    c = c.decrypt()
-    for e in b.getvalue():
-        print(c.update(bytes([e])))
-    print(c.final())
-
-if __name__ == '__main__':
-    test()
