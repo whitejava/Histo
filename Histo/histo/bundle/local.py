@@ -4,7 +4,7 @@ class Local:
         self.createIfNotExist()
     
     def open(self, name, mode):
-        assert mode in 'wb', 'rb'
+        assert mode in ('wb', 'rb')
         import os.path
         return open(os.path.join(self.root, name), mode)
     

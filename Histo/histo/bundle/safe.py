@@ -3,6 +3,9 @@ class Safe:
         self.bundle = bundle
         self.writing = []
         self.reading = []
+        self.files = bundle.list()
+        from threading import Lock
+        self.lock = Lock()
         
     def open(self, name, mode):
         if mode == 'wb':
@@ -13,35 +16,70 @@ class Safe:
             raise Exception('No such mode')
     
     def delete(self, name):
-        if name in self.writing or name in self.reading:
-            raise Exception('File is using.')
-        self.bundle.delete(name)
+        with self.lock:
+            self.assertNotUsing(name)
+            self.bundle.delete(name)
     
     def list(self):
-        result = self.bundle.list()
-        for e in self.writing:
-            if e in result:
-                result.remove(e)
-        return result
+        return self.files[:]
     
     def openForWrite(self, name):
-        if name in self.reading:
-            raise Exception('File is reading')
-        result = self.bundle.open(name, 'wb')
-        close0 = result.close
-        def close2():
-            close0()
-            self.writing.remove(name)
-        result.close = close2
-        return result
+        with self.lock:
+            self.assertNotUsing(name)
+            self.writing.append(name)
+            try:
+                result = self.bundle.open(name, 'wb')
+            except:
+                self.writing.remove(name)
+                raise
+            def postClose():
+                if name not in self.files:
+                    self.files.append(name)
+                self.writing.remove(name)
+            return FileHook(result, postClose = postClose)
     
     def openForRead(self, name):
-        if name in self.writing:
-            raise Exception('File is writing')
-        result = self.bundle.open(name, 'rb')
-        close0 = result.close
-        def close2():
-            close0()
-            self.reading.remove(name)
-        result.close = close2
-        return result
+        with self.lock:
+            self.assertNotWriting(name)
+            self.reading.append(name)
+            try:
+                result = self.bundle.open(name, 'rb')
+            except:
+                self.reading.remove(name)
+                raise
+            def postClose():
+                self.reading.remove(name)
+            return FileHook(result, postClose = postClose)
+    
+    def assertNotUsing(self, name):
+        self.assertNotReading(name)
+        self.assertNotWriting(name)
+    
+    def assertNotReading(self, name):
+        assert name not in self.reading, '%s is reading' % name
+    
+    def assertNotWriting(self, name):
+        assert name not in self.writing, '%s is writing' % name
+
+class FileHook:
+    def __init__(self, file, postClose):
+        self.file = file
+        self.postClose = postClose
+    
+    def read(self, limit):
+        return self.file.read(limit)
+    
+    def write(self, data):
+        return self.file.write(data)
+    
+    def close(self):
+        try:
+            self.file.close()
+        finally:
+            self.postClose()
+    
+    def __enter__(self):
+        return self.file
+    
+    def __exit__(self, *k):
+        self.close()
