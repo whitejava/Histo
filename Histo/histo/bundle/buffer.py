@@ -91,31 +91,89 @@ class Buffer:
 
 class TaskQueue:
     def __init__(self, file):
-        self.file = file
-        self.queue = self.loadOrCreate(file)
-        from threading import Semaphore, Lock
-        self.semaphore = Semaphore(0)
+        self.queue = DiskQueue(file)
+        self.fetched = []
+        from threading import Lock, Semaphore
+        self.semaphore = Semaphore(len(self.queue))
         self.lock = Lock()
-        Stuck
     
     def append(self, x):
         with self.lock:
-            self.queue.append((x, False))
+            self.queue.append(self.Task(x))
             self.semaphore.release()
-    
+        
     def fetch(self):
         self.semaphore.acquire()
         with self.lock:
-            for i,e,f in self.queue:
-                if not f:
-                    return e
-                Stuck
+            task = self.findUnfetch()
+            self.fetched.append(task)
+            return task, task.value
     
     def feedBack(self, fetchId, result):
-        pass
+        with self.lock:
+            self.fetched.remove(fetchId)
+            if result:
+                self.queue.remove(fetchId)
+            else:
+                self.semaphore.release()
     
-    def loadOrCreate(self, file):
-        pass
+    class Task:
+        def __init__(self, value):
+            self.value = value
+            
+    def findUnfetch(self):
+        for e in self.queue:
+            if not self.isFetched(e):
+                return e
+        raise Exception('Not found.')
+    
+    def isFetched(self, task):
+        for e in self.fetched:
+            if e.value is task:
+                return True
+        return False
+
+class DiskQueue:
+    def __init__(self, file):
+        self.file = file
+        self.queue = self.loadOrCreate()
+    
+    def append(self, x):
+        self.queue.append(x)
+        self.save()
+    
+    def remove(self, x):
+        self.queue.remove(x)
+        self.save()
+    
+    def __getitem__(self, key):
+        return self.queue[key]
+    
+    def __setitem__(self, key, value):
+        self.queue[key] = value
+        self.save()
+        
+    def __iter__(self):
+        return self.queue.__iter__()
+    
+    def save(self):
+        with open(self.file, 'w') as f:
+            for e in self.queue:
+                print(repr(e), file=f)
+    
+    def loadOrCreate(self):
+        import os
+        if os.path.exists(self.file):
+            return self.loadQueue()
+        else:
+            return []
+    
+    def loadQueue(self):
+        result = []
+        with open(self.file, 'r') as f:
+            for e in f:
+                result.append(eval(e))
+        return result
 
 class UsageLog:
     def __init__(self, file):
@@ -191,102 +249,3 @@ class TransferThread(Thread):
             with self.slowBundle.open(task, 'wb') as f2:
                 from pclib import copystream
                 copystream(f1, f2)
-
-class buffer:
-    def __init__(self, fast, slow, queuefile, usagelogfile, buffersize, threadcount):
-        self.fast = fast
-        self.slow = slow
-        self.usagelog = usagelog(usagelogfile)
-        self.buffersize = buffersize
-        queue = taskqueue(diskqueue(queuefile))
-        self.queue = queue
-        self.threads = [transferthread(fast, slow, queue) for _ in range(threadcount)]
-        for e in self.threads:
-            e.start()
-    
-    def open(self, name, mode):
-        self.usagelog.log(name)
-        if mode == 'rb':
-            return self.openforread(name)
-        elif mode == 'wb':
-            return self.openforwrite(name)
-        else:
-            raise Exception('No such mode.')
-    
-    def delete(self, name):
-        raise Exception('Not support')
-    
-    def openforread(self, name):
-        if self.fast.exists(name):
-            return self.fast.open(name, 'rb')
-        elif self.slow.exists(name):
-            self.transferslowtofast(name)
-        else:
-            raise Exception('File not exist.')
-    
-    def openforwrite(self, name):
-        result = self.fast.open(name, 'wb')
-        result.close = lambda: result.close(); self.limitbuffersize()
-        return result
-    
-    def transferslowtofast(self, name):
-        with self.slow.open(name, 'rb') as f1:
-            with self.fast.open(name, 'wb') as f2:
-                assert pclib.copystream(f1, f2) == self.slow.getsize(name)
-    
-    def limitbuffersize(self):
-        currentbuffersize = self.getcurrentbuffersize()
-        mostuseless = self.getmostuselessfastfiles()
-        for e in mostuseless:
-            if currentbuffersize <= self.buffersize:
-                break
-            if e not in self.queue:
-                size = self.fast.getsize(e)
-                try:
-                    self.fast.delete(e)
-                except Exception:
-                    continue
-                else:
-                    self.currentbuffersize -= size
-    
-    def getcurrentbuffersize(self):
-        result = 0
-        for e in self.fast.list():
-            result += self.fast.getsize(e)
-        return result
-    
-    def getmostuselessfastfiles(self):
-        files = self.fast.list()
-        files = [(-self.usagelog.getusagecount(e), e) for e in files]
-        files = sorted(files)
-        files = [e[1] for e in files]
-        return files
-    
-    def list(self):
-        return self.slow.list()
-
-class transferthread(threading.Thread):
-    def __init__(self, fast, slow, queue):
-        threading.Thread.__init__(self)
-        self.fast = fast
-        self.slow = slow
-        self.queue = queue
-    
-    def run(self):
-        while True:
-            fetchid, task = self.queue.fetchtask()
-            result = self.runtask(task)
-            self.queue.feedback(fetchid, result)
-    
-    def runtask(self, task):
-        try:
-            self.runtask2(task)
-        except Exception:
-            return False
-        else:
-            return True
-
-    def runtask2(self, task):
-        with self.slow.open(task, 'wb') as f1:
-            with self.fast.open(task, 'rb') as f2:
-                assert pclib.copystream(f2, f1) == self.fast.getsize(task)
