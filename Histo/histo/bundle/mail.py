@@ -6,8 +6,8 @@ class Mail:
         self.password = password
         self.receiver = receiver
         self.sender = sender
-        self.connection = ImapConnection(self.host, self.port, self.user, self.password)
-        self.files = self.listFiles()
+        from threading import Lock
+        self.lock = Lock()
     
     def open(self, name, mode):
         if mode == 'rb':
@@ -21,29 +21,31 @@ class Mail:
         raise Exception('Not impl')
     
     def list(self):
+        self.files = self.listFiles()
         return [e[1] for e in self.files]
     
     def listFiles(self):
-        with self.connection as connection:
-            mails = connection.search(None, 'ALL')
-            mails = mails[1][0]
-            mails = str(mails,'utf8').split()
-            mails2 = ','.join(mails)
-            result = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
-            result = result[1][::2]
-            result = [str(e[1], 'utf8') for e in result]
-            for e in result:
-                assert e.startswith('Subject: ')
-                assert e.endswith('\r\n\r\n')
-            result = [e[9:-4] for e in result]
-            return list(zip(map(int, mails), result))
+        with self.lock:
+            with self.Connection() as connection:
+                mails = connection.search(None, 'ALL')
+                mails = mails[1][0]
+                mails = str(mails,'utf8').split()
+                mails2 = ','.join(mails)
+                result = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
+                result = result[1][::2]
+                result = [str(e[1], 'utf8') for e in result]
+                for e in result:
+                    assert e.startswith('Subject: ')
+                    assert e.endswith('\r\n\r\n')
+                result = [e[9:-4] for e in result]
+                return list(zip(map(int, mails), result))
     
     def openForRead(self, name):
-        with self.connection as connection:
+        with self.Connection() as connection:
             return self.openForRead2(connection, name)
     
     def openForWrite(self, name):
-        with self.connection as connection:
+        with self.Connection() as connection:
             return self.openForWrite2(connection, name)
     
     def openForRead2(self, connection, name):
@@ -61,17 +63,13 @@ class Mail:
         return MailWriter(self.sender, self.receiver, name)
     
     def getMailIdByName(self, name):
-        result = self.getMailIdByName2(name)
-        if result is None:
-            self.files = self.listFiles()
-        result = self.getMailIdByName2(name)
-        assert result is not None, 'No such mail ' + name
-    
-    def getMailIdByName2(self, name):
-        for e in self.files:
+        for e in self.listFiles():
             if e[1] == name:
                 return e[0]
-        return None
+        raise Exception('No such mail')
+    
+    def Connection(self):
+        return ImapConnection(self.host, self.port, self.user, self.password)
 
 class ImapConnection:
     def __init__(self, host, port, user, password):
@@ -86,6 +84,7 @@ class ImapConnection:
     def __enter__(self):
         with self.lock:
             if self.refCount:
+                self.refCount += 1
                 return self.connection
             else:
                 connection = self.Connection()
