@@ -15,6 +15,14 @@ class Local:
         import os
         return os.listdir(self.root)
     
+    def exists(self, name):
+        import os
+        return os.path.isfile(self.getFile(name))
+    
+    def getSize(self, name):
+        import os.path
+        return os.path.getsize(self.getFile(name))
+    
     def createIfNotExist(self):
         import os
         if not os.path.isdir(self.root):

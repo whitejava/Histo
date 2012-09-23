@@ -13,6 +13,12 @@ class Limit:
             return LimitWriter(f, self.writeLimiter)
         else:
             raise Exception('No such mode.')
+    
+    def list(self):
+        return self.bundle.list()
+    
+    def delete(self, name):
+        return self.bundle.delete(name)
 
 class Limiter:
     def __init__(self, maxSpeed):

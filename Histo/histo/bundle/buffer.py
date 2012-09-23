@@ -42,13 +42,10 @@ class Buffer:
     
     def openForWrite(self, name):
         result = self.fastBundle.open(name, 'wb')
-        close0 = result.close
-        def close2():
-            close0()
+        def postClose():
             self.limitBufferSize()
             self.addQueue(name)
-        result.close = close2
-        return result
+        return FileHook(result, postClose = postClose)
     
     def openForRead(self, name):
         if not self.fastBundle.exists(name):
@@ -156,6 +153,9 @@ class DiskQueue:
     def __iter__(self):
         return self.queue.__iter__()
     
+    def __len__(self):
+        return len(self.queue)
+    
     def save(self):
         with open(self.file, 'w') as f:
             for e in self.queue:
@@ -221,7 +221,7 @@ class UsageLog:
     
     def createUsage(self):
         from collections import defaultdict
-        return defaultdict(0)
+        return defaultdict(int)
 
 from threading import Thread
 class TransferThread(Thread):
@@ -249,3 +249,26 @@ class TransferThread(Thread):
             with self.slowBundle.open(task, 'wb') as f2:
                 from pclib import copystream
                 copystream(f1, f2)
+
+class FileHook:
+    def __init__(self, file, postClose):
+        self.file = file
+        self.postClose = postClose
+    
+    def read(self, limit):
+        return self.file.read(limit)
+    
+    def write(self, data):
+        return self.file.write(data)
+    
+    def close(self):
+        try:
+            self.file.close()
+        finally:
+            self.postClose()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *k):
+        self.close()
