@@ -21,13 +21,8 @@ class Delay:
     
     def getGaussDelay(self):
         import random
-        return random.gauss(self.delay, 0.1)
+        return abs(random.gauss(self.delay, 0.1))
     
     def delay2(self, delay):
-        if delay < 0:
-            delay = 0
-        return self.delay3(delay)
-    
-    def delay3(self, delay):
         import time
         time.sleep(delay)
