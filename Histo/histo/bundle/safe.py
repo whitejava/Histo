@@ -80,7 +80,7 @@ class FileHook:
             self.postClose()
     
     def __enter__(self):
-        return self.file
+        return self
     
     def __exit__(self, *k):
         self.close()

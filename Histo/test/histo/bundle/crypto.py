@@ -1,6 +1,7 @@
 def main():
     bundle = Bundle()
     size = testWrite(bundle)
+    print('Write size', size)
     testRead(bundle, size)
 
 def Bundle():
@@ -50,6 +51,7 @@ def testRead2(file, size):
         if not read:
             break
         readSize += len(read)
+    print('read size', readSize)
     assert readSize == size
 
 def randomKey():
@@ -57,4 +59,4 @@ def randomKey():
     return bytes([random.randrange(256) for _ in range(32)])
 
 if __name__ == '__main__':
-    test()
+    main()
