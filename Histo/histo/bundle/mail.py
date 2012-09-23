@@ -47,7 +47,7 @@ class Mail:
             return self.openForWrite2(connection, name)
     
     def openForRead2(self, connection, name):
-        data = connection.fetch(str(self.getMailIdByName(name)))
+        data = connection.fetch(str(self.getMailIdByName(name)), '(RFC822)')
         emailBody = data[1][0][1]
         import email
         mail = email.message_from_string(emailBody)
@@ -55,7 +55,7 @@ class Mail:
             if part.get('Content-Disposition') is not None:
                 import io
                 return io.BytesIO(part.get_payload(decode=True))
-        raise Exception('Message abnormal.')
+        raise Exception('Message has no attachment.')
     
     def openForWrite2(self, connection, name):
         return MailWriter(self.sender, self.receiver, name)
