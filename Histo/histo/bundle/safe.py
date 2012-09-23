@@ -19,6 +19,7 @@ class Safe:
         with self.lock:
             self.assertNotUsing(name)
             self.bundle.delete(name)
+            self.files.remove(name)
     
     def list(self):
         return self.files[:]
