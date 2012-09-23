@@ -43,7 +43,8 @@ def randomAction2(bundle):
 def read(bundle):
     file = randomFile()
     logger.debug('Start Read %s' % file)
-    read = readAll(bundle.open(file, 'rb'))
+    with bundle.open(file, 'rb') as f:
+        read = readAll(f)
     logger.debug('Read size %d' % len(read))
     assert read == FileData(file)
     logger.debug('End Read %s success' % file)
@@ -51,13 +52,13 @@ def read(bundle):
 def write(bundle):
     file = randomFile()
     logger.debug('Write %s' % file)
-    writeAll(bundle.open(file, 'wb'), FileData(file))
+    with bundle.open(file, 'wb') as f:
+        writeAll(f, FileData(file))
     logger.debug('Write %s success' % file)
 
 def list2(bundle):
     logger.debug('List start')
-    for e in bundle.list():
-        print(e)
+    logger.debug(bundle.list())
     logger.debug('List end')
 
 def delete(bundle):
