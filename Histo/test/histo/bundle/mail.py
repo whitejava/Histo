@@ -1,8 +1,10 @@
 def main():
     bundle = Bundle()
-    #testList(bundle)
-    #testWrite(bundle)
-    testRead(bundle)
+    from pclib import timetext
+    name = timetext()
+    testList(bundle)
+    testWrite(bundle, name)
+    testRead(bundle, name)
 
 def Bundle():
     from histo.bundle import Mail
@@ -11,13 +13,13 @@ def Bundle():
 def testList(bundle):
     print(bundle.list())
 
-def testWrite(bundle):
-    with bundle.open('test1', 'wb') as f:
+def testWrite(bundle, name):
+    with bundle.open(name, 'wb') as f:
         for _ in range(100):
             f.write(b'a'*1024)
 
-def testRead(bundle):
-    with bundle.open('test1', 'rb') as f:
+def testRead(bundle, name):
+    with bundle.open(name, 'rb') as f:
         read = readAll(f)
         assert read == b'a'*100*1024
 

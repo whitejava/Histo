@@ -50,7 +50,7 @@ class Mail:
         data = connection.fetch(str(self.getMailIdByName(name)), '(RFC822)')
         emailBody = data[1][0][1]
         import email
-        mail = email.message_from_string(emailBody)
+        mail = email.message_from_string(str(emailBody,'utf8'))
         for part in mail.walk():
             if part.get('Content-Disposition') is not None:
                 import io
@@ -61,10 +61,17 @@ class Mail:
         return MailWriter(self.sender, self.receiver, name)
     
     def getMailIdByName(self, name):
+        result = self.getMailIdByName2(name)
+        if result is None:
+            self.files = self.listFiles()
+        result = self.getMailIdByName2(name)
+        assert result is not None, 'No such mail ' + name
+    
+    def getMailIdByName2(self, name):
         for e in self.files:
             if e[1] == name:
                 return e[0]
-        raise Exception('No such mail ' + name)
+        return None
 
 class ImapConnection:
     def __init__(self, host, port, user, password):
