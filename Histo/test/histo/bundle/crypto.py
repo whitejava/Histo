@@ -1,4 +1,9 @@
-def test():
+def main():
+    bundle = Bundle()
+    testWrite(bundle)
+    testRead(bundle)
+    
+    
     from histo.bundle import Local
     from pclib import timetext
     from histo.cipher import AES, Hub, Verify

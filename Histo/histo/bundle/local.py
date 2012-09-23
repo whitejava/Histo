@@ -5,12 +5,11 @@ class Local:
     
     def open(self, name, mode):
         assert mode in ('wb', 'rb')
-        import os.path
-        return open(os.path.join(self.root, name), mode)
+        return open(self.getFile(name), mode)
     
     def delete(self, name):
         import os
-        os.unlink(name)
+        os.unlink(self.getFile(name))
     
     def list(self):
         import os
@@ -20,3 +19,7 @@ class Local:
         import os
         if not os.path.isdir(self.root):
             os.makedirs(self.root)
+            
+    def getFile(self, name):
+        import os.path
+        return os.path.join(self.root, name)
