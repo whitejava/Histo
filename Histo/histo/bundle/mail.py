@@ -1,10 +1,12 @@
 class Mail:
-    def __init__(self, host, port, user, password, emailAddress):
+    def __init__(self, host, port, user, password, receiver, sender):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
-        self.emailAddress = emailAddress
+        self.receiver = receiver
+        self.sender = sender
+        self.connection = ImapConnection(self.host, self.port, self.user, self.password)
         self.files = self.listFiles()
     
     def open(self, name, mode):
@@ -21,30 +23,27 @@ class Mail:
     def list(self):
         return [e[1] for e in self.files]
     
-    def getConnection(self):
-        return ImapConnection(self.host, self.port, self.user, self.password)
-    
     def listFiles(self):
-        with self.getConnection() as connection:
+        with self.connection as connection:
             mails = connection.search(None, 'ALL')
             mails = mails[1][0]
             mails = str(mails,'utf8').split()
-            mails = ','.join(mails)
-            result = connection.fetch(mails, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
+            mails2 = ','.join(mails)
+            result = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
             result = result[1][::2]
             result = [str(e[1], 'utf8') for e in result]
             for e in result:
                 assert e.startswith('Subject: ')
                 assert e.endswith('\r\n\r\n')
             result = [e[9:-4] for e in result]
-            return list(zip(map(int, mails), map(decodeString, result)))
+            return list(zip(map(int, mails), result))
     
     def openForRead(self, name):
-        with self.getConnection() as connection:
+        with self.connection as connection:
             return self.openForRead2(connection, name)
     
     def openForWrite(self, name):
-        with self.getConnection() as connection:
+        with self.connection as connection:
             return self.openForWrite2(connection, name)
     
     def openForRead2(self, connection, name):
@@ -59,24 +58,13 @@ class Mail:
         raise Exception('Message abnormal.')
     
     def openForWrite2(self, connection, name):
-        return MailWriter(self.emailAddress, name)
+        return MailWriter(self.sender, self.receiver, name)
     
     def getMailIdByName(self, name):
         for e in self.files:
             if e[1] == name:
                 return e[0]
         raise Exception('No such mail ' + name)
-
-def decodeString(x):
-    import re
-    import quopri
-    match = re.match(r'=\?(?P<encode>.*)\?(?P<data>.*)', x)
-    if match:
-        encode = match.group('encode')
-        data = match.group('data')
-        data = quopri.decodestring(data)
-        return str(data, encode)
-    return quopri.decodestring(x)
 
 class ImapConnection:
     def __init__(self, host, port, user, password):
@@ -109,7 +97,7 @@ class ImapConnection:
         from imaplib import IMAP4_SSL
         result = IMAP4_SSL(self.host, self.port)
         result.login(self.user, self.password)
-        result.select(None, 'INBOX')
+        result.select('INBOX')
         return result
 
 class MailWriter:

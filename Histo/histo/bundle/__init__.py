@@ -7,3 +7,4 @@ from .safe import Safe
 from .crypto import Crypto
 #from .buffer import Buffer
 from .error import Error
+from .mail import Mail
