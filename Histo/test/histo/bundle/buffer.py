@@ -1,8 +1,8 @@
 def main():
     import logging
     global logger
-    logging.basicConfig(format='$asctime $name $thread $message', style='$', level=logging.DEBUG)
-    logger = logging.getLogger(__name__)
+    logging.basicConfig(format='%(asctime)s %(thread)08d %(message)s', level=logging.DEBUG)
+    logger = logging.getLogger()
     bundle = Bundle()
     global files
     files = []

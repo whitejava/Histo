@@ -1,7 +1,7 @@
 __all__ = ['Buffer']
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class Buffer:
     def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount):
