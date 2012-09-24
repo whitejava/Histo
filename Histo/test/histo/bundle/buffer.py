@@ -6,7 +6,10 @@ def main():
     bundle = Bundle()
     global files
     files = []
-    for _ in range(1):
+    from itertools import count
+    global fileNames
+    fileNames = map(str, count(0))
+    for _ in range(10):
         TestThread(bundle).start()
 
 def Bundle():
@@ -61,8 +64,7 @@ def testList(bundle):
     logger.debug('Length %d' % len(bundle.list()))
 
 def testWrite(bundle):
-    from pclib import timetext
-    file = timetext()
+    file = next(fileNames)
     logger.debug('Test write %s' % file)
     with bundle.open(file, 'wb') as f:
         f.write(FileData(file))

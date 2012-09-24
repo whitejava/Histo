@@ -26,7 +26,9 @@ class Buffer:
     
     def list(self):
         logger.debug('List')
-        result = self.slowBundle.list()
+        result = set()
+        result.union(self.slowBundle.list())
+        result.union(self.fastBundle.list())
         logger.debug('Return Length %d' % len(result))
         return result
     
@@ -61,7 +63,7 @@ class Buffer:
         if not self.fastBundle.exists(name):
             logger.debug('Out of cache')
             self.transferSlowBundleToFastBundle(name)
-        return self.fastBundle.open(name)
+        return self.fastBundle.open(name, 'rb')
     
     def createTransferThread(self):
         return TransferThread(self.fastBundle, self.slowBundle, self.queue)
@@ -121,13 +123,13 @@ class TaskQueue:
         self.semaphore.acquire()
         with self.lock:
             task = self.findUnfetch()
-            logger.debug('Fetch %s' % task)
+            logger.debug('Fetch %s %s' % (id(task), task.value))
             self.fetched.append(task)
             return task, task.value
     
     def feedBack(self, fetchId, result):
         with self.lock:
-            logger.debug('Feed back %s %s' % (fetchId, result))
+            logger.debug('Feed back %s %s %s' % (id(fetchId), fetchId.value, result))
             self.fetched.remove(fetchId)
             if result:
                 self.queue.remove(fetchId)
