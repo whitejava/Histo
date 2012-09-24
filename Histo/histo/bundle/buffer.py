@@ -99,11 +99,18 @@ class Buffer:
     def fetchSlowFileForRead(self, name):
         logger.debug('Fetching slow file %s' % name)
         with self.slowBundle.open(name, 'rb') as f1:
+            logger.debug('Opened slow file')
             with self.fastBundle.protect(name):
+                logger.debug('Protected fast bundle')
                 with self.fastBundle.openIgnoreProtection(name, 'wb') as f2:
+                    logger.debug('Opened fast file')
+                    logger.debug('Copying')
                     from pclib import copystream
                     copystream(f1, f2)
-                    return self.fastBundle.openIgnoreProtection(name, 'rb')
+                    logger.debug('Finish copying')
+                    result = self.fastBundle.openIgnoreProtection(name, 'rb')
+                    logger.debug('Reopen fast file')
+                    return result
     
     def createTransferThread(self):
         return TransferThread(self.fastBundle, self.slowBundle, self.queue)
