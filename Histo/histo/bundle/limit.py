@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger()
+
 class Limit:
     def __init__(self, bundle, writeSpeed, readSpeed):
         self.bundle = bundle
@@ -107,6 +110,7 @@ class LimitWriter:
             request.success(e)
             
     def close(self):
+        logger.debug('Close %s' % self.file)
         self.file.close()
         
     def __enter__(self):

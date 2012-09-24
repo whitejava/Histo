@@ -49,7 +49,7 @@ class ErrorWriter:
         self.pointError.increasePointer(len(data))
         return self.file.write(data)
     
-    def close(self, data):
+    def close(self):
         self.file.close()
         self.simulator.simulateError()
     

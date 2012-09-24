@@ -73,12 +73,12 @@ class Buffer:
         currentBufferSize = self.getCurrentBufferSize()
         mostUseless = self.getMostUseless()
         for e in mostUseless:
-            logger.debug('Current buffer size %s' % currentBufferSize)
             if currentBufferSize <= self.maxBufferSize:
                 break
             try:
                 if e in self.queue:
                     continue
+                logger.debug('Current buffer size %s' % currentBufferSize)
                 logger.debug('Delete %s' % e)
                 self.fastBundle.delete(e)
                 currentBufferSize -= self.fastBundle.getSize(e)
@@ -266,7 +266,8 @@ class TransferThread(Thread):
         try:
             self.runTask2(task)
             return True
-        except:
+        except Exception as e:
+            logger.exception(e)
             return False
         
     def runTask2(self, task):
