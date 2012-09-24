@@ -36,7 +36,7 @@ def Bundle():
     maxBufferSize = 10*1024*1024
     threadCount = 10
     result = Buffer(fast, slow, queueFile, usageLogFile, maxBufferSize, threadCount)
-    #result = Crypto(result, Cipher())
+    result = Crypto(result, Cipher())
     return result
 
 def Fast(root):
@@ -44,7 +44,6 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
-    return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
