@@ -42,6 +42,7 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
+    return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
@@ -90,6 +91,7 @@ def testRead(bundle):
     file = random.choice(files)
     logger.debug('File %s' % file)
     with bundle.open(file, 'rb') as f:
+        logger.debug('Opened file')
         assert readAll(f) == FileData(file)
     logger.debug('Finish read %s' % file)
 

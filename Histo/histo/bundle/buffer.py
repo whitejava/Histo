@@ -70,18 +70,26 @@ class Buffer:
     
     def openForRead(self, name):
         if self.fastBundle.exists(name):
+            logger.debug('Read from cache')
             return self.fastBundle.open(name, 'rb')
         else:
+            logger.debug('Read from slow bundle')
             return self.openSlowBundleForRead(name)
             
     def openSlowBundleForRead(self, name):
         result = FileShell()
         def threadProc():
             try:
-                result.fill(self.fetchSlowFileForRead(name))
+                logger.debug('Reading slow file %s' % name)
+                self.fetchSlowFileForRead(name)
+                logger.debug('Finish read slow %s' % name)
+                result.fill()
             except:
+                logger.debug('Read failed %s' % name)
                 result.fail()
                 raise
+        from threading import Thread
+        Thread(target=threadProc).start()
         return result
     
     def fetchSlowFileForRead(self, name):
