@@ -82,9 +82,9 @@ class Buffer:
             from histo.bundle.safe import SafeProtection
             try:
                 logger.debug('Reading slow file %s' % name)
-                self.fetchSlowFileForRead(name)
+                file = self.fetchSlowFileForRead(name)
                 logger.debug('Finish read slow %s' % name)
-                result.fill()
+                result.fill(file)
             except SafeProtection as e:
                 logger.debug('Read failed %s: %s' % (name, repr(e)))
                 result.fail()
@@ -108,9 +108,9 @@ class Buffer:
                     from pclib import copystream
                     copystream(f1, f2)
                     logger.debug('Finish copying')
-                    result = self.fastBundle.openIgnoreProtection(name, 'rb')
-                    logger.debug('Reopen fast file')
-                    return result
+                result = self.fastBundle.openIgnoreProtection(name, 'rb')
+                logger.debug('Reopen fast file')
+                return result
     
     def createTransferThread(self):
         return TransferThread(self.fastBundle, self.slowBundle, self.queue)
@@ -362,10 +362,12 @@ class FileShell:
         self.file = None
     
     def fill(self, file):
+        logger.debug('Fill')
         self.file = file
         self.event.set()
     
     def fail(self):
+        logger.debug('Fail')
         self.event.set()
     
     def read(self, limit):
@@ -389,6 +391,7 @@ class FileShell:
         return self.file.__exit__(*k)
     
     def waitFill(self):
+        logger.debug('Waiting filling')
         self.event.wait()
         if self.file is None:
             raise Exception('File shell failed')

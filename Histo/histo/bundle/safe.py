@@ -60,9 +60,10 @@ class Safe:
                 self.writing.remove(name)
                 raise
             def postClose():
-                if name not in self.files:
-                    self.files.append(name)
-                self.writing.remove(name)
+                with self.lock:
+                    if name not in self.files:
+                        self.files.append(name)
+                    self.writing.remove(name)
             return FileHook(result, postClose = postClose)
     
     def openForRead(self, name):
