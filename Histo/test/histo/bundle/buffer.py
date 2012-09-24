@@ -42,7 +42,6 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
-    return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
