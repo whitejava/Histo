@@ -15,6 +15,8 @@ class Buffer:
         self.usageLog = self.getUsageLog(usageLogFile)
         self.threads = self.createTransferThreads(threadCount)
         self.startAllThreads(self.threads)
+        from threading import Lock
+        self.limiting = Lock()
     
     def open(self, name, mode):
         if mode == 'wb':
@@ -27,8 +29,14 @@ class Buffer:
     def list(self):
         logger.debug('List')
         result = set()
-        result.union(self.slowBundle.list())
-        result.union(self.fastBundle.list())
+        result.union()
+        slowFiles = self.slowBundle.list()
+        fastFiles = self.fastBundle.list()
+        logger.debug('Slow files: %d' % len(slowFiles))
+        logger.debug('Fast files: %d' % len(fastFiles))
+        result = result.union(slowFiles)
+        result = result.union(fastFiles)
+        result = list(result)
         logger.debug('Return Length %d' % len(result))
         return result
     
@@ -53,8 +61,8 @@ class Buffer:
         result = self.fastBundle.open(name, 'wb')
         def postClose():
             logger.debug('Closing %s' % name)
-            self.limitBufferSize()
             self.addQueue(name)
+            self.limitBufferSize()
             logger.debug('Finish Close %s' % name)
         return FileHook(result, postClose = postClose)
     
@@ -70,20 +78,21 @@ class Buffer:
     
     def limitBufferSize(self):
         logger.debug('Limit buffer size')
-        currentBufferSize = self.getCurrentBufferSize()
-        mostUseless = self.getMostUseless()
-        for e in mostUseless:
-            if currentBufferSize <= self.maxBufferSize:
-                break
-            try:
-                if e in self.queue:
-                    continue
-                logger.debug('Current buffer size %s' % currentBufferSize)
-                logger.debug('Delete %s' % e)
-                self.fastBundle.delete(e)
-                currentBufferSize -= self.fastBundle.getSize(e)
-            except Exception as e:
-                logger.exception(e)
+        with self.limiting:
+            currentBufferSize = self.getCurrentBufferSize()
+            mostUseless = self.getMostUseless()
+            for e in mostUseless:
+                if currentBufferSize <= self.maxBufferSize:
+                    break
+                try:
+                    if e in self.queue:
+                        continue
+                    logger.debug('Current buffer size %s' % currentBufferSize)
+                    logger.debug('Delete %s' % e)
+                    self.fastBundle.delete(e)
+                    currentBufferSize -= self.fastBundle.getSize(e)
+                except Exception as e:
+                    logger.exception(e)
 
     def addQueue(self, name):
         self.queue.append(name)
@@ -145,15 +154,9 @@ class TaskQueue:
             
     def findUnfetch(self):
         for e in self.queue:
-            if not self.isFetched(e):
+            if e not in self.fetched:
                 return e
         raise Exception('Not found.')
-    
-    def isFetched(self, task):
-        for e in self.fetched:
-            if e.value is task:
-                return True
-        return False
 
     class DiskQueue:
         def __init__(self, file):
