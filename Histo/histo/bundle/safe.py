@@ -21,6 +21,12 @@ class Safe:
             self.bundle.delete(name)
             self.files.remove(name)
     
+    def getSize(self, name):
+        return self.bundle.getSize(name)
+    
+    def exists(self, name):
+        return self.bundle.exists(name)
+    
     def list(self):
         return self.files[:]
     
@@ -57,10 +63,15 @@ class Safe:
         self.assertNotWriting(name)
     
     def assertNotReading(self, name):
-        assert name not in self.reading, '%s is reading' % name
+        if name in self.reading:
+            raise SafeProtection('%s is reading' % name)
     
     def assertNotWriting(self, name):
-        assert name not in self.writing, '%s is writing' % name
+        if name in self.writing:
+            raise SafeProtection('%s is writing' % name)
+
+class SafeProtection(Exception):
+    pass
 
 class FileHook:
     def __init__(self, file, postClose):

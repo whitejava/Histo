@@ -5,7 +5,8 @@ logger = logging.getLogger()
 
 class Buffer:
     def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount):
-        self.fastBundle = fastBundle
+        from histo.bundle import Safe
+        self.fastBundle = Safe(fastBundle)
         self.slowBundle = slowBundle
         self.queueFile = queueFile
         self.usageLogFile = usageLogFile
@@ -16,7 +17,7 @@ class Buffer:
         self.threads = self.createTransferThreads(threadCount)
         self.startAllThreads(self.threads)
         from threading import Lock
-        self.limiting = Lock()
+        self.lock = Lock()
     
     def open(self, name, mode):
         if mode == 'wb':
@@ -59,12 +60,13 @@ class Buffer:
     def openForWrite(self, name):
         logger.debug('Open wb %s' % name)
         result = self.fastBundle.open(name, 'wb')
-        def postClose():
+        def preClose():
             logger.debug('Closing %s' % name)
             self.addQueue(name)
             self.limitBufferSize()
+        def postClose():
             logger.debug('Finish Close %s' % name)
-        return FileHook(result, postClose = postClose)
+        return FileHook(result, preClose=preClose, postClose=postClose)
     
     def openForRead(self, name):
         logger.debug('Open rb %s' % name)
@@ -78,27 +80,35 @@ class Buffer:
     
     def limitBufferSize(self):
         logger.debug('Limit buffer size')
-        with self.limiting:
+        with self.lock:
             currentBufferSize = self.getCurrentBufferSize()
             mostUseless = self.getMostUseless()
             for e in mostUseless:
                 if currentBufferSize <= self.maxBufferSize:
                     break
+                if e in self.queue:
+                    logger.debug('%s is in queue' % e)
+                    continue
+                logger.debug('Current buffer size %s' % currentBufferSize)
+                fileSize = self.fastBundle.getSize(e)
+                logger.debug('Delete %s' % e)
+                from histo.bundle.safe import SafeProtection
                 try:
-                    if e in self.queue:
-                        continue
-                    logger.debug('Current buffer size %s' % currentBufferSize)
-                    logger.debug('Delete %s' % e)
                     self.fastBundle.delete(e)
-                    currentBufferSize -= self.fastBundle.getSize(e)
-                except Exception as e:
-                    logger.exception(e)
+                except SafeProtection as ex:
+                    logger.debug('Delete not allowed %s' % e)
+                except Exception as ex:
+                    logger.debug('Delete error %s' % e)
+                    logger.exception(ex)
+                else:
+                    logger.debug('Delete ok %s' % e)
+                    currentBufferSize -= fileSize
 
     def addQueue(self, name):
         self.queue.append(name)
     
     def transferSlowBundleToFastBundle(self, name):
-        logger.debug('Download mail')
+        logger.debug('Transfer slow to fast %s' % name)
         with self.slowBundle.open(name, 'rb') as f1:
             with self.fastBundle.open(name, 'wb') as f2:
                 from pclib import copystream
@@ -283,9 +293,10 @@ class TransferThread(Thread):
                 copystream(f1, f2)
 
 class FileHook:
-    def __init__(self, file, postClose):
+    def __init__(self, file, preClose = None, postClose = None):
         self.file = file
-        self.postClose = postClose
+        self.preClose = self.denone(preClose)
+        self.postClose = self.denone(postClose)
     
     def read(self, limit):
         return self.file.read(limit)
@@ -295,12 +306,23 @@ class FileHook:
     
     def close(self):
         try:
-            self.file.close()
+            self.preClose()
         finally:
-            self.postClose()
+            try:
+                self.file.close()
+            finally:
+                self.postClose()
     
     def __enter__(self):
         return self
     
     def __exit__(self, *k):
         self.close()
+    
+    def denone(self, x):
+        if x is None:
+            def empty():
+                pass
+            return empty
+        else:
+            return x

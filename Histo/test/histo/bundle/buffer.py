@@ -14,9 +14,14 @@ def main():
     files = []
     from itertools import count
     global fileNames
-    fileNames = map(str, count(0))
+    fileNames = map(getFileName, count(0))
     for _ in range(10):
         TestThread(bundle).start()
+
+def getFileName(x):
+    import hashlib
+    import base64
+    return str(base64.b16encode(hashlib.md5(bytes(str(x),'utf8')).digest()),'utf8')[:8].lower()
 
 def Bundle():
     from histo.bundle import Buffer
