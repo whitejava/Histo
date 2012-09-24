@@ -16,30 +16,32 @@ class Buffer:
         self.usageLog = self.getUsageLog(usageLogFile)
         self.threads = self.createTransferThreads(threadCount)
         self.startAllThreads(self.threads)
-        from threading import Lock
-        self.lock = Lock()
+        from threading import RLock
+        self.lock = RLock()
     
     def open(self, name, mode):
-        if mode == 'wb':
-            return self.openForWrite(name)
-        elif mode == 'rb':
-            return self.openForRead(name)
-        else:
-            raise Exception('No such mode.')
+        with self.lock:
+            if mode == 'wb':
+                return self.openForWrite(name)
+            elif mode == 'rb':
+                return self.openForRead(name)
+            else:
+                raise Exception('No such mode.')
     
     def list(self):
         logger.debug('List')
-        result = set()
-        result.union()
-        slowFiles = self.slowBundle.list()
-        fastFiles = self.fastBundle.list()
-        logger.debug('Slow files: %d' % len(slowFiles))
-        logger.debug('Fast files: %d' % len(fastFiles))
-        result = result.union(slowFiles)
-        result = result.union(fastFiles)
-        result = list(result)
-        logger.debug('Return Length %d' % len(result))
-        return result
+        with self.lock:
+            result = set()
+            result.union()
+            slowFiles = self.slowBundle.list()
+            fastFiles = self.fastBundle.list()
+            logger.debug('Slow files: %d' % len(slowFiles))
+            logger.debug('Fast files: %d' % len(fastFiles))
+            result = result.union(slowFiles)
+            result = result.union(fastFiles)
+            result = list(result)
+            logger.debug('Return Length %d' % len(result))
+            return result
     
     def delete(self, name):
         raise Exception('Not support.')
@@ -58,22 +60,38 @@ class Buffer:
             e.start()
     
     def openForWrite(self, name):
-        logger.debug('Open wb %s' % name)
         result = self.fastBundle.open(name, 'wb')
-        def preClose():
-            logger.debug('Closing %s' % name)
-            self.addQueue(name)
-            self.limitBufferSize()
-        def postClose():
-            logger.debug('Finish Close %s' % name)
-        return FileHook(result, preClose=preClose, postClose=postClose)
+        def onClose(close0):
+            with self.lock:
+                self.queue.append(name)
+                close0()
+                self.limitBufferSize()
+        return FileHook(result, onClose=onClose)
     
     def openForRead(self, name):
-        logger.debug('Open rb %s' % name)
-        if not self.fastBundle.exists(name):
-            logger.debug('Out of cache')
-            self.transferSlowBundleToFastBundle(name)
-        return self.fastBundle.open(name, 'rb')
+        if self.fastBundle.exists(name):
+            return self.fastBundle.open(name, 'rb')
+        else:
+            return self.openSlowBundleForRead(name)
+            
+    def openSlowBundleForRead(self, name):
+        result = FileShell()
+        def threadProc():
+            try:
+                result.fill(self.fetchSlowFileForRead(name))
+            except:
+                result.fail()
+                raise
+        return result
+    
+    def fetchSlowFileForRead(self, name):
+        logger.debug('Fetching slow file %s' % name)
+        with self.slowBundle.open(name, 'rb') as f1:
+            with self.fastBundle.protect(name):
+                with self.fastBundle.openIgnoreProtection(name, 'wb') as f2:
+                    from pclib import copystream
+                    copystream(f1, f2)
+                    return self.fastBundle.openIgnoreProtection(name, 'rb')
     
     def createTransferThread(self):
         return TransferThread(self.fastBundle, self.slowBundle, self.queue)
@@ -86,34 +104,26 @@ class Buffer:
             for e in mostUseless:
                 if currentBufferSize <= self.maxBufferSize:
                     break
-                if e in self.queue:
-                    logger.debug('%s is in queue' % e)
-                    continue
-                logger.debug('Current buffer size %s' % currentBufferSize)
                 fileSize = self.fastBundle.getSize(e)
-                logger.debug('Delete %s' % e)
-                from histo.bundle.safe import SafeProtection
-                try:
-                    self.fastBundle.delete(e)
-                except SafeProtection as ex:
-                    logger.debug('Delete not allowed %s' % e)
-                except Exception as ex:
-                    logger.debug('Delete error %s' % e)
-                    logger.exception(ex)
-                else:
-                    logger.debug('Delete ok %s' % e)
+                if self.deleteCache(e):
                     currentBufferSize -= fileSize
-
-    def addQueue(self, name):
-        self.queue.append(name)
     
-    def transferSlowBundleToFastBundle(self, name):
-        logger.debug('Transfer slow to fast %s' % name)
-        with self.slowBundle.open(name, 'rb') as f1:
-            with self.fastBundle.open(name, 'wb') as f2:
-                from pclib import copystream
-                copystream(f1, f2)
-                
+    def deleteCache(self, file):
+        if file in self.queue:
+            logger.debug('%s is in queue, should not delete' % file)
+            return False
+        from histo.bundle.safe import SafeProtection
+        try:
+            self.fastBundle.delete(file)
+            logger.debug('Delete %s ok' % file)
+            return True
+        except SafeProtection as e:
+            logger.debug('Delete %s failed: %s' % (file, repr(e)))
+        except Exception as e:
+            logger.exception(e)
+            logger.debug('Delete %s failed' % file)
+            return False
+
     def getCurrentBufferSize(self):
         return sum(map(self.fastBundle.getSize, self.fastBundle.list()))
     
@@ -133,7 +143,7 @@ class TaskQueue:
         self.lock = Lock()
     
     def __iter__(self):
-        return iter(self.queue)
+        return map(lambda x:x.value, iter(self.queue))
     
     def append(self, x):
         with self.lock:
@@ -187,7 +197,7 @@ class TaskQueue:
         def __setitem__(self, key, value):
             self.queue[key] = value
             self.save()
-            
+        
         def __iter__(self):
             return self.queue.__iter__()
         
@@ -297,10 +307,11 @@ class TransferThread(Thread):
                 copystream(f1, f2)
 
 class FileHook:
-    def __init__(self, file, preClose = None, postClose = None):
+    def __init__(self, file, onClose = None):
         self.file = file
-        self.preClose = self.denone(preClose)
-        self.postClose = self.denone(postClose)
+        #self.preClose = self.denone(preClose)
+        self.onClose = self.denone(onClose)
+        #self.postClose = self.denone(postClose)
     
     def read(self, limit):
         return self.file.read(limit)
@@ -309,13 +320,7 @@ class FileHook:
         return self.file.write(data)
     
     def close(self):
-        try:
-            self.preClose()
-        finally:
-            try:
-                self.file.close()
-            finally:
-                self.postClose()
+        self.onClose(self.file.close)
     
     def __enter__(self):
         return self
@@ -325,8 +330,46 @@ class FileHook:
     
     def denone(self, x):
         if x is None:
-            def empty():
+            def empty(*k):
                 pass
             return empty
         else:
             return x
+
+class FileShell:
+    def __init__(self):
+        from threading import Event
+        self.event = Event()
+        self.file = None
+    
+    def fill(self, file):
+        self.file = file
+        self.event.set()
+    
+    def fail(self):
+        self.event.set()
+    
+    def read(self, limit):
+        self.waitFill()
+        return self.read(limit)
+    
+    def write(self, data):
+        self.waitFill()
+        return self.file.write(data)
+    
+    def close(self):
+        self.waitFill()
+        return self.file.close()
+    
+    def __enter__(self):
+        self.waitFill()
+        return self.file.__enter__()
+    
+    def __exit__(self, *k):
+        self.waitFill()
+        return self.file.__exit__(*k)
+    
+    def waitFill(self):
+        self.event.wait()
+        if self.file is None:
+            raise Exception('File shell failed')

@@ -4,19 +4,18 @@ class Safe:
         self.writing = []
         self.reading = []
         self.files = bundle.list()
-        from threading import Lock
-        self.lock = Lock()
+        from threading import RLock
+        self.lock = RLock()
+        self.protection = []
         
     def open(self, name, mode):
-        if mode == 'wb':
-            return self.openForWrite(name)
-        elif mode == 'rb':
-            return self.openForRead(name)
-        else:
-            raise Exception('No such mode')
+        with self.lock:
+            self.assertNotProtected(name)
+            return self.openIgnoreProtection(name, mode)
     
     def delete(self, name):
         with self.lock:
+            self.assertNotProtected(name)
             self.assertNotUsing(name)
             self.bundle.delete(name)
             self.files.remove(name)
@@ -25,11 +24,30 @@ class Safe:
         return self.bundle.getSize(name)
     
     def exists(self, name):
-        return self.bundle.exists(name)
+        with self.lock:
+            self.assertNotProtected(name)
+            return self.bundle.exists(name)
     
     def list(self):
         with self.lock:
             return self.files[:]
+    
+    def openIgnoreProtection(self, name, mode):
+        with self.lock:
+            if mode == 'wb':
+                return self.openForWrite(name)
+            elif mode == 'rb':
+                return self.openForRead(name)
+            else:
+                raise Exception('No such mode')
+    
+    def protect(self, name):
+        class Result:
+            def __enter__(self):
+                self.protection.append(name)
+            def __exit__(self, *k):
+                self.protection.remove(name)
+        return Result()
     
     def openForWrite(self, name):
         with self.lock:
@@ -70,6 +88,10 @@ class Safe:
     def assertNotWriting(self, name):
         if name in self.writing:
             raise SafeProtection('%s is writing' % name)
+        
+    def assertNotProtected(self, name):
+        if name in self.protection:
+            raise SafeProtection('%s is protected' % name)
 
 class SafeProtection(Exception):
     pass
