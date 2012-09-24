@@ -79,11 +79,15 @@ class Buffer:
     def openSlowBundleForRead(self, name):
         result = FileShell()
         def threadProc():
+            from histo.bundle.safe import SafeProtection
             try:
                 logger.debug('Reading slow file %s' % name)
                 self.fetchSlowFileForRead(name)
                 logger.debug('Finish read slow %s' % name)
                 result.fill()
+            except SafeProtection as e:
+                logger.debug('Read failed %s: %s' % (name, repr(e)))
+                result.fail()
             except:
                 logger.debug('Read failed %s' % name)
                 result.fail()
