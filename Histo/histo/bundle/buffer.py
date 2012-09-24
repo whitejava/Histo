@@ -279,9 +279,13 @@ class TransferThread(Thread):
             self.queue.feedBack(fetchId, result)
     
     def runTask(self, task):
+        from histo.bundle.safe import SafeProtection
         try:
             self.runTask2(task)
             return True
+        except SafeProtection as e:
+            logger.debug(repr(e))
+            return False
         except Exception as e:
             logger.exception(e)
             return False

@@ -28,7 +28,8 @@ class Safe:
         return self.bundle.exists(name)
     
     def list(self):
-        return self.files[:]
+        with self.lock:
+            return self.files[:]
     
     def openForWrite(self, name):
         with self.lock:
