@@ -1,8 +1,14 @@
 def main():
     import logging
     global logger
-    logging.basicConfig(format='%(asctime)s %(thread)08d %(message)s', level=logging.DEBUG)
+    format = '%(asctime)s %(thread)08d %(message)s'
+    logging.basicConfig(format=format, level=logging.DEBUG)
+    from pclib import timetext
+    handler = logging.FileHandler('D:\\%s.log' % timetext())
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter(format))
     logger = logging.getLogger()
+    logger.addHandler(handler)
     bundle = Bundle()
     global files
     files = []
