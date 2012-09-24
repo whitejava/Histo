@@ -1,5 +1,8 @@
 __all__ = ['Buffer']
 
+import logging
+logger = logging.getLogger()
+
 class Buffer:
     def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount):
         self.fastBundle = fastBundle
@@ -22,7 +25,10 @@ class Buffer:
             raise Exception('No such mode.')
     
     def list(self):
-        return self.slowBundle.list()
+        logger.debug('List')
+        result = self.slowBundle.list()
+        logger.debug('Return Length %d' % len(result))
+        return result
     
     def delete(self, name):
         raise Exception('Not support.')
@@ -41,14 +47,19 @@ class Buffer:
             e.start()
     
     def openForWrite(self, name):
+        logger.debug('Open wb %s' % name)
         result = self.fastBundle.open(name, 'wb')
         def postClose():
+            logger.debug('Closing %s' % name)
             self.limitBufferSize()
             self.addQueue(name)
+            logger.debug('Finish Close %s' % name)
         return FileHook(result, postClose = postClose)
     
     def openForRead(self, name):
+        logger.debug('Open rb %s' % name)
         if not self.fastBundle.exists(name):
+            logger.debug('Out of cache')
             self.transferSlowBundleToFastBundle(name)
         return self.fastBundle.open(name)
     
@@ -56,10 +67,14 @@ class Buffer:
         return TransferThread(self.fastBundle, self.slowBundle, self.queue)
     
     def limitBufferSize(self):
+        logger.debug('Limit buffer size')
         currentBufferSize = self.getCurrentBufferSize()
         mostUseless = self.getMostUseless()
         for e in mostUseless:
             try:
+                if e in self.queue:
+                    continue
+                logger.debug('Delete %s' % e)
                 self.fastBundle.delete(e)
                 currentBufferSize -= self.fastBundle.getSize(e)
                 if currentBufferSize <= self.maxBufferSize:
@@ -71,6 +86,7 @@ class Buffer:
         self.queue.append(name)
     
     def transferSlowBundleToFastBundle(self, name):
+        logger.debug('Download mail')
         with self.slowBundle.open(name, 'rb') as f1:
             with self.fastBundle.open(name, 'wb') as f2:
                 from pclib import copystream
@@ -96,6 +112,7 @@ class TaskQueue:
     
     def append(self, x):
         with self.lock:
+            logger.debug('Append %s' % x)
             self.queue.append(self.Task(x))
             self.semaphore.release()
         
@@ -103,11 +120,13 @@ class TaskQueue:
         self.semaphore.acquire()
         with self.lock:
             task = self.findUnfetch()
+            logger.debug('Fetch %s' % task)
             self.fetched.append(task)
             return task, task.value
     
     def feedBack(self, fetchId, result):
         with self.lock:
+            logger.debug('Feed back %s %s' % (fetchId, result))
             self.fetched.remove(fetchId)
             if result:
                 self.queue.remove(fetchId)
@@ -233,8 +252,11 @@ class TransferThread(Thread):
     
     def run(self):
         while True:
+            logger.debug('Fetching task')
             fetchId, task = self.queue.fetch()
+            logger.debug('Doing task %s' % task)
             result = self.runTask(task)
+            logger.debug('Task result: %s' % result)
             self.queue.feedBack(fetchId, result)
     
     def runTask(self, task):
