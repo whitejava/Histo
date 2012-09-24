@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class Limit:
     def __init__(self, bundle, writeSpeed, readSpeed):
