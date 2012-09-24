@@ -42,11 +42,12 @@ class Safe:
                 raise Exception('No such mode')
     
     def protect(self, name):
+        self2 = self
         class Result:
             def __enter__(self):
-                self.protection.append(name)
+                self2.protection.append(name)
             def __exit__(self, *k):
-                self.protection.remove(name)
+                self2.protection.remove(name)
         return Result()
     
     def openForWrite(self, name):
