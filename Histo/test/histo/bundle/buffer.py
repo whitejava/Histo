@@ -1,7 +1,7 @@
 def main():
     import logging
     global logger
-    logging.basicConfig(format='$asctime $thread $message', style='$', level=logging.DEBUG)
+    logging.basicConfig(format='$asctime $module $thread $message', style='$', level=logging.DEBUG)
     logger = logging.getLogger()
     bundle = Bundle()
     global files

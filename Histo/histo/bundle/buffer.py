@@ -71,14 +71,15 @@ class Buffer:
         currentBufferSize = self.getCurrentBufferSize()
         mostUseless = self.getMostUseless()
         for e in mostUseless:
+            logger.debug('Current buffer size %s' % currentBufferSize)
+            if currentBufferSize <= self.maxBufferSize:
+                break
             try:
                 if e in self.queue:
                     continue
                 logger.debug('Delete %s' % e)
                 self.fastBundle.delete(e)
                 currentBufferSize -= self.fastBundle.getSize(e)
-                if currentBufferSize <= self.maxBufferSize:
-                    break
             except:
                 pass
 

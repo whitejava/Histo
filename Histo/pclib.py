@@ -61,13 +61,13 @@ def copystream(input, output, limit = None, chunksize = 128*1024, buffercount = 
         def run(self):
             b = self.buffer
             for e in chunkreader(input, limit=limit, chunksize=chunksize):
-                b.push(e)
-            b.push(None)
+                b.put(e)
+            b.put(None)
     rthread = readthread(b)
     rthread.start()
     result = 0
     while True:
-        e = b.pop()
+        e = b.get()
         if e is None:
             break
         output.write(e)
