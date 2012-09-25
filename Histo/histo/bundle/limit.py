@@ -27,8 +27,9 @@ class Limiter:
     def __init__(self, maxSpeed):
         self.maxSpeed = maxSpeed
         self.maxInterval = 0.01
+        self.interval = 0.01
+        self.lastTime = None
         self.currentSpeed = 0
-        self.lastTime = 0
         from threading import Lock
         self.lock = Lock()
     
@@ -37,17 +38,40 @@ class Limiter:
     
     def requestBytes(self, limit):
         with self.lock:
-            maxBytes = int(self.maxSpeed * self.maxInterval)
-            if maxBytes == 0:
-                maxBytes = 1
-            bytes2 = min(limit, maxBytes)
-            sleep = bytes2 / self.maxSpeed
-            import time
-            time.sleep(sleep)
-            return bytes2
+            #logger.debug('Sleeping')
+            self.sleep()
+            #logger.debug('After sleep')
+            maxBytes = self.getMaxBytes()
+            #logger.debug('Max bytes %s' % maxBytes)
+            result = min(maxBytes, limit)
+            #logger.debug('Result %s' % result)
+            self.emitSpeed(result)
+            #logger.debug('Emit speed')
+            return result
     
     def success(self, size):
         pass
+    
+    def emitSpeed(self, size):
+        currentTime = self.getCurrentTime()
+        if self.lastTime is not None:
+            timeDelta = currentTime - self.lastTime
+            import math
+            self.currentSpeed *= math.exp(-timeDelta)
+        self.currentSpeed += size
+        self.lastTime = currentTime
+    
+    def sleep(self):
+        import time
+        time.sleep(self.interval)
+        
+    def getMaxBytes(self):
+        result = int((self.maxSpeed/0.632121 - self.currentSpeed) * self.interval)
+        return max(1, result)
+    
+    def getCurrentTime(self):
+        import time
+        return time.clock()
 
 class Request:
     def __init__(self, limiter, requestBytes):
@@ -108,7 +132,7 @@ class LimitWriter:
         for e in request:
             self.file.write(data.read(e))
             request.success(e)
-            
+
     def close(self):
         logger.debug('Close %s' % self.file)
         self.file.close()

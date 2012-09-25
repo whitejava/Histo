@@ -31,6 +31,7 @@ def Bundle():
     root = 'D:\\%s-test-buffer' % timetext()
     fast = Local(os.path.join(root, 'fast'))
     slow = Slow(os.path.join(root, 'slow'))
+    #return slow
     queueFile = os.path.join(root, 'queue')
     usageLogFile = os.path.join(root, 'usage-log')
     maxBufferSize = 10*1024*1024
@@ -44,6 +45,7 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
+    return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
@@ -61,7 +63,7 @@ def TestThread(bundle):
     return Thread(target=testLoop, args=(bundle,))
     
 def testLoop(bundle):
-    while True:
+    for _ in range(10000):
         try:
             randomAction(bundle)
         except Exception as e:

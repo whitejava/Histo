@@ -1,3 +1,5 @@
+import logging as logger
+
 class Delay:
     def __init__(self, bundle, delay):
         self.bundle = bundle
@@ -24,5 +26,6 @@ class Delay:
         return abs(random.gauss(self.delay, 0.1))
     
     def delay2(self, delay):
+        logger.debug('Delay %s' % delay)
         import time
         time.sleep(delay)

@@ -88,10 +88,10 @@ class Buffer:
             except SafeProtection as e:
                 logger.debug('Read failed %s: %s' % (name, repr(e)))
                 result.fail()
-            except:
+            except Exception as e:
                 logger.debug('Read failed %s' % name)
                 result.fail()
-                raise
+                logger.debug(e)
         from threading import Thread
         Thread(target=threadProc).start()
         return result
@@ -105,8 +105,8 @@ class Buffer:
                 with self.fastBundle.openIgnoreProtection(name, 'wb') as f2:
                     logger.debug('Opened fast file')
                     logger.debug('Copying')
-                    from pclib import copystream
-                    copystream(f1, f2)
+                    from pclib import copystream2
+                    copystream2(f1, f2)
                     logger.debug('Finish copying')
                 result = self.fastBundle.openIgnoreProtection(name, 'rb')
                 logger.debug('Reopen fast file')
@@ -371,24 +371,29 @@ class FileShell:
         self.event.set()
     
     def read(self, limit):
+        logger.debug('Read')
         self.waitFill()
-        return self.read(limit)
+        return self.file.read(limit)
     
     def write(self, data):
+        logger.debug('Write')
         self.waitFill()
         return self.file.write(data)
     
     def close(self):
+        logger.debug('Close')
         self.waitFill()
         return self.file.close()
     
     def __enter__(self):
+        logger.debug('Enter')
         self.waitFill()
-        return self.file.__enter__()
+        return self
     
     def __exit__(self, *k):
+        logger.debug('Exit')
         self.waitFill()
-        return self.file.__exit__(*k)
+        self.close()
     
     def waitFill(self):
         logger.debug('Waiting filling')
