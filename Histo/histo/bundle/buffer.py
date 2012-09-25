@@ -371,12 +371,10 @@ class FileShell:
         self.event.set()
     
     def read(self, limit):
-        logger.debug('Read')
         self.waitFill()
         return self.file.read(limit)
     
     def write(self, data):
-        logger.debug('Write')
         self.waitFill()
         return self.file.write(data)
     
@@ -396,7 +394,8 @@ class FileShell:
         self.close()
     
     def waitFill(self):
-        logger.debug('Waiting filling')
+        if not self.event.is_set():
+            logger.debug('Waiting filling')
         self.event.wait()
         if self.file is None:
             raise Exception('File shell failed')
