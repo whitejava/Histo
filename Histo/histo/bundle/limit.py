@@ -134,7 +134,6 @@ class LimitWriter:
             request.success(e)
 
     def close(self):
-        logger.debug('Close %s' % self.file)
         self.file.close()
         
     def __enter__(self):
