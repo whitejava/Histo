@@ -50,7 +50,7 @@ def Slow(root):
     result = Local(root)
     result = Error(result, 0.1)
     result = Limit(result, 200000, 200000)
-    result = Delay(result, 1.0)
+    #result = Delay(result, 1.0)
     return result
 
 def Cipher():

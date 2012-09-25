@@ -53,6 +53,12 @@ class ErrorWriter:
         self.file.close()
         self.simulator.simulateError()
     
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *k):
+        self.close()
+    
 class ErrorReader:
     def __init__(self, file, simulator):
         self.file = file
@@ -67,6 +73,12 @@ class ErrorReader:
     def close(self):
         self.file.close()
         self.simulator.simulateError()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *k):
+        self.close()
         
 class PointError:
     def __init__(self, simulator):
