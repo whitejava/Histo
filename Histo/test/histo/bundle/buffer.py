@@ -31,7 +31,7 @@ def Bundle():
     root = 'D:\\%s-test-buffer' % timetext()
     fast = Local(os.path.join(root, 'fast'))
     slow = Slow(os.path.join(root, 'slow'))
-    #return slow
+    return slow
     queueFile = os.path.join(root, 'queue')
     usageLogFile = os.path.join(root, 'usage-log')
     maxBufferSize = 10*1024*1024
@@ -45,7 +45,7 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
-    return Fast(root)
+    #return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
@@ -95,6 +95,7 @@ def testRead(bundle):
     logger.debug('File %s' % file)
     with bundle.open(file, 'rb') as f:
         logger.debug('Opened file')
+        logger.debug('Reading')
         assert readAll(f) == FileData(file)
     logger.debug('Finish read %s' % file)
 
@@ -104,9 +105,11 @@ def readAll(file):
     import random
     while True:
         length = abs(int(random.gauss(100,100))) + 1
+        logger.debug('Reading %s' % length)
         read = file.read(length)
         if not read:
             break
+        logger.debug('Read Result %s' % len(read))
         result.write(read)
     return result.getvalue()
 
