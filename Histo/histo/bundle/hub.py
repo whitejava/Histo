@@ -3,6 +3,8 @@ class Hub:
         self.bundles = bundles
         self.volumes = volumes
         self.state = state
+        from threading import Lock
+        self.lock = Lock()
         
     def open(self, name, mode):
         if mode == 'rb':
@@ -38,15 +40,17 @@ class Hub:
             i,bundle = self.findBigEnoughBundle(size)
             with bundle.open(name, 'wb') as f:
                 f.write(data)
-            self.state['Usage'][i] += size
+            with self.lock:
+                self.state['Usage'][i] += size
         from .filehook import FileHook
         return FileHook(result, onClose=onClose)
     
     def findBigEnoughBundle(self, size):
-        for i in range(len(self.bundles)):
-            if self.getBundleRemainSize(i) >= size:
-                return i,self.bundles[i]
-        raise Exception('Space not enough')
+        with self.lock:
+            for i in range(len(self.bundles)):
+                if self.getBundleRemainSize(i) >= size:
+                    return i,self.bundles[i]
+            raise Exception('Space not enough')
     
     def getBundleRemainSize(self, i):
         totalSize = self.volumes[i]
