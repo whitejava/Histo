@@ -32,8 +32,8 @@ class Hub:
         import io
         result = io.BytesIO()
         def onClose(close0):
-            close0()
             data = result.getvalue()
+            close0()
             size = len(data)
             bundle = self.findBigEnoughBundle(size)
             with bundle.open(name, 'wb') as f:
