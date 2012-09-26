@@ -51,3 +51,9 @@ class Hub:
         totalSize = self.volumes[i]
         usedSize = self.state['Usage'][i]
         return totalSize - usedSize
+    
+    def findContainerBundle(self, name):
+        for e in self.bundles:
+            if name in e.list():
+                return e
+        raise Exception('Container bundle not found.')
