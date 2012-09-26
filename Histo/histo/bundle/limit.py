@@ -42,6 +42,8 @@ class Limiter:
             self.sleep()
             #logger.debug('After sleep')
             maxBytes = self.getMaxBytes()
+            if maxBytes <= 0:
+                logger.error('Max bytes is 0')
             #logger.debug('Max bytes %s' % maxBytes)
             result = min(maxBytes, limit)
             #logger.debug('Result %s' % result)
@@ -66,7 +68,7 @@ class Limiter:
         time.sleep(self.interval)
         
     def getMaxBytes(self):
-        result = int((self.maxSpeed/0.632121 - self.currentSpeed) * self.interval)
+        result = int((self.maxSpeed/0.5 - self.currentSpeed) * self.interval)
         return max(1, result)
     
     def getCurrentTime(self):
@@ -92,6 +94,8 @@ class Request:
             if remainBytes <= 0:
                 break
             requestBytes = self.limiter.requestBytes(remainBytes)
+            if requestBytes == 0:
+                logger.error('Request bytes is 0')
             yield requestBytes
             remainBytes -= requestBytes
 

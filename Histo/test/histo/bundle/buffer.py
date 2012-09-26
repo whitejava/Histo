@@ -1,4 +1,15 @@
 def main():
+    initLogger()
+    bundle = Bundle()
+    global files
+    files = []
+    from itertools import count
+    global fileNames
+    fileNames = map(getFileName, count(0))
+    for _ in range(10):
+        TestThread(bundle).start()
+
+def initLogger():
     import logging
     global logger
     format = '%(asctime)s %(thread)08d %(message)s'
@@ -9,14 +20,6 @@ def main():
     handler.setFormatter(logging.Formatter(format))
     logger = logging.getLogger()
     logger.addHandler(handler)
-    bundle = Bundle()
-    global files
-    files = []
-    from itertools import count
-    global fileNames
-    fileNames = map(getFileName, count(0))
-    for _ in range(10):
-        TestThread(bundle).start()
 
 def getFileName(x):
     import hashlib
@@ -48,7 +51,7 @@ def Slow(root):
     #return Fast(root)
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
-    result = Error(result, 0.1)
+    #result = Error(result, 0.1)
     result = Limit(result, 200000, 200000)
     #result = Delay(result, 1.0)
     return result
