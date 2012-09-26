@@ -17,7 +17,10 @@ class TestThread(Thread):
         
     def run(self):
         for _ in range(self.actionCount):
-            self.randomAction()
+            try:
+                self.randomAction()
+            except Exception as e:
+                logger.exception(e)
     
     def randomAction(self):
         actions = [self.testWrite, self.testRead, self.testList]

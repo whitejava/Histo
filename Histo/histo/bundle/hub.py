@@ -15,7 +15,7 @@ class Hub:
     def delete(self, name):
         raise Exception('Not supported')
     
-    def list(self, name):
+    def list(self):
         result = set()
         for e in self.bundles:
             result = result.union(e.list())
@@ -33,10 +33,11 @@ class Hub:
         result = io.BytesIO()
         def onClose(close0):
             close0()
-            size = result.tell()
+            result = result.getvalue()
+            size = len(result)
             bundle = self.findBigEnoughBundle(size)
             with bundle.open(name, 'wb') as f:
-                f.write(result.getvalue())
+                f.write(result)
         from .filehook import FileHook
         return FileHook(result, onClose=onClose)
     
