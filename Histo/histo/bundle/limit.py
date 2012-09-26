@@ -106,9 +106,13 @@ class LimitReader:
     def read(self, limit):
         import io
         result = io.BytesIO()
+        logger.debug('[ Request limiter')
         request = self.limiter.request(limit)
+        logger.debug(' ]')
         for e in request:
             read = self.file.read(e)
+            if not read:
+                break
             result.write(read)
             request.success(len(read))
         return result.getvalue()
