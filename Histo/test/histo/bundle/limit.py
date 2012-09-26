@@ -18,7 +18,7 @@ def initLogger():
 def Bundle():
     from histo.bundle import Local, Limit
     from pclib import timetext
-    return Limit(Local('D:\\%s' % timetext()), 100000, 200000)
+    return Limit(Local('D:\\%s' % timetext()), 200000, 200000)
     
 if __name__ == '__main__':
     main()

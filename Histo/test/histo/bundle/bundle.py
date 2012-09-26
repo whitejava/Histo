@@ -1,16 +1,18 @@
 import logging as logger
 
-def testBundle(bundle, threadCount=10, actionCount=9999999999999999):
+def testBundle(bundle, threadCount=10, actionCount=9999999999999999, fileSize=1024*1024):
+    fileNames = FileNames()
     for _ in range(threadCount):
-        TestThread(bundle, actionCount).start()
+        TestThread(bundle, actionCount, fileNames, fileSize).start()
 
 from threading import Thread
 class TestThread(Thread):
-    def __init__(self, bundle, actionCount):
+    def __init__(self, bundle, actionCount, fileNames, fileSize):
         Thread.__init__(self)
         self.bundle = bundle
         self.actionCount = actionCount
-        self.fileNames = FileNames()
+        self.fileNames = fileNames
+        self.fileSize = fileSize
         self.files = []
         
     def run(self):
@@ -31,7 +33,7 @@ class TestThread(Thread):
         with self.bundle.open(file, 'wb') as f:
             logger.debug(' ]')
             logger.debug('[ Generate file data')
-            data = FileData(file)
+            data = self.FileData(file)
             logger.debug(' ]')
             logger.debug('[ Write file')
             writeAll(data, f)
@@ -58,7 +60,7 @@ class TestThread(Thread):
             read = readAll(f)
             logger.debug(' ] length = %d' % len(read))
             logger.debug('[ Check read result')
-            assert FileData(file) == read
+            assert self.FileData(file) == read
             logger.debug(' ]')
             logger.debug('[ Close file')
         logger.debug(' ]')
@@ -88,17 +90,17 @@ class TestThread(Thread):
         import random
         return random.choice(self.files)
     
+    def FileData(self, file):
+        from random import Random
+        r = Random(file)
+        length = abs(int(r.gauss(self.fileSize, self.fileSize/3)))
+        return bytes([r.randrange(256) for _ in range(length)])
+
 def FileNames():
     from itertools import count
     from hashlib import md5
     for i in count():
         yield '%04d-' % i + md5(bytes(str(i),'utf8')).hexdigest()[:8]
-
-def FileData(file):
-    from random import Random
-    r = Random(file)
-    length = abs(int(r.gauss(1024*1024,10000)))
-    return bytes([r.randrange(256) for _ in range(length)])
 
 def readAll(file):
     result = bytearray()

@@ -38,17 +38,11 @@ class Limiter:
     
     def requestBytes(self, limit):
         with self.lock:
-            #logger.debug('Sleeping')
-            self.sleep()
-            #logger.debug('After sleep')
+            if self.needSleep():
+                self.sleep()
             maxBytes = self.getMaxBytes()
-            if maxBytes <= 0:
-                logger.error('Max bytes is 0')
-            #logger.debug('Max bytes %s' % maxBytes)
             result = min(maxBytes, limit)
-            #logger.debug('Result %s' % result)
             self.emitSpeed(result)
-            #logger.debug('Emit speed')
             return result
     
     def success(self, size):
@@ -62,6 +56,11 @@ class Limiter:
             self.currentSpeed *= math.exp(-timeDelta)
         self.currentSpeed += size
         self.lastTime = currentTime
+    
+    def needSleep(self):
+        maxBytes = self.getMaxBytes()
+        stepBytes = self.maxSpeed * self.interval
+        return stepBytes * 2 < maxBytes
     
     def sleep(self):
         import time
