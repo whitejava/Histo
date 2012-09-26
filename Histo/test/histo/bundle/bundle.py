@@ -104,14 +104,14 @@ def FileNames():
 
 def readAll(file):
     result = bytearray()
-    for e in GaussReader(file, 100,100):
+    for e in GaussReader(file, 10000, 3000):
         logger.debug('Read part, length=%d' % len(e))
         result.extend(e)
     return bytes(result)
 
 def writeAll(data, file):
     from io import BytesIO
-    for e in GaussReader(BytesIO(data), 100, 100):
+    for e in GaussReader(BytesIO(data), 10000, 3000):
         logger.debug('[ Write data, length=%d' % len(e))
         file.write(e)
         logger.debug(' ]')
