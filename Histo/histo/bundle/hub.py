@@ -35,9 +35,10 @@ class Hub:
             data = result.getvalue()
             close0()
             size = len(data)
-            bundle = self.findBigEnoughBundle(size)
+            i,bundle = self.findBigEnoughBundle(size)
             with bundle.open(name, 'wb') as f:
                 f.write(data)
+            self.state['Usage'][i] += size
         from .filehook import FileHook
         return FileHook(result, onClose=onClose)
     
@@ -53,7 +54,7 @@ class Hub:
         return totalSize - usedSize
     
     def findContainerBundle(self, name):
-        for e in self.bundles:
+        for i,e in enumerate(self.bundles):
             if name in e.list():
-                return e
+                return i,e
         raise Exception('Container bundle not found.')
