@@ -45,7 +45,7 @@ class Hub:
     def findBigEnoughBundle(self, size):
         for i in range(len(self.bundles)):
             if self.getBundleRemainSize(i) >= size:
-                return self.bundles[i]
+                return i,self.bundles[i]
         raise Exception('Space not enough')
     
     def getBundleRemainSize(self, i):
@@ -54,7 +54,7 @@ class Hub:
         return totalSize - usedSize
     
     def findContainerBundle(self, name):
-        for i,e in enumerate(self.bundles):
+        for e in self.bundles:
             if name in e.list():
-                return i,e
+                return e
         raise Exception('Container bundle not found.')
