@@ -26,6 +26,7 @@ def Bundle():
     
 def BufferBundle(root, slowBundle=None):
     from histo.bundle import Buffer, Local
+    import os.path
     fastBundle = Local(os.path.join(root, 'Fast'))
     if slowBundle is None:
         slowBundle = HubBundle(os.path.join(root, 'Slow'))
@@ -34,6 +35,13 @@ def BufferBundle(root, slowBundle=None):
     maxBufferSize = 100
     threadCount = 3
     return Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount)
+
+def HubBundle(root):
+    count = 100
+    from histo.bundle import Local, Hub
+    import os.path
+    bundles = [Local(os.path.join(root, 'part%02d' % i)) for i in range(count)]
+    return Hub(bundles, [10000000]*count, {'Usage':[0]*count})
 
 if __name__ == '__main__':
     main()

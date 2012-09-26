@@ -36,12 +36,7 @@ class Hub:
         def onClose(close0):
             data = result.getvalue()
             close0()
-            size = len(data)
-            i,bundle = self.findBigEnoughBundle(size)
-            with bundle.open(name, 'wb') as f:
-                f.write(data)
-            with self.lock:
-                self.state['Usage'][i] += size
+            self.writeData(name, data)
         from .filehook import FileHook
         return FileHook(result, onClose=onClose)
     
@@ -62,3 +57,11 @@ class Hub:
             if name in e.list():
                 return e
         raise Exception('Container bundle not found.')
+    
+    def writeData(self, name, data):
+        size = len(data)
+        i,bundle = self.findBigEnoughBundle(size)
+        with bundle.open(name, 'wb') as f:
+            f.write(data)
+        with self.lock:
+            self.state['Usage'][i] += size
