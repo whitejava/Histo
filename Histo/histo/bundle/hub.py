@@ -33,11 +33,11 @@ class Hub:
         result = io.BytesIO()
         def onClose(close0):
             close0()
-            result = result.getvalue()
-            size = len(result)
+            data = result.getvalue()
+            size = len(data)
             bundle = self.findBigEnoughBundle(size)
             with bundle.open(name, 'wb') as f:
-                f.write(result)
+                f.write(data)
         from .filehook import FileHook
         return FileHook(result, onClose=onClose)
     
