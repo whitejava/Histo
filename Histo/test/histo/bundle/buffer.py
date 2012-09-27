@@ -37,6 +37,8 @@ def Fast(root):
     return Local(root)
 
 def Slow(root):
+    from histo.bundle import Mail
+    return Mail('imap.gmail.com', 993, 'cpc.histo.d0', 'fae39928ef', 'cpc.histo.d0@gmail.com', 'histo@caipeichao.com')
     from histo.bundle import Error, Delay, Limit, Local
     result = Local(root)
     result = Error(result, 0.1)
