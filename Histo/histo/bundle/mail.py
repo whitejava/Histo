@@ -76,7 +76,6 @@ class Mail:
     
     def openForRead2(self, connection, name):
         data = connection.fetch(str(self.getMailIdByName(name)), '(RFC822)')
-        logger.debug(repr(data))
         emailBody = data[1][0][1]
         import email
         mail = email.message_from_string(str(emailBody,'utf8'))
