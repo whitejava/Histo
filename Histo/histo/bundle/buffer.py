@@ -69,6 +69,7 @@ class Buffer:
         return FileHook(result, onClose=onClose)
     
     def openForRead(self, name):
+        self.usageLog.log(name)
         if self.fastBundle.exists(name):
             logger.debug('Read from cache')
             return self.fastBundle.open(name, 'rb')
