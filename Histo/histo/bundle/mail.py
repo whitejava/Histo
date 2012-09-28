@@ -9,6 +9,7 @@ def retry(times):
                     return f(*k, **kw)
                 except Exception as e:
                     logger.debug('Exception in retry %d: %s' % (i, repr(e)))
+                    logger.exception(e)
                     lastException = e
             raise lastException
         return b
