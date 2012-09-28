@@ -1,3 +1,16 @@
+import logging as logger
+
+def retry(times):
+    def a(f):
+        def b(*k, **kw):
+            for i in range(times):
+                try:
+                    return f(*k, **kw)
+                except Exception as e:
+                    logger.debug('Exception in retry %d: %s' % (i, repr(e)))
+        return b
+    return a
+
 class Mail:
     def __init__(self, host, port, user, password, receiver, sender):
         self.host = host
@@ -9,6 +22,7 @@ class Mail:
         from threading import Lock
         self.lock = Lock()
     
+    @retry(10)
     def open(self, name, mode):
         if mode == 'rb':
             return self.openForRead(name)
@@ -17,13 +31,16 @@ class Mail:
         else:
             raise Exception('No such mode.')
     
+    @retry(10)
     def delete(self, name):
         raise Exception('Not impl')
     
+    @retry(10)
     def list(self):
         self.files = self.listFiles()
         return [e[1] for e in self.files]
     
+    @retry(10)
     def getTotalSize(self):
         return sum([e[1] for e in self.listFiles()])
     
@@ -34,7 +51,7 @@ class Mail:
                 mails = mails[1][0]
                 mails = str(mails,'utf8').split()
                 mails2 = ','.join(mails)
-                result = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
+                result = connection.fetch(mails2, '(UID BODY[HEADER.FIELDS (SUBJECT)])')
                 result = result[1][::2]
                 result = [str(e[1], 'utf8') for e in result]
                 for e in result:
