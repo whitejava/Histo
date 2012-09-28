@@ -63,7 +63,7 @@ def FinalBundle(config):
     fastBundle = Local(config['CachePath'])
     mailBundles = MailBundles(config['MailBundles'])
     volumes = config['Volumes']
-    slowBundle = Hub(mailBundles, volumes, state)
+    slowBundle = Hub(mailBundles, volumes)
     cipher = Cipher(config['Cipher'])
     queueFile = config['QueueFile']
     usageLogFile = config['UsageLogFile']
@@ -142,6 +142,7 @@ class HistoServer(ObjectServer):
         indexItem = self.generateIndexItem(time, name, dataSize, dataCodes, md5, archivePath)
         indexCodes = self.pickleToDataBundle(KeySets.encode(1, indexItem))
         newState = self.generateNewState(indexCodes)
+        self.state = newState
         self.pickleToStateBundle(KeySets.encode(0, newState))
         self.index.add(indexItem)
         self.deleteFolder(folder)

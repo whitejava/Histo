@@ -24,6 +24,9 @@ class Mail:
         self.files = self.listFiles()
         return [e[1] for e in self.files]
     
+    def getTotalSize(self):
+        return sum([e[1] for e in self.listFiles()])
+    
     def listFiles(self):
         with self.lock:
             with self.Connection() as connection:
@@ -38,7 +41,7 @@ class Mail:
                     assert e.startswith('Subject: ')
                     assert e.endswith('\r\n\r\n')
                 result = [e[9:-4] for e in result]
-                return list(zip(map(int, mails), result))
+                return [MailSubject.decode(e) for e in zip(map(int, mails), result)]
     
     def openForRead(self, name):
         with self.Connection() as connection:
@@ -118,14 +121,29 @@ class MailWriter:
         return self.buffer.write(data)
         
     def close(self):
-        sendMail(self.sender, self.receiver, self.name, '', self.name, self.buffer.getvalue())
+        data = self.buffer.getvalue()
+        size = len(data)
+        subject = MailSubject.encode(self.name, size)
+        sendMail(self.sender, self.receiver, subject, '', self.name, data)
     
     def __enter__(self):
         return self
     
     def __exit__(self, *k):
         self.close()
+
+class MailSubject:
+    @staticmethod
+    def encode(name, size):
+        return '%08d - %s' % (size, name)
     
+    @staticmethod
+    def decode(string):
+        assert string[8:11] == ' - '
+        size = string[:8]
+        name = string[11:]
+        return size, name
+
 def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = [False]):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText

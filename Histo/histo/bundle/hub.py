@@ -1,8 +1,8 @@
 class Hub:
-    def __init__(self, bundles, volumes, state):
+    def __init__(self, bundles, volumes):
         self.bundles = bundles
         self.volumes = volumes
-        self.state = state
+        self.state = self.getState()
         from threading import Lock
         self.lock = Lock()
         
@@ -65,3 +65,6 @@ class Hub:
             f.write(data)
         with self.lock:
             self.state['Usage'][i] += size
+            
+    def getUsageState(self):
+        return [e.getTotalSize() for e in self.bundles]
