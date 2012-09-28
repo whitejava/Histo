@@ -54,7 +54,7 @@ class Mail:
                 mails = mails[1][0]
                 mails = str(mails,'utf8').split()
                 mails2 = ','.join(mails)
-                response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
+                response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')
                 subjects = parseResponse(response)
                 result = []
                 for i in range(len(subjects)):
