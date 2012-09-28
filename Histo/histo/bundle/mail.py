@@ -41,11 +41,11 @@ class Mail:
     
     @retry(10)
     def list(self):
-        return [e[1] for e in self.listFiles()]
+        return [e['Name'] for e in self.listFiles()]
     
     @retry(10)
     def getTotalSize(self):
-        return sum([e[1] for e in self.listFiles()])
+        return sum([e['Size'] for e in self.listFiles()])
     
     def listFiles(self):
         with self.lock:
@@ -54,9 +54,17 @@ class Mail:
                 mails = mails[1][0]
                 mails = str(mails,'utf8').split()
                 mails2 = ','.join(mails)
-                response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')
+                response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (Subject)])')
                 subjects = parseResponse(response)
-                return [MailSubject.decode(e) for e in subjects]
+                result = []
+                for i in range(len(subjects)):
+                    d = dict()
+                    d['MailID'] = int(mails[i])
+                    x = MailSubject.decode(subjects[i])
+                    d['Size'] = x[0]
+                    d['Name'] = x[1]
+                    result.append(d)
+                return result
     
     def openForRead(self, name):
         with self.Connection() as connection:
@@ -83,8 +91,8 @@ class Mail:
     
     def getMailIdByName(self, name):
         for e in self.listFiles():
-            if e[1] == name:
-                return e[0]
+            if e['Name'] == name:
+                return e['MailID']
         raise Exception('No such mail')
     
     def Connection(self):
