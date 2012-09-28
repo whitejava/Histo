@@ -1,18 +1,19 @@
 import logging as logger
 
-def testBundle(bundle, threadCount=10, actionCount=9999999999999999, fileSize=1024*1024):
+def testBundle(bundle, threadCount=10, actionCount=9999999999999999, fileSize=1024*1024, extraActions=[]):
     fileNames = FileNames()
     for _ in range(threadCount):
-        TestThread(bundle, actionCount, fileNames, fileSize).start()
+        TestThread(bundle, actionCount, fileNames, fileSize, extraActions).start()
 
 from threading import Thread
 class TestThread(Thread):
-    def __init__(self, bundle, actionCount, fileNames, fileSize):
+    def __init__(self, bundle, actionCount, fileNames, fileSize, extraActions):
         Thread.__init__(self)
         self.bundle = bundle
         self.actionCount = actionCount
         self.fileNames = fileNames
         self.fileSize = fileSize
+        self.extraActions = extraActions
         self.files = []
         
     def run(self):
@@ -23,7 +24,7 @@ class TestThread(Thread):
                 logger.exception(e)
     
     def randomAction(self):
-        actions = [self.testWrite, self.testRead, self.testList]
+        actions = [self.testWrite, self.testRead, self.testList] + self.extraActions
         import random
         random.choice(actions)()
     

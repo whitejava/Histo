@@ -16,13 +16,14 @@ def retry(times):
     return a
 
 class Mail:
-    def __init__(self, host, port, user, password, receiver, sender):
+    def __init__(self, host, port, user, password, receiver, sender, exitSignal):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.receiver = receiver
         self.sender = sender
+        self.exitSignal = exitSignal
         from threading import Lock
         self.lock = Lock()
     
@@ -86,7 +87,7 @@ class Mail:
         raise Exception('Message has no attachment.')
     
     def openForWrite2(self, connection, name):
-        return MailWriter(self.sender, self.receiver, name)
+        return MailWriter(self.sender, self.receiver, name, self.exitSignal)
     
     def getMailIdByName(self, name):
         for e in self.listFiles():
@@ -133,10 +134,11 @@ class ImapConnection:
         return result
 
 class MailWriter:
-    def __init__(self, sender, receiver, name):
+    def __init__(self, sender, receiver, name, exitSignal):
         self.sender = sender
         self.receiver = receiver
         self.name = name
+        self.exitSignal = exitSignal
         import io
         self.buffer = io.BytesIO()
         
@@ -147,7 +149,7 @@ class MailWriter:
         data = self.buffer.getvalue()
         size = len(data)
         subject = MailSubject.encode(self.name, size)
-        sendMail(self.sender, self.receiver, subject, '', self.name, data)
+        sendMail(self.sender, self.receiver, subject, '', self.name, data, self.exitSignal)
     
     def __enter__(self):
         return self
@@ -167,7 +169,7 @@ class MailSubject:
         name = string[11:]
         return size, name
 
-def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata, stopper = [False]):
+def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata, exitSignal):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.mime.base import MIMEBase
@@ -199,7 +201,7 @@ def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata,
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     def recv(code):
-        assert not stopper[0]
+        assert not exitSignal.isset()
         data = sock.recv(1024)
         data = data[:-2]
         data = str(data, 'utf8')
@@ -208,7 +210,7 @@ def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata,
         data = int(data)
         assert data == code
     def send(data):
-        assert not stopper[0]
+        assert not exitSignal.isset()
         sock.sendall(bytes(data + '\r\n','utf8'))
     try:
         recv(220)

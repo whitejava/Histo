@@ -1,8 +1,11 @@
 def main():
     config = loadConfig()
     initLogger(config['Logger'])
+    logger.debug('[ Load ExitSignal')
+    exitSignal = ExitSignal()
+    logger.debug(' ]')
     logger.debug('[ Load server')
-    server = Server(config['Server'])
+    server = Server(config['Server'], exitSignal)
     logger.debug(' ]')
     logger.debug('[ Start server')
     server.start()
@@ -11,6 +14,7 @@ def main():
     waitForKeyboardInterruption()
     logger.debug(' ]')
     logger.debug('[ Shutdown')
+    exitSignal.set()
     server.shutdown()
     logger.debug(' ]')
 
@@ -20,6 +24,10 @@ def loadConfig():
     with open(configFile, 'r') as f:
         import json
         return json.load(f)
+
+def ExitSignal():
+    from threading import Event
+    return Event()
 
 def initLogger(config):
     import logging
@@ -32,12 +40,12 @@ def initLogger(config):
     logger = logging.getLogger()
     logger.addHandler(handler)
 
-def Server(config):
+def Server(config, exitSignal):
     logger.debug('[ Load state bundle')
-    stateBundle = StateBundle(config['StateBundle'])
+    stateBundle = StateBundle(config['StateBundle'], exitSignal)
     logger.debug(' ]')
     logger.debug('[ Load data bundle')
-    dataBundle = DataBundle(config['DataBundle'])
+    dataBundle = DataBundle(config['DataBundle'], exitSignal)
     logger.debug(' ]')
     logger.debug('[ Load histo server')
     result = HistoServer(config['HistoServer'], stateBundle, dataBundle)
@@ -52,16 +60,16 @@ def waitForKeyboardInterruption():
     except KeyboardInterrupt:
         logger.debug('On keyboard interrupt')
 
-def StateBundle(config):
-    return FinalBundle(config)
+def StateBundle(config, exitSignal):
+    return FinalBundle(config, exitSignal)
 
-def DataBundle(config):
-    return FinalBundle(config)
+def DataBundle(config, exitSignal):
+    return FinalBundle(config, exitSignal)
 
-def FinalBundle(config):
+def FinalBundle(config, exitSignal):
     from histo.bundle import Local, Buffer, Hub, Crypto
     fastBundle = Local(config['CachePath'])
-    mailBundles = MailBundles(config['MailBundles'])
+    mailBundles = MailBundles(config['MailBundles'], exitSignal)
     volumes = config['Volumes']
     slowBundle = Hub(mailBundles, volumes)
     cipher = Cipher(config['Cipher'])
@@ -69,18 +77,18 @@ def FinalBundle(config):
     usageLogFile = config['UsageLogFile']
     maxBufferSize = config['MaxBufferSize']
     threadCount = config['ThreadCount']
-    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount)
+    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal)
     return Crypto(buffer, cipher)
 
-def MailBundles(config):
-    return [Mail(**e) for e in config]
+def MailBundles(config, exitSignal):
+    return [Mail(e, exitSignal) for e in config]
 
 def Cipher(config):
     from histo.cipher import Hub, AES, Verify
     from base64 import b16decode
     return Hub(Verify('md5'), AES(b16decode(bytes(config['Key'], 'utf8'))), Verify('sha1'), Verify('md5'))
 
-def Mail(config):
+def Mail(config, exitSignal):
     from histo.bundle import Mail as Mail2
     host = config['Host']
     port = config['Port']
@@ -88,7 +96,7 @@ def Mail(config):
     password = config['Password']
     receiver = config['Receiver']
     sender = config['Sender']
-    return Mail2(host, port, user, password, receiver, sender)
+    return Mail2(host, port, user, password, receiver, sender, exitSignal)
 
 from pclib import ObjectServer
 class HistoServer(ObjectServer):

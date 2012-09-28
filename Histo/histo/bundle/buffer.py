@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger()
 
 class Buffer:
-    def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount):
+    def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal):
         from histo.bundle import Safe
         self.fastBundle = Safe(fastBundle)
         self.slowBundle = slowBundle
@@ -15,6 +15,7 @@ class Buffer:
         self.queue = self.getQueue(queueFile)
         self.usageLog = self.getUsageLog(usageLogFile)
         self.threads = self.createTransferThreads(threadCount)
+        self.exitSignal = exitSignal
         self.startAllThreads(self.threads)
         from threading import RLock
         self.lock = RLock()
@@ -114,7 +115,7 @@ class Buffer:
                 return result
     
     def createTransferThread(self):
-        return TransferThread(self.fastBundle, self.slowBundle, self.queue)
+        return TransferThread(self.fastBundle, self.slowBundle, self.queue, self.exitSignal)
     
     def limitBufferSize(self):
         logger.debug('Limit buffer size')
@@ -293,14 +294,15 @@ class UsageLog:
 
 from threading import Thread
 class TransferThread(Thread):
-    def __init__(self, fastBundle, slowBundle, queue):
+    def __init__(self, fastBundle, slowBundle, queue, exitSignal):
         Thread.__init__(self)
         self.fastBundle = fastBundle
         self.slowBundle = slowBundle
         self.queue = queue
+        self.exitSignal = exitSignal
     
     def run(self):
-        while True:
+        while not self.exitSignal.isset():
             logger.debug('Fetching task')
             fetchId, task = self.queue.fetch()
             logger.debug('Doing task %s' % task)
