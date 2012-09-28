@@ -3,11 +3,14 @@ import logging as logger
 def retry(times):
     def a(f):
         def b(*k, **kw):
+            lastException = None
             for i in range(times):
                 try:
                     return f(*k, **kw)
                 except Exception as e:
                     logger.debug('Exception in retry %d: %s' % (i, repr(e)))
+                    lastException = e
+            raise lastException
         return b
     return a
 
@@ -37,8 +40,7 @@ class Mail:
     
     @retry(10)
     def list(self):
-        self.files = self.listFiles()
-        return [e[1] for e in self.files]
+        return [e[1] for e in self.listFiles()]
     
     @retry(10)
     def getTotalSize(self):
@@ -51,14 +53,9 @@ class Mail:
                 mails = mails[1][0]
                 mails = str(mails,'utf8').split()
                 mails2 = ','.join(mails)
-                result = connection.fetch(mails2, '(UID BODY[HEADER.FIELDS (SUBJECT)])')
-                result = result[1][::2]
-                result = [str(e[1], 'utf8') for e in result]
-                for e in result:
-                    assert e.startswith('Subject: ')
-                    assert e.endswith('\r\n\r\n')
-                result = [e[9:-4] for e in result]
-                return [MailSubject.decode(e) for e in zip(map(int, mails), result)]
+                response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')
+                subjects = parseResponse(response)
+                return [MailSubject.decode(e) for e in subjects]
     
     def openForRead(self, name):
         with self.Connection() as connection:
@@ -123,7 +120,7 @@ class ImapConnection:
         from imaplib import IMAP4_SSL
         result = IMAP4_SSL(self.host, self.port)
         result.login(self.user, self.password)
-        result.select('INBOX')
+        result.select('INBOX', readonly=True)
         return result
 
 class MailWriter:
@@ -221,3 +218,13 @@ def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata,
         recv(250)
     finally:
         sock.close()
+
+def parseResponse(response):
+    assert response[0] == 'OK'
+    result = response[1][::2]
+    result = [str(e[1],'utf8') for e in result]
+    for e in result:
+        assert e.startswith('Subject: ')
+        assert e.endswith('\r\n\r\n')
+    result = [e[9:-4] for e in result]
+    return result
