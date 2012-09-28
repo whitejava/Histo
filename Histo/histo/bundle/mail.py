@@ -68,6 +68,7 @@ class Mail:
     
     def openForRead2(self, connection, name):
         data = connection.fetch(str(self.getMailIdByName(name)), '(RFC822)')
+        logger.debug(repr(data))
         emailBody = data[1][0][1]
         import email
         mail = email.message_from_string(str(emailBody,'utf8'))
@@ -121,7 +122,7 @@ class ImapConnection:
         from imaplib import IMAP4_SSL
         result = IMAP4_SSL(self.host, self.port)
         result.login(self.user, self.password)
-        result.select('INBOX', readonly=True)
+        result.select('INBOX')
         return result
 
 class MailWriter:
