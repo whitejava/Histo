@@ -1,12 +1,12 @@
 #- -encoding: utf8
 
-__all__ = ['generatesummary', 'walk']
+__all__ = ['generateSummary', 'walk']
 
 def generateSummary(name, fileName):
     import os.path
     if os.path.isdir(fileName):
         summary = folderSummary(fileName)
-    elif fileName.endswith():
+    else:
         summary = fileSummary(fileName)
     if summary is None:
         return [name]
@@ -23,8 +23,9 @@ def folderSummary(fileName):
     result = []
     result.append('FolderSummary')
     import os
-    for e in os.listdir():
-        result.append(e, generateSummary(os.path.join(e, fileName)))
+    for e in os.listdir(fileName):
+        file = os.path.join(fileName, e)
+        result.append(generateSummary(e, file))
     return result
 
 def fileSummary(fileName):
@@ -34,9 +35,9 @@ def fileSummary(fileName):
          '.tar': rarSummary,
          '.zip': rarSummary,
          '.rar': rarSummary}
-    for k,v in t:
+    for k in t:
         if fileName.lower().endswith(k):
-            return v(fileName)
+            return t[k](fileName)
     return None
 
 def txtSummary(fileName):
@@ -55,12 +56,13 @@ def rarSummary(fileName):
         if error is None:
             result = folderSummary(temp)
             result[0] = 'RarSummary'
+            return result
         else:
             return ['RarError: %s' % repr(error)]
 
 def unpackArchive(fileName, targetDirectory):
     import subprocess
-    returnCode = subprocess.call('winrar', '-ibck', '-inul', '-p-', '-y', 'x', fileName, targetDirectory+'/')
+    returnCode = subprocess.call(['winrar', '-ibck', '-inul', '-p-', '-y', 'x', fileName, targetDirectory+'/'])
     if returnCode == 0:
         return None
     else:
@@ -83,6 +85,8 @@ def getRarErrorMessage(returnCode):
         return str(returnCode)
 
 def guessEncoding(data):
+    if len(data) == 0:
+        return 'utf8'
     commonPercent = []
     encodings = ['utf8','gbk','utf16','utf32','big5']
     for e in encodings:
