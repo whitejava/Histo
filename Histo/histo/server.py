@@ -70,14 +70,14 @@ def FinalBundle(config, exitSignal):
     from histo.bundle import Local, Buffer, Hub, Crypto
     fastBundle = Local(config['CachePath'])
     mailBundles = MailBundles(config['MailBundles'], exitSignal)
-    volumes = config['Volumes']
-    slowBundle = Hub(mailBundles, volumes)
+    slowBundle = Hub(mailBundles)
     cipher = Cipher(config['Cipher'])
     queueFile = config['QueueFile']
     usageLogFile = config['UsageLogFile']
     maxBufferSize = config['MaxBufferSize']
     threadCount = config['ThreadCount']
-    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal)
+    volume = config['Volume']
+    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, volume, exitSignal)
     return Crypto(buffer, cipher)
 
 def MailBundles(config, exitSignal):
@@ -98,9 +98,10 @@ def Mail(config, exitSignal):
     sender = config['Sender']
     return Mail2(host, port, user, password, receiver, sender, exitSignal)
 
-from pclib import ObjectServer
-class HistoServer(ObjectServer):
+from picklestream import PickleServer
+class HistoServer(PickleServer):
     def __init__(self, config, stateBundle, dataBundle):
+        PickleServer.__init__(self, (config['ListenIP'], config['ListenPort']))
         self.config = config
         self.stateBundle = stateBundle
         self.dataBundle = dataBundle
@@ -108,24 +109,24 @@ class HistoServer(ObjectServer):
         self.index = Index(self.openCodes(self.state['Codes']))
     
     def handle(self, stream):
-        method = stream.readobject()
+        method = stream.readObject()
         t = {'Commit': self.commit,
              'Search': self.search,
              'Get': self.get}
         return t[method](stream)
     
     def commit(self, stream):
-        parameters = stream.readobject()
+        parameters = stream.readObject()
         result = self.commit2(**parameters)
-        stream.write(result)
+        stream.writeObject(result)
     
     def search(self, stream):
-        parameters = stream.readobject()
+        parameters = stream.readObject()
         result = self.search2(**parameters)
-        stream.write(result)
+        stream.writeObject(result)
     
     def get(self, stream):
-        parameters = stream.readobject()
+        parameters = stream.readObject()
         self.get2(stream, **parameters)
     
     def loadOrCreateState(self):
@@ -138,7 +139,10 @@ class HistoServer(ObjectServer):
             with self.dataBundle.open('data-%08d' % e, 'rb') as f:
                 yield f
     
-    def commit2(self, folder, name = None, compression = True, time = None):
+    def commit2(self, Folder, Name = None, Compression = True, Time = None):
+        return self.commit3(Folder, Name, Compression, Time)
+    
+    def commit3(self, folder, name, compression, time):
         import os.path
         time = self.translateTime(time)
         name = self.translateName(name, folder)
@@ -156,10 +160,16 @@ class HistoServer(ObjectServer):
         self.deleteFolder(folder)
         return True
     
-    def search2(self, keyWords):
+    def search2(self, Keywords):
+        return self.search3(Keywords)
+    
+    def search3(self, keyWords):
         return self.index.search(keyWords)
     
-    def get2(self, stream, commitId):
+    def get2(self, stream, CommitID):
+        return self.get3(stream, CommitID)
+    
+    def get3(self, stream, commitId):
         item = self.index.getItemByCommitId(commitId)
         stream.writeobject(item['Size'])
         self.copyCodesFromDataBundle(item['Codes'], stream)
@@ -220,8 +230,8 @@ class HistoServer(ObjectServer):
         index['Codes'] = CodesSimplify.encode(dataCodes)
         index['Size'] = dataSize
         index['MD5'] = md5
-        from summary import generatesummary
-        index['Summary'] = generatesummary(name, archivePath)
+        from histo.summary import generateSummary
+        index['Summary'] = generateSummary(name, archivePath)
     
     def pickleToStateBundle(self, state):
         import pickle
@@ -234,7 +244,6 @@ class HistoServer(ObjectServer):
     def packFolder(self, folder, compression, time, name):
         import os
         import tempfile
-        import pclib
         root = self.config['ArchiveRoot']
         timeString = '%04d%02d%02d%02d%02d%02d%06d' % time
         compress = {True: '-m5', False:'-m0'}[compression]
@@ -253,7 +262,8 @@ class HistoServer(ObjectServer):
         
         cwd = os.getcwd()
         os.chdir(folder)
-        assert 0 == pclib.quietcall('rar a "%s" @"%s" -scul %s' % (package, listfile.name, compress))
+        import subprocess
+        subprocess.call(['winrar a "%s" @"%s" -scul %s' % (package, listfile.name, compress)])
         os.chdir(cwd)
         
         os.unlink(listfile.name)

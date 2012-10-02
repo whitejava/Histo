@@ -1,7 +1,6 @@
 class Hub:
-    def __init__(self, bundles, volumes):
+    def __init__(self, bundles):
         self.bundles = bundles
-        self.volumes = volumes
         self.state = self.getState()
         from threading import Lock
         self.lock = Lock()
@@ -48,7 +47,7 @@ class Hub:
             raise Exception('Space not enough')
     
     def getBundleRemainSize(self, i):
-        totalSize = self.volumes[i]
+        totalSize = self.bundles[i].getVolume()
         usedSize = self.state['Usage'][i]
         return totalSize - usedSize
     
