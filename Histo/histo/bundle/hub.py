@@ -1,7 +1,7 @@
 class Hub:
     def __init__(self, bundles):
         self.bundles = bundles
-        self.state = self.getUsageState()
+        self.usageState = self.getUsageState()
         from threading import Lock
         self.lock = Lock()
         
@@ -48,7 +48,7 @@ class Hub:
     
     def getBundleRemainSize(self, i):
         totalSize = self.bundles[i].getVolume()
-        usedSize = self.state['Usage'][i]
+        usedSize = self.usageState[i]
         return totalSize - usedSize
     
     def findContainerBundle(self, name):
@@ -63,7 +63,7 @@ class Hub:
         with bundle.open(name, 'wb') as f:
             f.write(data)
         with self.lock:
-            self.state['Usage'][i] += size
+            self.usageState[i] += size
             
     def getUsageState(self):
         return [e.getTotalSize() for e in self.bundles]

@@ -4,19 +4,21 @@ def main():
     logger.debug('[ Load ExitSignal')
     exitSignal = ExitSignal()
     logger.debug(' ]')
-    logger.debug('[ Load server')
-    server = Server(config['Server'], exitSignal)
-    logger.debug(' ]')
-    logger.debug('[ Start server')
-    server.start()
-    logger.debug(' ]')
-    logger.debug('[ Wait exit signal')
-    waitForKeyboardInterruption()
-    logger.debug(' ]')
-    logger.debug('[ Shutdown')
-    exitSignal.set()
-    server.shutdown()
-    logger.debug(' ]')
+    try:
+        logger.debug('[ Load server')
+        server = Server(config['Server'], exitSignal)
+        logger.debug(' ]')
+        logger.debug('[ Start server')
+        server.start()
+        logger.debug(' ]')
+        logger.debug('[ Wait exit signal')
+        waitForKeyboardInterruption()
+        logger.debug(' ]')
+    finally:
+        logger.debug('[ Shutdown')
+        exitSignal.set()
+        server.shutdown()
+        logger.debug(' ]')
 
 def loadConfig():
     import sys
@@ -97,17 +99,18 @@ def Mail(config, exitSignal):
     sender = config['Sender']
     volume = config['Volume']
     result = Mail2(host, port, user, password, receiver, sender, exitSignal)
-    result.getVolume = lambda self:volume
+    result.getVolume = lambda:volume
     return result
 
 def SimMail(config, exitSignal):
     from histo.bundle import Error, Delay, Limit, Local
+    volume = config['Volume']
     result = Local('D:\\sim-mail\\%s' % config['User'])
+    result.getVolume = lambda:volume
+    return result
     result = Error(result, 0.1)
     result = Limit(result, 200000, 200000)
     result = Delay(result, 1.0)
-    volume = config['Volume']
-    result.getVolume = lambda self: volume
     return result
 
 from picklestream import PickleServer
@@ -122,6 +125,7 @@ class HistoServer(PickleServer):
     
     def handle(self, stream):
         method = stream.readObject()
+        logger.debug('Request: %s' % method)
         t = {'Commit': self.commit,
              'Search': self.search,
              'Get': self.get}
@@ -169,21 +173,52 @@ class HistoServer(PickleServer):
         return self.commit3(Folder, Name, Compression, Time)
     
     def commit3(self, folder, name, compression, time):
+        logger.debug('[ Commit')
+        logger.debug('Folder: %s' % folder)
+        logger.debug('Name: %s' % name)
+        logger.debug('Compression: %s' % compression)
+        logger.debug('Time: %s' % time)
+        logger.debug('[ Translate parameters')
         import os.path
         time = self.translateTime(time)
         name = self.translateName(name, folder)
+        logger.debug(' ]')
+        logger.debug('[ Rename folder')
         folder = self.renameCommittingFolder(folder)
+        logger.debug(' ]')
+        logger.debug('[ Pack folder')
         archivePath = self.packFolder(folder, compression, time, name)
+        logger.debug(' ]')
+        logger.debug('[ Copy data')
         dataSize = os.path.getsize(archivePath)
-        dataCodes = self.copyToDataBundle(archivePath)
+        dataCodeCount = self.state['CodeCount']
+        dataCodes = self.readFileToDataBundle(archivePath, dataCodeCount)
+        dataCodeCount += len(dataCodes)
+        logger.debug(' ]')
+        logger.debug('[ Calc MD5')
         md5 = getFileMD5(archivePath)
+        logger.debug(' ]')
+        logger.debug('[ Generate index')
         indexItem = self.generateIndexItem(time, name, dataSize, dataCodes, md5, archivePath)
-        indexCodes = self.pickleToDataBundle(KeySets.encode(1, indexItem))
-        newState = self.generateNewState(indexCodes)
+        logger.debug(' ]')
+        logger.debug('[ Write index')
+        encodedIndexItem = KeySets.encode(1, indexItem)
+        indexCodes = self.pickleToDataBundle(encodedIndexItem, dataCodeCount)
+        dataCodeCount += len(indexCodes)
+        logger.debug(' ]')
+        logger.debug('[ Generate state')
+        dataCountIncrement = len(dataCodes) + len(indexCodes)
+        newState = self.generateNewState(indexCodes, dataCountIncrement)
+        logger.debug(' ]')
+        logger.debug('[ Write state')
+        self.pickleToStateBundle(newState['Time'], KeySets.encode(0, newState))
+        logger.debug(' ]')
         self.state = newState
-        self.pickleToStateBundle(KeySets.encode(0, newState))
-        self.index.add(indexItem)
+        logger.debug('New state: %s' % repr(newState))
+        self.index.add(encodedIndexItem)
+        logger.debug('[ Delete folder')
         self.deleteFolder(folder)
+        logger.debug(' ]')
         return True
     
     def search2(self, Keywords):
@@ -197,7 +232,7 @@ class HistoServer(PickleServer):
     
     def get3(self, stream, commitId):
         item = self.index.getItemByCommitId(commitId)
-        stream.writeobject(item['Size'])
+        stream.writeObject(item['Size'])
         self.copyCodesFromDataBundle(item['Codes'], stream)
     
     def translateTime(self, time):
@@ -218,15 +253,21 @@ class HistoServer(PickleServer):
         os.rename(folder, folder2)
         return folder2
     
-    def copyFileToDataBundle(self, filePath):
+    def copyFileToDataBundle(self, filePath, startFrom):
         import os.path
         fileSize = os.path.getsize(filePath)
         with open(filePath, 'rb') as f:
-            return self.copyToDataBundle(f, fileSize)
+            return self.copyToDataBundle(f, fileSize, startFrom)
     
-    def copyToDataBundle(self, f, fileSize):
+    def readFileToDataBundle(self, file, startFrom):
+        import os
+        size = os.path.getsize(file)
+        with open(file, 'rb') as f:
+            return self.copyToDataBundle(f, size, startFrom)
+    
+    def copyToDataBundle(self, f, fileSize, startFrom):
         maxCodeSize = self.config['MaxCodeSize']
-        dataCodeCount = self.state['CodeCount']
+        dataCodeCount = startFrom
         copySize = 0
         result = []
         while copySize < fileSize:
@@ -241,12 +282,12 @@ class HistoServer(PickleServer):
             dataCodeCount += 1
         return result
     
-    def pickleToDataBundle(self, x):
+    def pickleToDataBundle(self, x, startFrom):
         import pickle
         import io
         data = pickle.dumps(x)
         f = io.BytesIO(data)
-        return self.copyToDataBundle(f, len(data))
+        return self.copyToDataBundle(f, len(data), startFrom)
     
     def generateIndexItem(self, time, name, dataSize, dataCodes, md5, archivePath):
         index = dict()
@@ -258,41 +299,27 @@ class HistoServer(PickleServer):
         index['MD5'] = md5
         from histo.summary import generateSummary
         index['Summary'] = generateSummary(name, archivePath)
+        return index
     
-    def pickleToStateBundle(self, state):
+    def pickleToStateBundle(self, time, state):
         import pickle
         data = pickle.dumps(state)
-        time = state['Time']
         fileName = 'state-%04d%02d%02d%02d%02d%02d%06d' % time
         with self.stateBundle.open(fileName, 'wb') as f:
             f.write(data)
     
     def packFolder(self, folder, compression, time, name):
         import os
-        import tempfile
         root = self.config['ArchiveRoot']
         timeString = '%04d%02d%02d%02d%02d%02d%06d' % time
         compress = {True: '-m5', False:'-m0'}[compression]
-        package = os.path.join(root, '%s-%s' % (timeString, name))
-        
-        files = os.listdir(folder)
-        if not files:
-            files = ['Empty']
-            with open(os.path.join(folder, 'Empty'), 'wb'): pass
-        else:
-            files = '\n'.join(files) + '\n'
-            files = bytes(files, 'utf16')
-            listfile = tempfile.NamedTemporaryFile(mode = 'wb', delete = False)
-            listfile.write(files)
-            listfile.close()
+        package = os.path.join(root, '%s-%s.rar' % (timeString, name))
         
         cwd = os.getcwd()
         os.chdir(folder)
         import subprocess
-        subprocess.call(['winrar a "%s" @"%s" -scul %s' % (package, listfile.name, compress)])
+        subprocess.call(['winrar', 'a', '-r', compress, package, '.'])
         os.chdir(cwd)
-        
-        os.unlink(listfile.name)
         
         return package
     
@@ -314,15 +341,24 @@ class HistoServer(PickleServer):
             with self.dataBundle.open('data-%08d' % codeId) as f:
                 from pclib import copystream
                 copystream(f, stream)
+                
+    def generateNewState(self, indexCodes, dataCountIncrement):
+        from pclib import nowtuple
+        result = dict()
+        result['Time'] = nowtuple()
+        result['CommitCount'] = self.state['CommitCount'] + 1
+        result['CodeCount'] = self.state['CodeCount'] + 1
+        result['IndexCodes'] = self.state['IndexCodes'] + indexCodes
+        return result
 
 class Index:
     def __init__(self, files):
-        self.index = self.readIndexItems(files)
+        self.index = readIndexItems(files)
     
     def search(self, keyWords):
-        matchCount = [self.countKeyWords(e['Summary'], keyWords) for e in self.Iterator()]
-        result = [(e['Time'], e['CommitID'], e['Name'], e['Size']) for e in self.Iterator()]
-        return [e[1] for e in sorted(zip(matchCount, result), reverse=True)]
+        matchCount = [countKeyWordsMatch(e['Summary'], keyWords) for e in self]
+        result = [(e['Time'], e['CommitID'], e['Name'], e['Size']) for e in self]
+        return [dict(zip('Time CommitID Name Size'.split(), e[1])) for e in sorted(zip(matchCount, result), reverse=True)]
     
     def add(self, indexItem):
         self.index.append(indexItem)
@@ -331,13 +367,35 @@ class Index:
         for e in self.index:
             yield KeySets.decode(e)
     
-    def readIndexItems(self, files):
-        for e in files:
-            try:
-                import pickle
-                pickle.load(e)
-            except EOFError:
-                break
+def readIndexItems(files):
+    result = []
+    for e in files:
+        result.extend(readIndexItemsFromSingleFile(e))
+    return result
+        
+def readIndexItemsFromSingleFile(file):
+    result = []
+    while True:
+        try:
+            import pickle
+            result.append(pickle.load(file))
+        except EOFError:
+            break
+    return result
+
+def countKeyWordsMatch(summary, keywords):
+    result = 0
+    for e in keywords:
+        if isSummaryContainKeyword(summary, e):
+            result += 1
+    return result
+
+def isSummaryContainKeyword(summary, keyword):
+    from histo.summary import walk
+    for e in walk(summary):
+        if keyword in e:
+            return True
+    return False
 
 def getFileMD5(file):
     from pclib import copystream, hashstream
@@ -375,18 +433,18 @@ def findMaxContinuous(codes):
 
 class KeySets:
     @staticmethod
-    def encode(self, keySetId, d):
-        d = dict()
+    def encode(keySetId, d):
+        d = dict(d)
         result = []
         result.append(keySetId)
-        for e in keySets(keySetId):
+        for e in keySets[keySetId]:
             result.append(d[e])
             del d[e]
         assert not d
         return result
     
     @staticmethod
-    def decode(self, x):
+    def decode(x):
         return dict(zip(keySets[x[0]], x[1:]))
 
 keySets = [

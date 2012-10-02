@@ -32,13 +32,15 @@ def download(commit):
         root = 'D:\\'
         import os
         fileName = os.path.join(root, fileName)
+        if os.path.exists(fileName):
+            raise Exception('File exists')
         with open(fileName, 'wb') as f:
             from pclib import copystream
             assert size == copystream(conn, f)
 
 def connect():
     from picklestream import PickleClient
-    return PickleClient('127.0.0.1', 3750)
+    return PickleClient(('127.0.0.1', 3750))
 
 if __name__ == '__main__':
     main()

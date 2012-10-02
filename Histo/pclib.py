@@ -112,10 +112,10 @@ def bufferedreader(reader, buffercount = 5):
 
 class datastream:
     def __init__(self, stream):
-        self._stream = stream
+        self.stream = stream
     
     def write(self, data):
-        self._stream.write(data)
+        self.stream.write(data)
     
     def writeint(self, a):
         self.write(struct.pack('!i', a))
@@ -128,7 +128,7 @@ class datastream:
         self.write(a)
     
     def read(self, limit = None):
-        return self._stream.read(limit)
+        return self.stream.read(limit)
     
     def readfully(self, limit):
         result = bytearray()
@@ -148,28 +148,31 @@ class datastream:
     
     def readbytes(self):
         length = self.readint()
-        result = self._stream.read(length)
+        result = self.stream.read(length)
         assert len(result) == length
         return result
     
+    def close(self):
+        self.stream.close()
+    
 class objectstream:
     def __init__(self, stream):
-        self._stream = datastream(stream)
+        self.stream = datastream(stream)
         
     def write(self, data):
-        self._stream.write(data)
+        self.stream.write(data)
     
     def read(self, limit = None):
-        return self._stream.read(limit)
+        return self.stream.read(limit)
     
-    def writeobject(self, object):
+    def writeObject(self, object):
         dump = pickle.dumps(object)
-        self._stream.writeint(len(dump))
-        self._stream.write(dump)
+        self.stream.writeint(len(dump))
+        self.stream.write(dump)
     
     def readobject(self):
-        length = self._stream.readint()
-        dump = self._stream.readfully(length)
+        length = self.stream.readint()
+        dump = self.stream.readfully(length)
         assert len(dump) == length
         return pickle.loads(dump)
 
@@ -205,6 +208,10 @@ class iostream:
     
     def read(self, limit = None):
         return self._input.read(limit)
+    
+    def close(self):
+        self._input.close()
+        self._output.close()
 
 class hashstream:
     def __init__(self, algorithm):

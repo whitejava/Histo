@@ -12,7 +12,7 @@ def commit(folder):
 
 def connect():
     from picklestream import PickleClient
-    return PickleClient('127.0.0.1', 3750)
+    return PickleClient(('127.0.0.1', 3750))
 
 if __name__ == '__main__':
     main()

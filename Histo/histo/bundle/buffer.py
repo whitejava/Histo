@@ -157,7 +157,7 @@ class Buffer:
 
 class TaskQueue:
     def __init__(self, file):
-        self.queue = self.DiskQueue(file)
+        self.queue = DiskQueue(file)
         self.fetched = []
         from threading import Lock, Semaphore
         self.semaphore = Semaphore(len(self.queue))
@@ -169,7 +169,7 @@ class TaskQueue:
     def append(self, x):
         with self.lock:
             logger.debug('Append %s' % x)
-            self.queue.append(self.Task(x))
+            self.queue.append(Task(x))
             self.semaphore.release()
         
     def fetch(self, exitSignal):
@@ -190,61 +190,61 @@ class TaskQueue:
                 self.queue.remove(fetchId)
             else:
                 self.semaphore.release()
-    
-    class Task:
-        def __init__(self, value):
-            self.value = value
             
     def findUnfetch(self):
         for e in self.queue:
             if e not in self.fetched:
                 return e
         raise Exception('Not found.')
-
-    class DiskQueue:
-        def __init__(self, file):
-            self.file = file
-            self.queue = self.loadOrCreate()
+    
+class Task:
+    def __init__(self, value):
+        self.value = value
         
-        def append(self, x):
-            self.queue.append(x)
-            self.save()
-        
-        def remove(self, x):
-            self.queue.remove(x)
-            self.save()
-        
-        def __getitem__(self, key):
-            return self.queue[key]
-        
-        def __setitem__(self, key, value):
-            self.queue[key] = value
-            self.save()
-        
-        def __iter__(self):
-            return self.queue.__iter__()
-        
-        def __len__(self):
-            return len(self.queue)
-        
-        def save(self):
-            with open(self.file, 'w') as f:
-                for e in self.queue:
-                    print(repr(e.value), file=f)
-        
-        def loadOrCreate(self):
-            import os
-            if os.path.exists(self.file):
-                return self.loadQueue()
-            else:
-                return []
-        
-        def loadQueue(self):
-            result = []
-            with open(self.file, 'r') as f:
-                for e in f:
-                    result.append(self.Task(eval(e)))
-            return result
+class DiskQueue:
+    def __init__(self, file):
+        self.file = file
+        self.queue = self.loadOrCreate()
+    
+    def append(self, x):
+        self.queue.append(x)
+        self.save()
+    
+    def remove(self, x):
+        self.queue.remove(x)
+        self.save()
+    
+    def __getitem__(self, key):
+        return self.queue[key]
+    
+    def __setitem__(self, key, value):
+        self.queue[key] = value
+        self.save()
+    
+    def __iter__(self):
+        return self.queue.__iter__()
+    
+    def __len__(self):
+        return len(self.queue)
+    
+    def save(self):
+        with open(self.file, 'w') as f:
+            for e in self.queue:
+                print(repr(e.value), file=f)
+    
+    def loadOrCreate(self):
+        import os
+        if os.path.exists(self.file):
+            return self.loadQueue()
+        else:
+            return []
+    
+    def loadQueue(self):
+        result = []
+        with open(self.file, 'r') as f:
+            for e in f:
+                result.append(Task(eval(e)))
+        return result
 
 class UsageLog:
     def __init__(self, file):
