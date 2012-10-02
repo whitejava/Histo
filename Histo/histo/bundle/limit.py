@@ -17,11 +17,8 @@ class Limit:
         else:
             raise Exception('No such mode.')
     
-    def list(self):
-        return self.bundle.list()
-    
-    def delete(self, name):
-        return self.bundle.delete(name)
+    def __getattr__(self, name):
+        return getattr(self.bundle, name)
 
 class Limiter:
     def __init__(self, maxSpeed):

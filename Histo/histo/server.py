@@ -76,12 +76,11 @@ def FinalBundle(config, exitSignal):
     usageLogFile = config['UsageLogFile']
     maxBufferSize = config['MaxBufferSize']
     threadCount = config['ThreadCount']
-    volume = config['Volume']
-    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, volume, exitSignal)
+    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal)
     return Crypto(buffer, cipher)
 
 def MailBundles(config, exitSignal):
-    return [Mail(e, exitSignal) for e in config]
+    return [SimMail(e, exitSignal) for e in config]
 
 def Cipher(config):
     from histo.cipher import Hub, AES, Verify
@@ -96,7 +95,20 @@ def Mail(config, exitSignal):
     password = config['Password']
     receiver = config['Receiver']
     sender = config['Sender']
-    return Mail2(host, port, user, password, receiver, sender, exitSignal)
+    volume = config['Volume']
+    result = Mail2(host, port, user, password, receiver, sender, exitSignal)
+    result.getVolume = lambda self:volume
+    return result
+
+def SimMail(config, exitSignal):
+    from histo.bundle import Error, Delay, Limit, Local
+    result = Local('D:\\sim-mail\\%s' % config['User'])
+    result = Error(result, 0.1)
+    result = Limit(result, 200000, 200000)
+    result = Delay(result, 1.0)
+    volume = config['Volume']
+    result.getVolume = lambda self: volume
+    return result
 
 from picklestream import PickleServer
 class HistoServer(PickleServer):
@@ -106,7 +118,7 @@ class HistoServer(PickleServer):
         self.stateBundle = stateBundle
         self.dataBundle = dataBundle
         self.state = self.loadOrCreateState()
-        self.index = Index(self.openCodes(self.state['Codes']))
+        self.index = Index(self.openCodes(self.state['IndexCodes']))
     
     def handle(self, stream):
         method = stream.readObject()
@@ -130,14 +142,28 @@ class HistoServer(PickleServer):
         self.get2(stream, **parameters)
     
     def loadOrCreateState(self):
-        if self.getLatestState() is None:
-            self.createState()
-        return self.loadState()
+        latestState = self.getLatestState()
+        if latestState is None:
+            return self.createState()
+        else:
+            return self.loadState(latestState)
     
     def openCodes(self, codes):
         for e in codes:
             with self.dataBundle.open('data-%08d' % e, 'rb') as f:
                 yield f
+    
+    def getLatestState(self):
+        states = self.stateBundle.list()
+        if len(states) == 0:
+            return None
+        else:
+            return list(sorted(states))[-1]
+    
+    def loadState(self, state):
+        with self.stateBundle.open(state, 'rb') as f:
+            import pickle
+            return pickle.load(f)
     
     def commit2(self, Folder, Name = None, Compression = True, Time = None):
         return self.commit3(Folder, Name, Compression, Time)
@@ -304,6 +330,14 @@ class Index:
     def __iter__(self):
         for e in self.index:
             yield KeySets.decode(e)
+    
+    def readIndexItems(self, files):
+        for e in files:
+            try:
+                import pickle
+                pickle.load(e)
+            except EOFError:
+                break
 
 def getFileMD5(file):
     from pclib import copystream, hashstream

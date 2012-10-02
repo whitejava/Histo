@@ -21,6 +21,9 @@ class Error:
         self.simulateError()
         return self.bundle.delete()
     
+    def __getattr__(self, name):
+        return getattr(self.bundle, name)
+    
     def simulateError(self):
         return self.simulator.simulateError()
 

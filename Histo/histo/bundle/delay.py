@@ -5,27 +5,21 @@ class Delay:
         self.bundle = bundle
         self.delay = delay
     
-    def open(self, name, mode):
-        self.simulateDelay()
-        return self.bundle.open(name, mode)
-    
-    def list(self):
-        self.simulateDelay()
-        return self.bundle.list()
-    
-    def delete(self, name):
-        self.simulateDelay()
-        return self.bundle.delete()
-    
-    def simulateDelay(self):
+    def __getattr__(self, name):
+        def result(*k, **kw):
+            self.nap()
+            return getattr(self.bundle, name)(*k, **kw)
+        return result
+
+    def nap(self):
         delay = self.getGaussDelay()
-        return self.delay2(delay)
+        return self.sleep(delay)
     
     def getGaussDelay(self):
         import random
         return abs(random.gauss(self.delay, 0.1))
     
-    def delay2(self, delay):
-        logger.debug('Delay %s' % delay)
+    def sleep(self, duration):
+        logger.debug('Sleep %s' % duration)
         import time
-        time.sleep(delay)
+        time.sleep(duration)

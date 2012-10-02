@@ -1,7 +1,7 @@
 class Hub:
     def __init__(self, bundles):
         self.bundles = bundles
-        self.state = self.getState()
+        self.state = self.getUsageState()
         from threading import Lock
         self.lock = Lock()
         

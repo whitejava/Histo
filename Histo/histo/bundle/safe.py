@@ -20,9 +20,6 @@ class Safe:
             self.bundle.delete(name)
             self.files.remove(name)
     
-    def getSize(self, name):
-        return self.bundle.getSize(name)
-    
     def exists(self, name):
         with self.lock:
             self.assertNotProtected(name)
@@ -31,6 +28,9 @@ class Safe:
     def list(self):
         with self.lock:
             return self.files[:]
+    
+    def __getattr__(self, name):
+        return getattr(self.bundle, name)
     
     def openIgnoreProtection(self, name, mode):
         with self.lock:

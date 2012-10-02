@@ -16,14 +16,13 @@ def retry(times):
     return a
 
 class Mail:
-    def __init__(self, host, port, user, password, receiver, sender, volume, exitSignal):
+    def __init__(self, host, port, user, password, receiver, sender, exitSignal):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.receiver = receiver
         self.sender = sender
-        self.volume = volume
         self.exitSignal = exitSignal
         from threading import Lock
         self.lock = Lock()
@@ -48,9 +47,6 @@ class Mail:
     @retry(10)
     def getTotalSize(self):
         return sum([e['Size'] for e in self.listFiles()])
-    
-    def getVolume(self):
-        return self.volume
     
     def listFiles(self):
         with self.lock:

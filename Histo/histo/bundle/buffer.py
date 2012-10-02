@@ -6,6 +6,7 @@ logger = logging.getLogger()
 class Buffer:
     def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal):
         from histo.bundle import Safe
+        self.exitSignal = exitSignal
         self.fastBundle = Safe(fastBundle)
         self.slowBundle = slowBundle
         self.queueFile = queueFile
@@ -15,7 +16,6 @@ class Buffer:
         self.queue = self.getQueue(queueFile)
         self.usageLog = self.getUsageLog(usageLogFile)
         self.threads = self.createTransferThreads(threadCount)
-        self.exitSignal = exitSignal
         self.startAllThreads(self.threads)
         from threading import RLock
         self.lock = RLock()
@@ -172,13 +172,15 @@ class TaskQueue:
             self.queue.append(self.Task(x))
             self.semaphore.release()
         
-    def fetch(self):
-        self.semaphore.acquire()
-        with self.lock:
-            task = self.findUnfetch()
-            logger.debug('Fetch %s %s' % (id(task), task.value))
-            self.fetched.append(task)
-            return task, task.value
+    def fetch(self, exitSignal):
+        while not exitSignal.is_set():
+            if self.semaphore.acquire(timeout=0.5):
+                with self.lock:
+                    task = self.findUnfetch()
+                    logger.debug('Fetch %s %s' % (id(task), task.value))
+                    self.fetched.append(task)
+                    return task, task.value
+        raise OnExitSignal()
     
     def feedBack(self, fetchId, result):
         with self.lock:
@@ -302,13 +304,17 @@ class TransferThread(Thread):
         self.exitSignal = exitSignal
     
     def run(self):
-        while not self.exitSignal.isset():
-            logger.debug('Fetching task')
-            fetchId, task = self.queue.fetch()
-            logger.debug('Doing task %s' % task)
-            result = self.runTask(task)
-            logger.debug('Task result: %s' % result)
-            self.queue.feedBack(fetchId, result)
+        try:
+            while not self.exitSignal.is_set():
+                logger.debug('Fetching task')
+                fetchId, task = self.queue.fetch(self.exitSignal)
+                logger.debug('Doing task %s' % task)
+                result = self.runTask(task)
+                logger.debug('Task result: %s' % result)
+                self.queue.feedBack(fetchId, result)
+        except OnExitSignal:
+            logger.debug('On exit signal, exiting')
+            pass
     
     def runTask(self, task):
         from histo.bundle.safe import SafeProtection
@@ -402,3 +408,6 @@ class FileShell:
         self.event.wait()
         if self.file is None:
             raise Exception('File shell failed')
+
+class OnExitSignal(Exception):
+    pass

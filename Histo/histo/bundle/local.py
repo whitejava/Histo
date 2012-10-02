@@ -23,6 +23,9 @@ class Local:
         import os.path
         return os.path.getsize(self.getFile(name))
     
+    def getTotalSize(self):
+        return sum((self.getSize(e) for e in self.list()))
+    
     def createIfNotExist(self):
         import os
         if not os.path.isdir(self.root):
