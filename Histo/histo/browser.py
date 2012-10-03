@@ -28,15 +28,16 @@ def download(commit):
         p = {'CommitID' : commit['CommitID']}
         conn.writeObject(p)
         size = conn.readObject()
-        fileName = '%04d-%s' % (commit['CommitID'], commit['Name'])
+        fileName = '%04d-%s.rar' % (commit['CommitID'], commit['Name'])
         root = 'D:\\'
         import os
         fileName = os.path.join(root, fileName)
         if os.path.exists(fileName):
-            raise Exception('File exists')
+            return False
         with open(fileName, 'wb') as f:
             from pclib import copystream
             assert size == copystream(conn, f)
+    return True
 
 def connect():
     from picklestream import PickleClient

@@ -70,6 +70,7 @@ def testSearch(keywords):
     for e in result:
         logger.debug('%d %s' % (e['CommitID'], e['Name']))
     logger.debug(' ]')
+    return result
     
 def testDownload(commit):
     logger.debug('[ Test download')
