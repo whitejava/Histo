@@ -8,7 +8,7 @@ def commit(folder):
         conn.writeObject('Commit')
         p = {'Folder': folder}
         conn.writeObject(p)
-        assert conn.readObject() == True
+        assert conn.readObject() == 'OK'
 
 def connect():
     from picklestream import PickleClient

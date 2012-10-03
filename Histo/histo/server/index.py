@@ -4,11 +4,11 @@ class Index:
     
     def search(self, keyWords):
         matchCount = [countKeyWordsMatch(e['Summary'], keyWords) for e in self]
-        result = [(e['Time'], e['CommitID'], e['Name'], e['Size']) for e in self]
-        return [dict(zip('Time CommitID Name Size'.split(), e[1])) for e in sorted(zip(matchCount, result), reverse=True)]
+        result = [(e['Time'], e['CommitID'], e['Name'], e['Size'], e['MD5']) for e in self]
+        return [dict(zip('Time CommitID Name Size MD5'.split(), e[1])) for e in sorted(zip(matchCount, result), reverse=True)]
     
-    def add(self, indexItem):
-        self.index.append(indexItem)
+    def add(self, encodedIndexItem):
+        self.index.append(encodedIndexItem)
     
     def getItemByCommitId(self, commitId):
         for e in self:
@@ -30,6 +30,7 @@ def loadIndex(stream):
             result.append(stream.readObject())
         except EOFError:
             break
+    return result
 
 def countKeyWordsMatch(summary, keywords):
     result = 0

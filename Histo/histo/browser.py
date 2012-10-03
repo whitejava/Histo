@@ -22,26 +22,33 @@ def printResult(result):
         name = e['Name']
         print('%3d %s %s' % (i, time, name))
 
-def download(commit):
+def download(commit, extractRoot = 'D:\\'):
     with connect() as conn:
         conn.writeObject('Get')
         p = {'CommitID' : commit['CommitID']}
         conn.writeObject(p)
         size = conn.readObject()
         fileName = '%04d-%s.rar' % (commit['CommitID'], commit['Name'])
-        root = 'D:\\'
         import os
-        fileName = os.path.join(root, fileName)
+        fileName = os.path.join(extractRoot, fileName)
         if os.path.exists(fileName):
             return False
         with open(fileName, 'wb') as f:
             from pclib import copystream
-            assert size == copystream(conn, f)
+            assert size == copystream(conn, f, size)
+        assert getFileMd5(fileName) == commit['MD5']
     return True
 
 def connect():
     from picklestream import PickleClient
     return PickleClient(('127.0.0.1', 3750))
+
+def getFileMd5(fileName):
+    from pclib import copystream, hashstream
+    result = hashstream('md5')
+    with open(fileName, 'rb') as f:
+        copystream(f, result)
+    return result.digest()
 
 if __name__ == '__main__':
     main()

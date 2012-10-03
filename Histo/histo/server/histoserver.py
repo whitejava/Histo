@@ -30,19 +30,10 @@ class HistoServer(PickleServer):
     def openIndexCodesAsSingleStream(self):
         bundle = self.dataBundle
         indexCodes = self.state['IndexCodes']
-        return openCodesAsSingleStream(bundle, indexCodes)
+        from histo.server.codes import openCodesAsSingleStream
+        return openCodesAsSingleStream(bundle, indexCodes, 'data-{:08d}'.format)
 
 def getListenAddress(config):
     listenIp = config['ListenIP']
     listenPort = config['ListenPort']
     return (listenIp, listenPort)
-
-def openCodesAsStreams(bundle, codes):
-    for e in codes:
-        with bundle.open('data-%08d' % e, 'rb') as f:
-            yield f
-            
-def openCodesAsSingleStream(bundle, codes):
-    from histo.server.joinstream import JoinStream
-    streams = openCodesAsStreams(bundle, codes)
-    return JoinStream(streams)

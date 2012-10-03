@@ -75,7 +75,7 @@ def testSearch(keywords):
 def testDownload(commit):
     logger.debug('[ Test download')
     from histo.browser import download
-    download(commit)
+    download(commit, 'D:\\histo-extract')
     logger.debug(' ]')
 
 if __name__ == '__main__':

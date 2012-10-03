@@ -1,3 +1,5 @@
+import logging as logger
+
 class Commit:
     def __init__(self, config, state, index, dataBundle, stream):
         self.config = config
@@ -7,9 +9,11 @@ class Commit:
         self.stream = stream
     
     def run(self):
+        logger.debug('[ Commit')
         self.readParameters()
         self.translateParameters()
         self.renameTargetFolder()
+        self.ensureFolderNotEmpty()
         self.packTargetFolder()
         self.getPackageSize()
         self.getCurrentCodeCount()
@@ -17,16 +21,28 @@ class Commit:
         self.generateIndexItem()
         self.pickleIndexItemToDataBundle()
         self.addIndexItemToIndex()
+        self.generateNewState()
         self.updateState()
         self.deleteTargetFolder()
+        self.writeOk()
+        logger.debug(' ]')
     
     def readParameters(self):
+        logger.debug('[ Read parameters')
         self.parameters = self.stream.readObject()
+        logger.debug(' ]%s' % repr(self.parameters))
     
     def translateParameters(self):
         self.translateNameParameter()
         self.translateCompressionParameter()
         self.translateTimeParameter()
+    
+    def ensureFolderNotEmpty(self):
+        import os
+        if not os.listdir(self.targetFolder):
+            emptyFile = os.path.join(self.targetFolder, 'empty')
+            with open(emptyFile, 'wb'):
+                pass
     
     def renameTargetFolder(self):
         folder = self.parameters['Folder']
@@ -35,8 +51,10 @@ class Commit:
         os.rename(folder, self.targetFolder)
     
     def packTargetFolder(self):
+        logger.debug('[ Pack folder')
         self.getArchivePath()
         packFolder(self.targetFolder, self.archivePath, self.compression)
+        logger.debug(' ]')
     
     def getPackageSize(self):
         import os
@@ -46,8 +64,10 @@ class Commit:
         self.currentCodeCount = self.state['CodeCount']
     
     def readPackageToDataBundle(self):
+        logger.debug('[ Read package to data bundle')
         with open(self.archivePath, 'rb') as f:
             self.dataCodes = self.readStreamToDataBundle(f, self.packageSize)
+        logger.debug(' ]')
     
     def generateIndexItem(self):
         self.simplifyDataCodes()
@@ -83,13 +103,16 @@ class Commit:
         self.writeBytesToStateBundle(self.pickledState)
     
     def addIndexItemToIndex(self):
-        pass
+        self.index.add(self.encodedIndexItem)
     
     def updateState(self):
         self.state.update(self.newState)
     
     def deleteTargetFolder(self):
         deleteFolder(self.targetFolder)
+    
+    def writeOk(self):
+        self.stream.writeObject('OK')
     
     def translateNameParameter(self):
         default = self.getDefaultCommitName()
@@ -121,8 +144,9 @@ class Commit:
             dataName = 'data-%08d' % self.currentCodeCount
             with self.dataBundle.open(dataName, 'wb') as f:
                 from pclib import copystream
-                assert copystream(stream, f) == copySize
+                assert copystream(stream, f, copySize) == copySize
             self.currentCodeCount += 1
+            transferedSize += copySize
         return result
     
     def simplifyDataCodes(self):
@@ -130,11 +154,15 @@ class Commit:
         self.simplifiedDataCodes = Codes.simplify(self.dataCodes)
     
     def calculatePackageMd5(self):
+        logger.debug('[ Get package MD5')
         self.packageMd5 = calculateFileMd5(self.archivePath)
+        logger.debug(' ]')
     
     def generateSummary(self):
+        logger.debug('[ Generate summary')
         from histo.server.summary import generateSummary
         self.summary = generateSummary(self.name, self.targetFolder)
+        logger.debug(' ]')
     
     def encodeIndexItem(self):
         from histo.server.keysets import KeySets
@@ -146,7 +174,7 @@ class Commit:
         from picklestream import PickleStream
         stream = PickleStream(result)
         stream.writeObject(self.encodedIndexItem)
-        return result.getvalue()
+        self.pickledIndexItem = result.getvalue()
     
     def writeBytesToDataBundle(self, b):
         import io
@@ -160,9 +188,11 @@ class Commit:
         return os.path.basename(folder)
     
     def getArchiveName(self):
-        pass
         self.getTimeString()
-        return '%s-%s' % (self.timeString, self.name)
+        self.archiveName = '%s-%s.rar' % (self.timeString, self.name)
+    
+    def getTimeString(self):
+        self.timeString = '%04d%02d%02d%02d%02d%02d%06d' % self.time
     
 def calculateFileMd5(file):
     from pclib import copystream, hashstream
@@ -177,9 +207,9 @@ def packFolder(folder, archivePath, compression):
     cwd = os.getcwd()
     os.chdir(folder)
     import subprocess
-    subprocess.call(['winrar', 'a', '-r', compress, archivePath, '.'])
+    subprocess.call(['winrar', 'a', '-r', '-df', compress, archivePath, '.'])
     os.chdir(cwd)
 
 def deleteFolder(folder):
-    import shutil
-    shutil.rmtree(folder)
+    import os
+    os.rmdir(folder)

@@ -1,3 +1,5 @@
+import logging as logger
+
 class State:
     def __init__(self, bundle):
         self.bundle = bundle
@@ -17,13 +19,11 @@ class State:
         stateName = 'state-%04d%02d%02d%02d%02d%02d%06d' % self.state['Time']
         from histo.server.keysets import KeySets
         encodedState = KeySets.encode(0, self.state)
-        import pickle
-        pickledState = pickle.dumps(encodedState)
         stream = self.bundle.open(stateName, 'wb')
         from picklestream import PickleStream
         stream = PickleStream(stream)
         with stream as f:
-            f.writeObject(pickledState)
+            f.writeObject(encodedState)
 
     def loadOrCreateState(self):
         latestState = self.getLatestState()
@@ -44,7 +44,9 @@ class State:
         from picklestream import PickleStream
         stream = PickleStream(stream)
         with stream as f:
-            return f.readObject()
+            result = f.readObject()
+        from histo.server.keysets import KeySets
+        return KeySets.decode(result)
     
     def createState(self):
         from pclib import nowtuple

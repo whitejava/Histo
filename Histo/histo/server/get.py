@@ -1,3 +1,5 @@
+import logging as logger
+
 class Get:
     def __init__(self, stream, index, dataBundle):
         self.stream = stream
@@ -22,20 +24,18 @@ class Get:
         self.stream.writeObject(size)
     
     def writeData(self):
+        logger.debug('[ Send data')
         bundle = self.dataBundle
         codes = self.commit['Codes']
         stream = self.stream
         size = self.commit['Size']
-        with openCodesAsSingleStream(bundle, codes) as f:
+        logger.debug('Expect size: %d' % size)
+        from histo.server.codes import openCodesAsSingleStream
+        with openCodesAsSingleStream(bundle, codes, 'data-{:08d}'.format) as f:
             from pclib import copystream
-            assert copystream(f, stream, size) == size
-
-def openCodesAsStreams(bundle, codes):
-    for e in codes:
-        with bundle.open('data-%08d' % e, 'rb') as f:
-            yield f
-            
-def openCodesAsSingleStream(bundle, codes):
-    from histo.server.joinstream import JoinStream
-    streams = openCodesAsStreams(bundle, codes)
-    return JoinStream(streams)
+            logger.debug('[ Copy stream')
+            sendSize = copystream(f, stream, size)
+            logger.debug(' ]')
+            logger.debug('Send size: %d' % sendSize)
+            assert sendSize == size
+        logger.debug(' ]')

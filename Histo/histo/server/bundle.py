@@ -7,6 +7,7 @@ def DataBundle(config, exitSignal):
 def FinalBundle(config, exitSignal):
     from histo.bundle import Local, Buffer, Hub, Crypto
     fastBundle = Local(config['CachePath'])
+    return fastBundle
     mailBundles = MailBundles(config['MailBundles'], exitSignal)
     slowBundle = Hub(mailBundles)
     cipher = Cipher(config['Cipher'])
