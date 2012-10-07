@@ -4,9 +4,15 @@ def main():
     commit(folder)
 
 def commit(folder):
+    advancedCommit(folder)
+
+def advancedCommit(folder, time=None, name=None, compression=True):
     with connect() as conn:
         conn.writeObject('Commit')
-        p = {'Folder': folder}
+        p = {'Folder': folder,
+             'Name': name,
+             'Compression': compression,
+             'Time': time}
         conn.writeObject(p)
         assert conn.readObject() == 'OK'
 

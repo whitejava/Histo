@@ -23,7 +23,7 @@ def MailBundles(config, exitSignal):
 def Cipher(config):
     from histo.cipher import Hub, AES, Verify
     from base64 import b16decode
-    return Hub(Verify('md5'), AES(b16decode(bytes(config['Key'], 'utf8'))), Verify('sha1'), Verify('md5'))
+    return Hub(Verify('md5'), AES(b16decode(bytes(config['Key'].upper(), 'utf8'))), Verify('sha1'), Verify('md5'))
 
 def Mail(config, exitSignal):
     from histo.bundle import Mail as Mail2

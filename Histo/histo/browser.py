@@ -3,7 +3,8 @@ def main():
     result = search(keywords)
     printResult(result)
     selections = map(int, input2('Selections').split())
-    map(download, (result[e] for e in selections))
+    for e in selections:
+        download(result[e])
     
 def input2(message):
     print(message + ': ', end='')
@@ -17,7 +18,7 @@ def search(keywords):
         return conn.readObject()
 
 def printResult(result):
-    for i,e in reversed(enumerate(result)):
+    for i,e in reversed(list(enumerate(result))):
         time = '%04d%02d%02d' % e['Time'][:3]
         name = e['Name']
         print('%3d %s %s' % (i, time, name))

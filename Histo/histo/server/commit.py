@@ -90,7 +90,7 @@ class Commit:
     
     def generateNewState(self):
         state = dict()
-        state['Time'] = self.time
+        state['Time'] = self.stateTime
         state['CommitCount'] = self.state['CommitCount'] + 1
         state['CodeCount'] = self.currentCodeCount
         state['IndexCodes'] = self.state['IndexCodes'] + self.indexItemCodes
@@ -124,8 +124,8 @@ class Commit:
     
     def translateTimeParameter(self):
         from pclib import nowtuple
-        default = nowtuple()
-        self.time = self.parameters.get('Time', default)
+        self.stateTime = nowtuple()
+        self.time = self.parameters.get('Time', self.stateTime)
     
     def getArchivePath(self):
         root = self.config['ArchiveRoot']
