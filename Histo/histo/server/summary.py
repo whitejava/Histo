@@ -130,6 +130,9 @@ def guessEncoding(data):
         return 'utf8'
     commonPercent = []
     encodings = ['utf8','gbk','utf16','utf32','big5']
+    # Prevent python crash
+    # There is a bug in str builtin function.
+    data = data + b'\0'*10000
     for e in encodings:
         decode = str(data, e, 'ignore')
         count = countCommonChar(decode)

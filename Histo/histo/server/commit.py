@@ -11,9 +11,11 @@ class Commit:
     def run(self):
         logger.debug('[ Commit')
         self.readParameters()
+        self.getStateTime()
         self.translateParameters()
         self.renameTargetFolder()
         self.ensureFolderNotEmpty()
+        self.generateSummary()
         self.packTargetFolder()
         self.getPackageSize()
         self.getCurrentCodeCount()
@@ -31,6 +33,10 @@ class Commit:
         logger.debug('[ Read parameters')
         self.parameters = self.stream.readObject()
         logger.debug(' ]%s' % repr(self.parameters))
+    
+    def getStateTime(self):
+        from pclib import nowtuple
+        self.stateTime = nowtuple()
     
     def translateParameters(self):
         self.translateNameParameter()
@@ -72,7 +78,6 @@ class Commit:
     def generateIndexItem(self):
         self.simplifyDataCodes()
         self.calculatePackageMd5()
-        self.generateSummary()
         index = dict()
         index['CommitID'] = self.state['CommitCount']
         index['Name'] = self.name
@@ -123,9 +128,8 @@ class Commit:
         self.compression = self.parameters.get('Compression', default)
     
     def translateTimeParameter(self):
-        from pclib import nowtuple
-        self.stateTime = nowtuple()
-        self.time = self.parameters.get('Time', self.stateTime)
+        default = self.stateTime
+        self.time = self.parameters.get('Time', default)
     
     def getArchivePath(self):
         root = self.config['ArchiveRoot']
@@ -159,11 +163,12 @@ class Commit:
         logger.debug(' ]')
     
     def generateSummary(self):
-        logger.debug('[ Generate summary')
+        logger.debug('[ Generate summary: %s' % self.targetFolder)
         from histo.server.summary import generateSummary, simplify
         self.summary = generateSummary(self.name, self.targetFolder)
         itemLimit = self.config['SummaryItemLimit']
         self.summary = simplify(self.summary, itemLimit)
+        logger.debug('Summary: %r' % self.summary)
         logger.debug(' ]')
     
     def encodeIndexItem(self):

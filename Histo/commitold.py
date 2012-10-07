@@ -5,8 +5,8 @@ def main():
     files = [os.path.join(root, e) for e in files]
     files = [(os.path.getsize(e), e) for e in files]
     files = sorted(files)
-    start = 500
-    files = files[start:600]
+    start = 0
+    files = files[start:start+850]
     i = start
     for size,e in files:
         print('Commit: ', i, size, e)
@@ -28,7 +28,7 @@ def commit(file):
         os.mkdir(temp)
         from histo.server.summary import unpackArchive
         assert unpackArchive(file, temp) is None
-        from histo.commit import advancedCommit 
+        from histo.commit import advancedCommit
         advancedCommit(temp, time, name, True)
 
 if __name__ == '__main__':

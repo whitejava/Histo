@@ -10,7 +10,7 @@ def testSimplify():
     pprint(summary, indent=4, width=1)
 
 def testSummary():
-    root = 'G:\\test-summary'
+    root = 'D:\\ed'
     from histo.server.summary import generateSummary
     summary = generateSummary('TestSummary', root)
     from pprint import pprint
