@@ -17,20 +17,14 @@ def initLogger():
 
 def Bundle():
     from histo.bundle import Mail
-    imap = dict()
-    imap['Host'] = 'imap.gmail.com'
-    imap['Port'] = 993
-    imap['User'] = 'cpc.histo.d0'
-    imap['Password'] = 'fae39928ef'
-    smtp = dict()
-    smtp['Host'] = 'smtp.gmail.com'
-    smtp['Sender'] = 'histo@caipeichao.com'
-    smtp['Receiver'] = 'cpc.histo.d0@gmail.com'
-    config = dict()
-    config['Imap'] = imap
-    config['Smtp'] = smtp
+    host = 'imap.gmail.com'
+    port = 993
+    user = 'cpc.histo.d0'
+    password = 'fae39928ef'
+    sender = 'histo@caipeichao.com'
+    receiver = 'cpc.histo.d0@gmail.com'
     from threading import Event
-    return Mail(config, Event())
+    return Mail(host, port, user, password, receiver, sender, Event())
 
 if __name__ == '__main__':
     main()

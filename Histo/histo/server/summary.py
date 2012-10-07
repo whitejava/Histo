@@ -2,6 +2,26 @@
 
 __all__ = ['generateSummary', 'walk']
 
+'''
+Summary is a complicated list.
+For example:
+[
+    'SummaryName',
+    'FolderSummary',
+    [
+        'Novel.txt',
+        'TxtSummary',
+        'xxxxx'
+    ],
+    [
+        'Older',
+        'FolderSummary',
+        [
+        ]
+    ]
+]
+'''
+
 def generateSummary(name, fileName):
     import os.path
     if os.path.isdir(fileName):
@@ -18,6 +38,27 @@ def walk(summary):
     for e in summary[2:]:
         for e2 in walk(e):
             yield e2
+
+def simplify(summary, itemLimit):
+    itemCount = 0
+    result = []
+    q = [(summary, result)]
+    while itemCount < itemLimit:
+        if not q:
+            break
+        copyFrom, copyTo = q[0]
+        del q[0]
+        for e in copyFrom:
+            itemCount += 1
+            if type(e) is list:
+                li = []
+                copyTo.append(li)
+                q.append((e, li))
+            else:
+                copyTo.append(e)
+    for copyFrom, copyTo in q:
+        copyTo.append('...')
+    return result
 
 def folderSummary(fileName):
     result = []

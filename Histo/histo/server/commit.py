@@ -160,8 +160,10 @@ class Commit:
     
     def generateSummary(self):
         logger.debug('[ Generate summary')
-        from histo.server.summary import generateSummary
+        from histo.server.summary import generateSummary, simplify
         self.summary = generateSummary(self.name, self.targetFolder)
+        itemLimit = self.config['SummaryItemLimit']
+        self.summary = simplify(self.summary, itemLimit)
         logger.debug(' ]')
     
     def encodeIndexItem(self):

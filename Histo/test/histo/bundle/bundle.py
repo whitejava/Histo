@@ -29,7 +29,7 @@ class TestThread(Thread):
         random.choice(actions)()
     
     def testWrite(self):
-        logger.debug('[ Test read')
+        logger.debug('[ Test write')
         logger.debug('[ Get file name')
         file = next(self.fileNames)
         logger.debug(' ]%s' % file)

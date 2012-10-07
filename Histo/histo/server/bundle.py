@@ -27,8 +27,14 @@ def Cipher(config):
 
 def Mail(config, exitSignal):
     from histo.bundle import Mail as Mail2
-    result = Mail2(config, exitSignal)
+    host = config['Host']
+    port = config['Port']
+    user = config['User']
+    password = config['Password']
+    receiver = config['Receiver']
+    sender = config['Sender']
     volume = config['Volume']
+    result = Mail2(host, port, user, password, receiver, sender, exitSignal)
     result.getVolume = lambda:volume
     return result
 
