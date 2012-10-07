@@ -270,7 +270,7 @@ class UsageLog:
         self.usage[name] += 1
     
     def logToFile(self, name):
-        with open(name, 'a', encoding = 'utf8') as f:
+        with open(self.file, 'a', encoding = 'utf8') as f:
             from pclib import timetext
             print('%s %s' % (timetext(), repr(name)), file=f)
     

@@ -7,7 +7,6 @@ def DataBundle(config, exitSignal):
 def FinalBundle(config, exitSignal):
     from histo.bundle import Local, Buffer, Hub, Crypto
     fastBundle = Local(config['CachePath'])
-    return fastBundle
     mailBundles = MailBundles(config['MailBundles'], exitSignal)
     slowBundle = Hub(mailBundles)
     cipher = Cipher(config['Cipher'])
@@ -19,7 +18,7 @@ def FinalBundle(config, exitSignal):
     return Crypto(buffer, cipher)
 
 def MailBundles(config, exitSignal):
-    return [SimMail(e, exitSignal) for e in config]
+    return [Mail(e, exitSignal) for e in config]
 
 def Cipher(config):
     from histo.cipher import Hub, AES, Verify
@@ -28,14 +27,8 @@ def Cipher(config):
 
 def Mail(config, exitSignal):
     from histo.bundle import Mail as Mail2
-    host = config['Host']
-    port = config['Port']
-    user = config['User']
-    password = config['Password']
-    receiver = config['Receiver']
-    sender = config['Sender']
+    result = Mail2(config, exitSignal)
     volume = config['Volume']
-    result = Mail2(host, port, user, password, receiver, sender, exitSignal)
     result.getVolume = lambda:volume
     return result
 
@@ -44,7 +37,6 @@ def SimMail(config, exitSignal):
     volume = config['Volume']
     result = Local('D:\\sim-mail\\%s' % config['User'])
     result.getVolume = lambda:volume
-    return result
     result = Error(result, 0.1)
     result = Limit(result, 200000, 200000)
     result = Delay(result, 1.0)

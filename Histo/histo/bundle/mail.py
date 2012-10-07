@@ -16,13 +16,8 @@ def retry(times):
     return a
 
 class Mail:
-    def __init__(self, host, port, user, password, receiver, sender, exitSignal):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.receiver = receiver
-        self.sender = sender
+    def __init__(self, config, exitSignal):
+        self.config = config
         self.exitSignal = exitSignal
         from threading import Lock
         self.lock = Lock()
@@ -54,6 +49,8 @@ class Mail:
                 mails = connection.search(None, 'ALL')
                 mails = mails[1][0]
                 mails = str(mails,'utf8').split()
+                if not mails:
+                    return []
                 mails2 = ','.join(mails)
                 response = connection.fetch(mails2, '(BODY.PEEK[HEADER.FIELDS (SUBJECT)])')
                 subjects = parseResponse(response)
@@ -72,8 +69,7 @@ class Mail:
             return self.openForRead2(connection, name)
     
     def openForWrite(self, name):
-        with self.Connection() as connection:
-            return self.openForWrite2(connection, name)
+        return MailWriter(self.config['Smtp'], name, self.exitSignal)
     
     def openForRead2(self, connection, name):
         data = connection.fetch(str(self.getMailIdByName(name)), '(RFC822)')
@@ -86,9 +82,6 @@ class Mail:
                 return io.BytesIO(part.get_payload(decode=True))
         raise Exception('Message has no attachment.')
     
-    def openForWrite2(self, connection, name):
-        return MailWriter(self.sender, self.receiver, name, self.exitSignal)
-    
     def getMailIdByName(self, name):
         for e in self.listFiles():
             if e['Name'] == name:
@@ -96,14 +89,14 @@ class Mail:
         raise Exception('No such mail')
     
     def Connection(self):
-        return ImapConnection(self.host, self.port, self.user, self.password)
+        return ImapConnection(self.config['Imap'])
 
 class ImapConnection:
-    def __init__(self, host, port, user, password):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
+    def __init__(self, config):
+        self.host = config['Host']
+        self.port = config['Port']
+        self.user = config['User']
+        self.password = config['Password']
         self.refCount = 0
         from threading import Lock
         self.lock = Lock()
@@ -134,9 +127,10 @@ class ImapConnection:
         return result
 
 class MailWriter:
-    def __init__(self, sender, receiver, name, exitSignal):
-        self.sender = sender
-        self.receiver = receiver
+    def __init__(self, config, name, exitSignal):
+        self.host = config['Host']
+        self.sender = config['Sender']
+        self.receiver = config['Receiver']
         self.name = name
         self.exitSignal = exitSignal
         import io
@@ -149,7 +143,7 @@ class MailWriter:
         data = self.buffer.getvalue()
         size = len(data)
         subject = MailSubject.encode(self.name, size)
-        sendMail(self.sender, self.receiver, subject, '', self.name, data, self.exitSignal)
+        sendMail(self.host, self.sender, self.receiver, subject, '', self.name, data, self.exitSignal)
     
     def __enter__(self):
         return self
@@ -169,12 +163,11 @@ class MailSubject:
         name = string[11:]
         return size, name
 
-def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata, exitSignal):
+def sendMail(host, user, password, sender, receiver, subject, content, attachmentname, attachmentdata, exitSignal):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.mime.base import MIMEBase
     from email import encoders
-    import dns.resolver
     import socket
     message = MIMEMultipart()
     message['From'] = '<{}>'.format(sender)
@@ -187,48 +180,17 @@ def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata,
     part.add_header('Content-Disposition', 'attachment; filename="{}"'.format(attachmentname))
     message.attach(part)
     message = message.as_string()
-    host = receiver.split('@')
-    host = host[-1]
-    host = dns.resolver.query(host, 'MX')
-    host = host[-1]
-    host = host.to_text()
-    host = host.split(' ')
-    host = host[1]
-    host = dns.resolver.query(host, 'A')
-    host = host[0]
-    host = host.to_text()
     port = 25
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
-    def recv(code):
-        assert not exitSignal.isset()
-        data = sock.recv(1024)
-        data = data[:-2]
-        data = str(data, 'utf8')
-        data = data.split(' ')
-        data = data[0]
-        data = int(data)
-        assert data == code
-    def send(data):
-        assert not exitSignal.isset()
-        sock.sendall(bytes(data + '\r\n','utf8'))
-    try:
-        recv(220)
-        send('HELO %s' % sender.split('@')[1])
-        recv(250)
-        send('MAIL FROM:<{}>'.format(sender))
-        recv(250)
-        send('RCPT TO:<{}>'.format(receiver))
-        recv(250)
-        send('DATA')
-        for line in message.splitlines():
-            send(line)
-        send('.')
-        recv(354)
-        send('QUIT')
-        recv(250)
-    finally:
-        sock.close()
+    localHostName = sender.split('@')[1]
+    
+    from smtplib import SMTP
+    smtp = SMTP(host, port)
+    smtp.helo(localHostName)
+    smtp.ehlo(localHostName)
+    smtp.starttls()
+    smtp.login(user, password)
+    smtp.sendmail(sender, receiver, message)
+    smtp.quit()
 
 def parseResponse(response):
     assert response[0] == 'OK'

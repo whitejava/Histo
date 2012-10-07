@@ -1,7 +1,7 @@
 def main():
     initLogger()
     from bundle import testBundle
-    testBundle(Bundle())
+    testBundle(Bundle(), threadCount=1)
 
 def initLogger():
     import logging
@@ -17,7 +17,20 @@ def initLogger():
 
 def Bundle():
     from histo.bundle import Mail
-    return Mail('imap.gmail.com', 993, 'cpc.histo.d0', 'fae39928ef', 'cpc.histo.d0@gmail.com', 'histo@caipeichao.com')
+    imap = dict()
+    imap['Host'] = 'imap.gmail.com'
+    imap['Port'] = 993
+    imap['User'] = 'cpc.histo.d0'
+    imap['Password'] = 'fae39928ef'
+    smtp = dict()
+    smtp['Host'] = 'smtp.gmail.com'
+    smtp['Sender'] = 'histo@caipeichao.com'
+    smtp['Receiver'] = 'cpc.histo.d0@gmail.com'
+    config = dict()
+    config['Imap'] = imap
+    config['Smtp'] = smtp
+    from threading import Event
+    return Mail(config, Event())
 
 if __name__ == '__main__':
     main()
