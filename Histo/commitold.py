@@ -5,11 +5,13 @@ def main():
     files = [os.path.join(root, e) for e in files]
     files = [(os.path.getsize(e), e) for e in files]
     files = sorted(files)
-    start = 0
-    files = files[start:start+850]
+    # TODO 752
+    start = 796
+    files = files[start:860]
     i = start
     for size,e in files:
-        print('Commit: ', i, size, e)
+        from datetime import datetime
+        print(datetime.isoformat(datetime.now()), 'Commit: ', i, size, e)
         commit(e)
         i += 1
 

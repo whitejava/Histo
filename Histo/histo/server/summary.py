@@ -1,5 +1,7 @@
 #- -encoding: utf8
 
+import logging as logger
+
 __all__ = ['generateSummary', 'walk']
 
 '''
@@ -40,6 +42,7 @@ def walk(summary):
             yield e2
 
 def simplify(summary, itemLimit):
+    logger.debug('[ Simplify')
     itemCount = 0
     result = []
     q = [(summary, result)]
@@ -58,6 +61,7 @@ def simplify(summary, itemLimit):
                 copyTo.append(e)
     for copyFrom, copyTo in q:
         copyTo.append('...')
+    logger.debug(' ]')
     return result
 
 def folderSummary(fileName):
@@ -91,23 +95,30 @@ def txtSummary(fileName):
     return result
 
 def rarSummary(fileName):
+    logger.debug('[ Rar summary %s' % fileName)
     from tempfile import TemporaryDirectory
     with TemporaryDirectory('.histo') as temp:
         error = unpackArchive(fileName, temp)
         if error is None:
             result = folderSummary(temp)
             result[0] = 'RarSummary'
+            logger.debug('] Success')
             return result
         else:
+            logger.debug('] Error: %s' % repr(error))
             return ['RarError: %s' % repr(error)]
 
 def unpackArchive(fileName, targetDirectory):
+    logger.debug('[ Unpack archive %s to %s' % (fileName, targetDirectory))
     import subprocess
     returnCode = subprocess.call(['winrar', '-ibck', '-inul', '-p-', '-y', 'x', fileName, targetDirectory+'/'])
     if returnCode == 0:
+        logger.debug(' ] Success')
         return None
     else:
-        return 'UnpackRarError: %s' % getRarErrorMessage(returnCode)
+        errorMessage = getRarErrorMessage(returnCode)
+        logger.debug(' ] Fail %s' % errorMessage)
+        return 'UnpackRarError: %s' % errorMessage
 
 def getRarErrorMessage(returnCode):
     t = {1: 'warning',
@@ -137,7 +148,8 @@ def guessEncoding(data):
         decode = str(data, e, 'ignore')
         count = countCommonChar(decode)
         commonPercent.append(count/len(data))
-    return max(zip(commonPercent, encodings))[1]
+    result = max(zip(commonPercent, encodings))[1]
+    return result
 
 commonChar = '，的。　了不一是我“”他她这你在有人来着个？么…上说就到那子看！道也好要下没地大出心然会去得\
 过里可想还小自们时为后起都什：头天身以手对只眼中能样开知己事笑而很回点话面声之真情意如和前生气女无又多现见让儿家些\

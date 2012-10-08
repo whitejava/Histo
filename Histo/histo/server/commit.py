@@ -168,7 +168,7 @@ class Commit:
         self.summary = generateSummary(self.name, self.targetFolder)
         itemLimit = self.config['SummaryItemLimit']
         self.summary = simplify(self.summary, itemLimit)
-        logger.debug('Summary: %r' % self.summary)
+        logger.debug('Summary length: %d' % len(repr(self.summary)))
         logger.debug(' ]')
     
     def encodeIndexItem(self):
