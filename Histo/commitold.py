@@ -6,8 +6,8 @@ def main():
     files = [(os.path.getsize(e), e) for e in files]
     files = sorted(files)
     # TODO 752
-    start = 796
-    files = files[start:860]
+    start = 860
+    files = files[start:870]
     i = start
     for size,e in files:
         from datetime import datetime
