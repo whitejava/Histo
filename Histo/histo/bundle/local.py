@@ -1,7 +1,10 @@
+import functools
+
 class Local:
     def __init__(self, root):
         self.root = root
         self.createIfNotExist()
+        
     
     def open(self, name, mode):
         assert mode in ('wb', 'rb')
@@ -19,6 +22,7 @@ class Local:
         import os
         return os.path.isfile(self.getFile(name))
     
+    @functools.lru_cache(1000000)
     def getSize(self, name):
         import os.path
         return os.path.getsize(self.getFile(name))

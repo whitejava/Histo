@@ -118,7 +118,7 @@ class Buffer:
         return TransferThread(self.fastBundle, self.slowBundle, self.queue, self.exitSignal)
     
     def limitBufferSize(self):
-        logger.debug('Limit buffer size')
+        logger.debug('[ Limit buffer size')
         with self.lock:
             currentBufferSize = self.getCurrentBufferSize()
             mostUseless = self.getMostUseless()
@@ -128,6 +128,7 @@ class Buffer:
                 fileSize = self.fastBundle.getSize(e)
                 if self.deleteCache(e):
                     currentBufferSize -= fileSize
+        logger.debug(' ]')
     
     def deleteCache(self, file):
         if file in self.queue:
@@ -146,7 +147,7 @@ class Buffer:
             return False
 
     def getCurrentBufferSize(self):
-        return sum(map(self.fastBundle.getSize, self.fastBundle.list()))
+        return self.fastBundle.getTotalSize()
     
     def getMostUseless(self):
         files = self.fastBundle.list()
