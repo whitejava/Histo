@@ -121,15 +121,21 @@ class Commit:
     
     def translateNameParameter(self):
         default = self.getDefaultCommitName()
-        self.name = self.parameters.get('Name', default)
+        self.name = self.parameters.get('Name', None)
+        if self.name is None:
+            self.name = default
     
     def translateCompressionParameter(self):
         default = True
-        self.compression = self.parameters.get('Compression', default)
+        self.compression = self.parameters.get('Compression', None)
+        if self.compression is None:
+            self.compression = default
     
     def translateTimeParameter(self):
         default = self.stateTime
-        self.time = self.parameters.get('Time', default)
+        self.time = self.parameters.get('Time', None)
+        if self.time is None:
+            self.time = default
     
     def getArchivePath(self):
         root = self.config['ArchiveRoot']
