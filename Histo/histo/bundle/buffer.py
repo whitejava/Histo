@@ -1,91 +1,117 @@
 __all__ = ['Buffer']
 
+from debuginfo import *
 import logging
 logger = logging.getLogger()
 
 class Buffer:
-    def __init__(self, fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal):
-        from histo.bundle import Safe
-        self.exitSignal = exitSignal
-        self.fastBundle = Safe(fastBundle)
-        self.slowBundle = slowBundle
-        self.queueFile = queueFile
-        self.usageLogFile = usageLogFile
-        self.maxBufferSize = maxBufferSize
-        self.threadCount = threadCount
-        self.queue = self.getQueue(queueFile)
-        self.usageLog = self.getUsageLog(usageLogFile)
-        self.threads = self.createTransferThreads(threadCount)
-        self.startAllThreads(self.threads)
-        from threading import RLock
-        self.lock = RLock()
+    def __init__(self, config, fastBundle, slowBundle, exitSignal):
+        with DebugInfo('Initialize buffer bundle'):
+            self.config = config
+            from histo.bundle import Safe
+            self.exitSignal = exitSignal
+            self.fastBundle = Safe(fastBundle)
+            from histo.bundle import ListCache
+            self.slowBundle = ListCache(slowBundle, config['ListInterval'], exitSignal)
+            from threading import RLock
+            self.lock = RLock()
+            self.usageLog = self.getUsageLog(config['UsageLogFile'])
+            self.queue = TaskQueue()
+            self.threads = self.createTransferThreads(config['ThreadCount'])
+            self.protectedFiles = []
+            for e in self.threads:
+                e.start()
+            def supplyNotUploaded():
+                self.queue.extend(self.getNotUploadedFiles())
+            from threading import Thread
+            Thread(target = supplyNotUploaded).start()
     
     def open(self, name, mode):
         with self.lock:
-            if mode == 'wb':
-                return self.openForWrite(name)
-            elif mode == 'rb':
-                return self.openForRead(name)
-            else:
-                raise Exception('No such mode.')
+            with DebugInfo('Open %s with mode %r' % (name, mode)):
+                if mode == 'wb':
+                    return self.openForWrite(name)
+                elif mode == 'rb':
+                    return self.openForRead(name)
+                else:
+                    raise Exception('No such mode.')
     
     def list(self):
-        logger.debug('List')
-        with self.lock:
-            result = set()
-            result.union()
-            slowFiles = self.slowBundle.list()
-            fastFiles = self.fastBundle.list()
-            logger.debug('Slow files: %d' % len(slowFiles))
-            logger.debug('Fast files: %d' % len(fastFiles))
-            result = result.union(slowFiles)
-            result = result.union(fastFiles)
-            result = list(result)
-            logger.debug('Return Length %d' % len(result))
-            return result
+        with DebugInfo('List') as d:
+            with self.lock:
+                result = set()
+                result.union()
+                slowFiles = self.slowBundle.list()
+                fastFiles = self.fastBundle.list()
+                logger.debug('Slow files: %d' % len(slowFiles))
+                logger.debug('Fast files: %d' % len(fastFiles))
+                result = result.union(slowFiles)
+                result = result.union(fastFiles)
+                result = list(result)
+                d.result = str(len(result))
+                return result
+    
+    def listFast(self):
+        with DebugInfo('List fast'):
+            return self.fastBundle.list()
     
     def delete(self, name):
         raise Exception('Not support.')
     
-    def getQueue(self, queueFile):
-        return TaskQueue(queueFile)
+    def protect(self, name):
+        with DebugInfo('Protect %s' % name):
+            self.protectedFiles.append(name)
+    
+    def unprotect(self, name):
+        with DebugInfo('Unprotect: %s' % name):
+            self.protectedFiles.remove(name)
+    
+    def getNotUploadedFiles(self):
+        with DebugInfo('Get not uploaded files') as d:
+            fastFiles = self.fastBundle.list()
+            slowFiles = self.slowBundle.list()
+            for e in slowFiles:
+                fastFiles.remove(e)
+            d.result = 'Count: %d' % len(fastFiles)
+            return fastFiles
     
     def getUsageLog(self, usageLogFile):
-        return UsageLog(usageLogFile)
+        with DebugInfo('Get usage log'):
+            return UsageLog(usageLogFile)
     
     def createTransferThreads(self, threadCount):
-        return [self.createTransferThread() for _ in range(threadCount)]
-    
-    def startAllThreads(self, threads):
-        for e in threads:
-            e.start()
+        with DebugInfo('Create transfer threads'):
+            return [self.createTransferThread() for _ in range(threadCount)]
+        
     
     def openForWrite(self, name):
-        result = self.fastBundle.open(name, 'wb')
-        def onClose(close0):
-            with self.lock:
-                self.queue.append(name)
-                close0()
-                self.limitBufferSize()
-        return FileHook(result, onClose=onClose)
+        with DebugInfo('Open for write %s' % name):
+            result = self.fastBundle.open(name, 'wb')
+            def onClose(close0):
+                with DebugInfo('Close %s' % name):
+                    with self.lock:
+                        self.queue.append(name)
+                        close0()
+                        self.limitBufferSize()
+            return FileHook(result, onClose=onClose)
     
     def openForRead(self, name):
-        self.usageLog.log(name)
-        if self.fastBundle.exists(name):
-            logger.debug('Read from cache')
-            return self.fastBundle.open(name, 'rb')
-        else:
-            logger.debug('Read from slow bundle')
-            return self.openSlowBundleForRead(name)
+        with DebugInfo('Open for read: %s' % name) as d:
+            self.usageLog.log(name)
+            if self.fastBundle.exists(name):
+                d.result = 'From cache'
+                return self.fastBundle.open(name, 'rb')
+            else:
+                d.result = 'From slow'
+                return self.openSlowBundleForRead(name)
             
     def openSlowBundleForRead(self, name):
         result = FileShell()
         def threadProc():
             from histo.bundle.safe import SafeProtection
             try:
-                logger.debug('Reading slow file %s' % name)
-                file = self.fetchSlowFileForRead(name)
-                logger.debug('Finish read slow %s' % name)
+                with DebugInfo('Read slow file %s' % name):
+                    file = self.fetchSlowFileForRead(name)
                 result.fill(file)
             except SafeProtection as e:
                 logger.debug('Read failed %s: %s' % (name, repr(e)))
@@ -99,40 +125,45 @@ class Buffer:
         return result
     
     def fetchSlowFileForRead(self, name):
-        logger.debug('Fetching slow file %s' % name)
-        with self.slowBundle.open(name, 'rb') as f1:
-            logger.debug('Opened slow file')
-            with self.fastBundle.protect(name):
-                logger.debug('Protected fast bundle')
-                with self.fastBundle.openIgnoreProtection(name, 'wb') as f2:
-                    logger.debug('Opened fast file')
-                    logger.debug('Copying')
-                    from pclib import copystream2
-                    copystream2(f1, f2)
-                    logger.debug('Finish copying')
-                result = self.fastBundle.openIgnoreProtection(name, 'rb')
-                logger.debug('Reopen fast file')
-                return result
+        with DebugInfo('Fetching slow file %s' % name):
+            with DebugInfo('Open slow file'):
+                slowFile = self.slowBundle.open(name, 'rb')
+            with slowFile as f1:
+                with DebugInfo('Protect %s' % name):
+                    protection = self.fastBundle.protect(name)
+                with protection:
+                    with DebugInfo('Open fast file'):
+                        fastFile = self.fastBundle.openIgnoreProtection(name, 'wb')
+                    with fastFile as f2:
+                        with DebugInfo('Copy'):
+                            from pclib import copystream2
+                            copystream2(f1, f2)
+                    with DebugInfo('Reopen fast file'):
+                        result = self.fastBundle.openIgnoreProtection(name, 'rb')
+                    return result
     
     def createTransferThread(self):
-        return TransferThread(self.fastBundle, self.slowBundle, self.queue, self.exitSignal)
+        with DebugInfo('Create transfer thread'):
+            return TransferThread(self.fastBundle, self.slowBundle, self.queue, self.exitSignal)
     
     def limitBufferSize(self):
-        logger.debug('[ Limit buffer size')
-        with self.lock:
-            currentBufferSize = self.getCurrentBufferSize()
-            mostUseless = self.getMostUseless()
-            for e in mostUseless:
-                if currentBufferSize <= self.maxBufferSize:
-                    break
-                fileSize = self.fastBundle.getSize(e)
-                if self.deleteCache(e):
-                    currentBufferSize -= fileSize
-        logger.debug(' ]')
+        with DebugInfo('Limit buffer size'):
+            with self.lock:
+                currentBufferSize = self.fastBundle.getTotalSize()
+                mostUseless = self.getMostUseless()
+                for e in mostUseless:
+                    if currentBufferSize <= self.config['MaxBufferSize']:
+                        break
+                    fileSize = self.fastBundle.getSize(e)
+                    if self.deleteCache(e):
+                        currentBufferSize -= fileSize
     
     def deleteCache(self, file):
-        if file in self.queue:
-            logger.debug('%s is in queue, should not delete' % file)
+        if file in self.protectedFiles:
+            logger.debug('%s is in protection, should not be deleted' % file);
+            return False
+        if file not in self.slowBundle.listWithCache():
+            logger.debug('%s may not uploaded, it should not be deleted' % file)
             return False
         from histo.bundle.safe import SafeProtection
         try:
@@ -141,24 +172,23 @@ class Buffer:
             return True
         except SafeProtection as e:
             logger.debug('Delete %s failed: %s' % (file, repr(e)))
+            return False
         except Exception as e:
             logger.exception(e)
             logger.debug('Delete %s failed' % file)
             return False
-
-    def getCurrentBufferSize(self):
-        return self.fastBundle.getTotalSize()
     
     def getMostUseless(self):
-        files = self.fastBundle.list()
-        files = [(-self.usageLog.getUsageCount(e), e) for e in files]
-        files = sorted(files)
-        files = [e[1] for e in files]
-        return files
+        with DebugInfo('Get most useless'):
+            files = self.fastBundle.list()
+            files = [(-self.usageLog.getUsageCount(e), e) for e in files]
+            files = sorted(files)
+            files = [e[1] for e in files]
+            return files
 
 class TaskQueue:
-    def __init__(self, file):
-        self.queue = DiskQueue(file)
+    def __init__(self):
+        self.queue = []
         self.fetched = []
         from threading import Lock, Semaphore
         self.semaphore = Semaphore(len(self.queue))
@@ -168,29 +198,34 @@ class TaskQueue:
         return map(lambda x:x.value, iter(self.queue))
     
     def append(self, x):
-        with self.lock:
-            logger.debug('Append %s' % x)
-            self.queue.append(Task(x))
-            self.semaphore.release()
+        with DebugInfo('Append %s' % x):
+            with self.lock:
+                self.queue.append(Task(x))
+                self.semaphore.release()
+        
+    def extend(self, iterable):
+        for e in iterable:
+            self.append(e)
         
     def fetch(self, exitSignal):
-        while not exitSignal.is_set():
-            if self.semaphore.acquire(timeout=0.5):
-                with self.lock:
-                    task = self.findUnfetch()
-                    logger.debug('Fetch %s %s' % (id(task), task.value))
-                    self.fetched.append(task)
-                    return task, task.value
-        raise OnExitSignal()
+        with DebugInfo('Fetch') as d:
+            while not exitSignal.is_set():
+                if self.semaphore.acquire(timeout=0.5):
+                    with self.lock:
+                        task = self.findUnfetch()
+                        self.fetched.append(task)
+                        d.result = 'Fetch %s %s' % (id(task), task.value)
+                        return task, task.value
+            raise OnExitSignal()
     
     def feedBack(self, fetchId, result):
-        with self.lock:
-            logger.debug('Feed back %s %s %s' % (id(fetchId), fetchId.value, result))
-            self.fetched.remove(fetchId)
-            if result:
-                self.queue.remove(fetchId)
-            else:
-                self.semaphore.release()
+        with DebugInfo('Feed back %s %s' % (fetchId, result)):
+            with self.lock:
+                self.fetched.remove(fetchId)
+                if result:
+                    self.queue.remove(fetchId)
+                else:
+                    self.semaphore.release()
             
     def findUnfetch(self):
         for e in self.queue:
@@ -201,51 +236,6 @@ class TaskQueue:
 class Task:
     def __init__(self, value):
         self.value = value
-        
-class DiskQueue:
-    def __init__(self, file):
-        self.file = file
-        self.queue = self.loadOrCreate()
-    
-    def append(self, x):
-        self.queue.append(x)
-        self.save()
-    
-    def remove(self, x):
-        self.queue.remove(x)
-        self.save()
-    
-    def __getitem__(self, key):
-        return self.queue[key]
-    
-    def __setitem__(self, key, value):
-        self.queue[key] = value
-        self.save()
-    
-    def __iter__(self):
-        return self.queue.__iter__()
-    
-    def __len__(self):
-        return len(self.queue)
-    
-    def save(self):
-        with open(self.file, 'w') as f:
-            for e in self.queue:
-                print(repr(e.value), file=f)
-    
-    def loadOrCreate(self):
-        import os
-        if os.path.exists(self.file):
-            return self.loadQueue()
-        else:
-            return []
-    
-    def loadQueue(self):
-        result = []
-        with open(self.file, 'r') as f:
-            for e in f:
-                result.append(Task(eval(e)))
-        return result
 
 class UsageLog:
     def __init__(self, file):
@@ -315,14 +305,17 @@ class TransferThread(Thread):
                 self.queue.feedBack(fetchId, result)
         except OnExitSignal:
             logger.debug('On exit signal, exiting')
-            pass
     
     def runTask(self, task):
         from histo.bundle.safe import SafeProtection
+        from histo.bundle.mail import MailDeniedException
         try:
             self.runTask2(task)
             return True
         except SafeProtection as e:
+            logger.debug(repr(e))
+            return False
+        except MailDeniedException as e:
             logger.debug(repr(e))
             return False
         except Exception as e:

@@ -10,11 +10,7 @@ def FinalBundle(config, exitSignal):
     mailBundles = MailBundles(config['MailBundles'], exitSignal)
     slowBundle = Hub(mailBundles)
     cipher = Cipher(config['Cipher'])
-    queueFile = config['QueueFile']
-    usageLogFile = config['UsageLogFile']
-    maxBufferSize = config['MaxBufferSize']
-    threadCount = config['ThreadCount']
-    buffer = Buffer(fastBundle, slowBundle, queueFile, usageLogFile, maxBufferSize, threadCount, exitSignal)
+    buffer = Buffer(config['Buffer'], fastBundle, slowBundle, exitSignal)
     return Crypto(buffer, cipher)
 
 def MailBundles(config, exitSignal):

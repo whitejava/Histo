@@ -167,6 +167,9 @@ class MailSubject:
         name = string[11:]
         return size, name
 
+class MailDeniedException(Exception):
+    pass
+
 def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata, exitSignal):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
@@ -205,26 +208,26 @@ def sendMail(sender, receiver, subject, content, attachmentname, attachmentdata,
         data = str(data, 'utf8')
         data = data.split(' ')
         data = data[0]
-        data = int(data)
-        assert data == code
+        if data != code:
+            raise MailDeniedException(data)
     def send(data):
         assert not exitSignal.is_set()
         sock.sendall(bytes(data + '\r\n','utf8'))
     try:
-        recv(220)
+        recv('220')
         send('HELO %s' % sender.split('@')[1])
-        recv(250)
+        recv('250')
         send('MAIL FROM:<{}>'.format(sender))
-        recv(250)
+        recv('250')
         send('RCPT TO:<{}>'.format(receiver))
-        recv(250)
+        recv('250')
         send('DATA')
         for line in message.splitlines():
             send(line)
         send('.')
-        recv(354)
+        recv('354')
         send('QUIT')
-        recv(250)
+        recv('250')
     finally:
         sock.close()
 

@@ -53,7 +53,6 @@ class Main():
         config = self.config['Server']
         stateBundle = self.stateBundle
         dataBundle = self.dataBundle
-        event = self.exitEvent
         self.server = HistoServer(config, stateBundle, dataBundle)
         logger.debug(' ]')
     

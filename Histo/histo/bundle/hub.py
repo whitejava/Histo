@@ -1,9 +1,29 @@
+from debuginfo import *
+
+class ObjectShell:
+    def __init__(self):
+        with DebugInfo('Init ObjectShell'):
+            from threading import Event
+            self.available = Event()
+    
+    def get(self):
+        self.available.wait()
+        return self.value
+    
+    def put(self, x):
+        self.value = x
+        self.available.set()
+
 class Hub:
     def __init__(self, bundles):
         self.bundles = bundles
-        self.usageState = self.getUsageState()
+        self.spaceUsage = ObjectShell()
         from threading import Lock
         self.lock = Lock()
+        def loadSpaceUsage():
+            self.spaceUsage.put(self.calculateSpaceUsage())
+        from threading import Thread
+        Thread(target = loadSpaceUsage).start()
         
     def open(self, name, mode):
         if mode == 'rb':
@@ -48,7 +68,7 @@ class Hub:
     
     def getBundleRemainSize(self, i):
         totalSize = self.bundles[i].getVolume()
-        usedSize = self.usageState[i]
+        usedSize = self.spaceUsage.get()[i]
         return totalSize - usedSize
     
     def findContainerBundle(self, name):
@@ -63,7 +83,7 @@ class Hub:
         with bundle.open(name, 'wb') as f:
             f.write(data)
         with self.lock:
-            self.usageState[i] += size
+            self.spaceUsage.get()[i] += size
             
-    def getUsageState(self):
+    def calculateSpaceUsage(self):
         return [e.getTotalSize() for e in self.bundles]

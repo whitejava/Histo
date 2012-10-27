@@ -4,6 +4,9 @@ class State:
     def __init__(self, bundle):
         self.bundle = bundle
         self.state = self.loadOrCreateState()
+        stateName = getStateName(self.state)
+        self.bundle.protect(stateName)
+        self.lastProtectedStateName = stateName
 
     def update(self, state):
         self.state = state
@@ -16,10 +19,13 @@ class State:
         self.state[k] = v
 
     def writeStateToBundle(self):
-        stateName = 'state-%04d%02d%02d%02d%02d%02d%06d' % self.state['Time']
+        stateName = getStateName(self.state)
         from histo.server.keysets import KeySets
         encodedState = KeySets.encode(0, self.state)
         stream = self.bundle.open(stateName, 'wb')
+        self.bundle.unprotect(self.lastProtectedStateName)
+        self.bundle.protect(stateName)
+        self.lastProtectedStateName = stateName
         from picklestream import PickleStream
         stream = PickleStream(stream)
         with stream as f:
@@ -33,7 +39,7 @@ class State:
             return self.loadState(latestState)
         
     def getLatestState(self):
-        states = self.bundle.list()
+        states = self.bundle.listFast()
         if len(states) == 0:
             return None
         else:
@@ -56,3 +62,6 @@ class State:
         result['CodeCount'] = 0
         result['IndexCodes'] = []
         return result
+    
+def getStateName(state):
+    return 'state-%04d%02d%02d%02d%02d%02d%06d' % state['Time']

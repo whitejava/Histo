@@ -19,6 +19,9 @@ class Crypto:
     
     def list(self):
         return self.bundle.list()
+    
+    def __getattr__(self, name):
+        return getattr(self.bundle, name)
 
 class CryptoWriter:
     def __init__(self, file, cipher):
