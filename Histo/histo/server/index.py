@@ -34,7 +34,7 @@ def loadIndex(stream):
 
 def countKeyWordsMatch(summary, keywords):
     result = 0
-    for e in keywords:
+    for e in keywords.split():
         if isSummaryContainKeyword(summary, e):
             result += 1
     return result

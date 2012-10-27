@@ -71,7 +71,8 @@ class Buffer:
             fastFiles = self.fastBundle.list()
             slowFiles = self.slowBundle.list()
             for e in slowFiles:
-                fastFiles.remove(e)
+                if e in fastFiles:
+                    fastFiles.remove(e)
             d.result = 'Count: %d' % len(fastFiles)
             return fastFiles
     
@@ -219,7 +220,7 @@ class TaskQueue:
             raise OnExitSignal()
     
     def feedBack(self, fetchId, result):
-        with DebugInfo('Feed back %s %s' % (fetchId, result)):
+        with DebugInfo('Feed back %s %s' % (id(fetchId), result)):
             with self.lock:
                 self.fetched.remove(fetchId)
                 if result:

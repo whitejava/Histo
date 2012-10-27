@@ -1,6 +1,7 @@
 def main():
     keywords = input2('Keywords')
     result = search(keywords)
+    result = result[:50]
     printResult(result)
     selections = map(int, input2('Selections').split())
     for e in selections:
