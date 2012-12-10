@@ -14,12 +14,6 @@ class Crypto:
         else:
             raise Exception('No such mode.')
     
-    def delete(self, name):
-        return self.bundle.delete(name)
-    
-    def list(self):
-        return self.bundle.list()
-    
     def __getattr__(self, name):
         return getattr(self.bundle, name)
 

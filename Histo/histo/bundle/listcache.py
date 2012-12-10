@@ -13,7 +13,7 @@ class ListCache:
             self.postUpdateCache()
         result = FileHook(result, onClose = onClose)
         return result
-    
+
     def delete(self, name):
         return self.bundle.delete(name)
     

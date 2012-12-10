@@ -33,6 +33,9 @@ class PickleStream:
 
 class PickleServer:
     def __init__(self, address):
+        ''' @param address: A tuple of ip and port.
+            For example, PickleServer(('127.0.0.1', 3750))
+        '''
         handler = self.handle
         from socketserver import StreamRequestHandler
         class Handler(StreamRequestHandler):

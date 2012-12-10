@@ -109,21 +109,21 @@ class Buffer:
     def openSlowBundleForRead(self, name):
         result = FileShell()
         def threadProc():
-            from histo.bundle.safe import SafeProtection
-            try:
-                with DebugInfo('Read slow file %s' % name):
+            with DebugInfo('Read slow file %s' % name) as d:
+                from histo.bundle.safe import SafeProtection
+                try:
                     file = self.fetchSlowFileForRead(name)
-                result.fill(file)
-            except SafeProtection as e:
-                logger.debug('Read failed %s: %s' % (name, repr(e)))
-                result.fail()
-            except Exception as e:
-                logger.debug('Read failed %s' % name)
-                result.fail()
-                logger.debug(e)
-        from threading import Thread
-        Thread(target=threadProc).start()
-        return result
+                    result.fill(file)
+                except SafeProtection as e:
+                    result.fail()
+                    d.result = 'Fail %s' % repr(e)
+                except Exception as e:
+                    result.fail()
+                    d.result = 'Fail %s' % repr(e)
+        with DebugInfo('Start read slow file thread'):
+            from threading import Thread
+            Thread(target=threadProc).start()
+            return result
     
     def fetchSlowFileForRead(self, name):
         with DebugInfo('Fetching slow file %s' % name):
@@ -160,24 +160,25 @@ class Buffer:
                         currentBufferSize -= fileSize
     
     def deleteCache(self, file):
-        if file in self.protectedFiles:
-            logger.debug('%s is in protection, should not be deleted' % file);
-            return False
-        if file not in self.slowBundle.listWithCache():
-            logger.debug('%s may not uploaded, it should not be deleted' % file)
-            return False
-        from histo.bundle.safe import SafeProtection
-        try:
-            self.fastBundle.delete(file)
-            logger.debug('Delete %s ok' % file)
-            return True
-        except SafeProtection as e:
-            logger.debug('Delete %s failed: %s' % (file, repr(e)))
-            return False
-        except Exception as e:
-            logger.exception(e)
-            logger.debug('Delete %s failed' % file)
-            return False
+        with DebugInfo('Delete cache'):
+            if file in self.protectedFiles:
+                logger.debug('%s is in protection, should not be deleted' % file);
+                return False
+            if file not in self.slowBundle.listWithCache():
+                logger.debug('%s may not uploaded, it should not be deleted' % file)
+                return False
+            from histo.bundle.safe import SafeProtection
+            try:
+                self.fastBundle.delete(file)
+                logger.debug('Delete %s ok' % file)
+                return True
+            except SafeProtection as e:
+                logger.debug('Delete %s failed: %s' % (file, repr(e)))
+                return False
+            except Exception as e:
+                logger.exception(e)
+                logger.debug('Delete %s failed' % file)
+                return False
     
     def getMostUseless(self):
         with DebugInfo('Get most useless'):
