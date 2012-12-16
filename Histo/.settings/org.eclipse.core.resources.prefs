@@ -1,5 +1,7 @@
 eclipse.preferences.version=1
 encoding//histo/__init__.py=utf8
+encoding//histo/server/histoserver.py=utf8
+encoding//histo/server/picklehandler.py=utf8
 encoding//histo/server/summary.py=utf8
 encoding//test/histo/server.py=utf8
 encoding/pclib.py=utf8

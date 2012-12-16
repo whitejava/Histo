@@ -1,6 +1,11 @@
+#encoding: utf8
+
 import logging as logger
 
 class PickleHandler:
+    ''' 从stream读取pickle格式的请求，将请求解析为Python对象，
+    传至RequestHandler执行相应的动作。
+    '''
     def __init__(self, config, state, index, dataBundle, stream):
         self.config = config
         self.state = state

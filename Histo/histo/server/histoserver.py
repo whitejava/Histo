@@ -1,5 +1,9 @@
+#encoding: utf8
+
 from picklestream import PickleServer
 class HistoServer(PickleServer):
+    ''' 各个命令的具体实现在RequestHandler中。
+    '''
     def __init__(self, config, stateBundle, dataBundle):
         self.config = config
         self.stateBundle = stateBundle
